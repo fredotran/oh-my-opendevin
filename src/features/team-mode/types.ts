@@ -232,6 +232,7 @@ export const AGENT_ELIGIBILITY_REGISTRY: Readonly<Record<string, {
       "Agent 'prometheus' is plan-mode-only; can only write to .sisyphus/*.md (enforced by prometheusMdOnly hook). Cannot write to team mailbox. Use category: 'plan' instead.",
   },
   "sisyphus-junior": { verdict: "eligible" },
+  devin: { verdict: "eligible" },
 } as const
 
 /**
