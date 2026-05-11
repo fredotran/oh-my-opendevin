@@ -6,7 +6,6 @@
 
 This fork adds:
 - **Devin CLI Integration** - MCP server, built-in skill, and slash commands for delegating tasks to Devin CLI
-- **Session Alias System** - Friendly names for OpenCode session IDs (e.g., "auth-refactor" instead of "ses_1e95074dcffe...")
 - **Global Installer** - Easy installation script for deploying to any system
 - **Custom Configurations** - Tailored settings for specific workflows
 
@@ -37,19 +36,6 @@ This fork includes a complete integration with the [Devin CLI](https://cli.devin
 - `/devin-models` - Show model reference table
 - `/devin-status` - List or show session status
 - `/devin-cancel` - Cancel sessions
-
-### Session Alias System
-
-Friendly names for OpenCode session IDs instead of cryptic identifiers:
-
-**Features** (`src/features/session-alias/`)
-- Create aliases: `session_alias_create({ alias: "auth-refactor", session_id: "ses_..." })`
-- List aliases: `session_alias_list()`
-- Delete aliases: `session_alias_delete({ alias: "auth-refactor" })`
-- Auto-resolution: Session tools automatically resolve aliases to session IDs
-- Slash command: `/session-alias create|list|delete <name>`
-
-**Storage**: Project-local at `.opencode/session-aliases.json` with file locking for safety
 
 ---
 
