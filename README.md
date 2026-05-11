@@ -5,9 +5,10 @@
 ## What's Different
 
 This fork adds:
-- **Devin CLI Integration** - MCP server, built-in skill, and slash commands for delegating tasks to Devin CLI
-- **Global Installer** - Easy installation script for deploying to any system
-- **Custom Configurations** - Tailored settings for specific workflows
+- **Devin x Sisyphus Tag-Team** - Devin is the default primary agent (orchestrator + Devin CLI router); Sisyphus remains available for deep autonomous work. Both coexist and can hand off to each other.
+- **Devin CLI Integration** - MCP server, built-in skill, slash commands, and a dedicated `devin` built-in agent for delegating tasks to the Devin CLI sandbox.
+- **Global Installer** - Easy installation script for deploying to any system.
+- **Custom Configurations** - Tailored settings for specific workflows.
 
 All core features from the original oh-my-openagent are preserved and maintained. See [oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent) for the upstream project.
 
@@ -36,6 +37,89 @@ This fork includes a complete integration with the [Devin CLI](https://cli.devin
 - `/devin-models` - Show model reference table
 - `/devin-status` - List or show session status
 - `/devin-cancel` - Cancel sessions
+
+### Devin x Sisyphus Tag-Team
+
+This fork introduces a unique **dual-primary-agent architecture** where Devin and Sisyphus work side by side. Devin is the default router; Sisyphus is the deep-work specialist.
+
+| Agent | Mode | Role | When to Use |
+|-------|------|------|-------------|
+| **Devin** (default) | primary | Main router & orchestrator. Decides whether to execute locally, delegate to the Devin CLI sandbox, or route to specialist agents. | Quick edits, context gathering, Devin CLI delegation, task routing |
+| **Sisyphus** | primary | Deep autonomous worker. Plans, delegates, and executes complex multi-file changes independently. | Large refactors, architecture changes, multi-step implementations |
+
+**How the tag-team works:**
+- Devin is the **default agent** when you start OpenCode (respects your UI-selected model).
+- Sisyphus remains fully available — switch to it anytime for heavy lifting.
+- Devin's prompt teaches it when to hand off to Sisyphus for deep work, and when to keep things local or delegate to the Devin CLI sandbox.
+- Specialist agents (Oracle, Librarian, Explore, Hephaestus, Atlas, Metis, Momus) are available to both Devin and Sisyphus.
+- Both agents are **eligible for Team Mode** — you can spawn a team with either Devin or Sisyphus as the lead.
+
+**Agent assembly order:** `Devin → Sisyphus → Hephaestus → Prometheus → Atlas`
+
+#### Architecture Diagram
+
+```
+                               User Request
+                                    |
+                                    v
+                          +-------------------+
+                          |   Devin (primary) |
+                          |   Default Agent   |
+                          +-------------------+
+                                    |
+            +-----------------------+-----------------------+
+            |                       |                       |
+            v                       v                       v
+     +-------------+      +------------------+      +------------------+
+     |   Execute   |      |  Delegate to     |      |  Route to        |
+     |   Locally   |      |  Devin CLI       |      |  Specialist      |
+     |             |      |  Sandbox         |      |  Agent           |
+     +-------------+      +------------------+      +------------------+
+            |                       |                       |
+            |              +--------+--------+      +-------+-------+
+            |              |                 |      |       |       |
+            |              v                 v      v       v       v
+            |      +-----------+     +-----------+  Oracle  |  Hephaestus
+            |      | devin_    |     | Monitor   |          |  (deep work)
+            |      | start     |     | status /  |          |
+            |      |           |     | output    |  Librarian   Atlas
+            |      +-----------+     +-----------+  (docs)       (todos)
+            |                                        |
+            |                                   Explore
+            |                                   (search)
+            v
+   +------------------+
+   |  Sisyphus        |
+   |  (primary)       |<--------- Hand off for
+   |  Deep autonomous |            complex work
+   |  work            |
+   +------------------+
+            |
+            v
+   +------------------+
+   |  Atlas           |
+   |  (todo tracking) |
+   +------------------+
+```
+
+#### Devin Decision Flow
+
+```
+User Request
+    |
+    +-- Simple? (single-file edit, read, grep)
+    |      +--> Execute locally with read/edit/grep/LSP tools
+    |
+    +-- Long-running? (>30s, background, sandbox)
+    |      +--> Delegate to Devin CLI via devin_start
+    |      +--> Monitor with devin_status / devin_output
+    |
+    +-- Complex? (multi-file, architecture, deep refactor)
+    |      +--> Route to Sisyphus or Hephaestus
+    |
+    +-- Specialized? (docs, search, review, planning)
+           +--> Route to Oracle / Librarian / Explore / Metis / Momus
+```
 
 ---
 
