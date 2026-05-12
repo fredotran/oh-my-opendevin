@@ -113,9 +113,10 @@ For long-running background tasks, use the MCP \`devin_*\` tools. The \`devin-cl
 ### Standard Workflow
 
 \`\`\`typescript
-// 1. Start a Devin session (standard tier — omit model)
+// 1. Start a Devin session (standard tier — omit model, always pass cwd)
 devin_start({
   prompt: "Run the full test suite and report failures. Use bun test. Do not fix — just report.",
+  cwd: "/path/to/repo",
 })
 // → Returns session_id: "abc-123"
 
@@ -159,6 +160,7 @@ devin_wait({ session_id: "abc-123", timeout_ms: 120000 })
 
 - Start with a one-line goal
 - Provide absolute file paths (relative-to-repo also works)
+- Always pass \`cwd\` explicitly in \`devin_start\` — the MCP server's default directory is fixed at startup
 - List acceptance criteria explicitly
 - State what NOT to do
 - Keep it under ~2000 characters when possible
@@ -179,15 +181,15 @@ Refactor src/auth/session.ts to use the new TokenStore interface from src/auth/t
 
 \`\`\`typescript
 // CORRECT: Start Devin CLI AND do local work in parallel
-devin_start({ prompt: "Run full test suite" })  // standard tier (kimi-k2.6)
+devin_start({ prompt: "Run full test suite", cwd: "/path/to/repo" })  // standard tier (kimi-k2.6)
 // → session_id "abc-123"
 read({ file_path: "/project/src/main.ts" })
 grep({ pattern: "function handle", path: "/project/src" })
 // Now continue local work while Devin runs tests in background
 
 // CORRECT: Multiple independent Devin CLI sessions
-devin_start({ prompt: "Task A" })  // → id "A", standard tier
-devin_start({ prompt: "Task B", model: "opus" })  // → id "B", deep tier
+devin_start({ prompt: "Task A", cwd: "/path/to/repo" })  // → id "A", standard tier
+devin_start({ prompt: "Task B", cwd: "/path/to/repo", model: "opus" })  // → id "B", deep tier
 // Continue locally while both run
 \`\`\`
 

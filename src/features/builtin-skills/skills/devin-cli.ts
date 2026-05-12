@@ -47,7 +47,7 @@ Each tool returns a human-readable text snapshot. \`session_id\` is a UUID — s
 ## Standard workflow
 
 1. **Compose a self-contained prompt.** Devin will not see your conversation history. The prompt must contain everything Devin needs: goal, constraints, file paths, acceptance criteria. Treat it like delegating to a remote engineer.
-2. **Pick a working directory.** Default is the MCP server cwd (this repo). Pass \`cwd\` explicitly if Devin should run in a sibling project.
+2. **Pick a working directory (required).** Always pass \`cwd\` explicitly — the MCP server's default directory is fixed at startup and may differ from the current session's working directory (e.g. after a session fork). Use the repository root unless the task belongs to a sibling project.
 3. **Pick a model tier (optional).** The Devin agent (you) runs on free models. When delegating to Devin CLI, choose the tier based on task complexity:
    - **Standard** — omit \`model\` → defaults to \`kimi-k2.6\` (most tasks)
    - **Fast/Cheap** — \`model: "swe"\` (simple edits, typos)

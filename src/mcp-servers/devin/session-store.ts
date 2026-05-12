@@ -14,6 +14,10 @@ const LOG_RETENTION_MS = 24 * 60 * 60 * 1000 // 24 hours
 const KILL_GRACE_PERIOD_MS = 5000
 const DEFAULT_DEVIN_MODEL = "kimi-k2.6"
 
+// Capture the working directory at module load time so that
+// session fork / session roaming does not drift the default cwd.
+const MCP_HOME_DIR = process.cwd()
+
 const sessions = new Map<string, DevinSession>()
 
 // Per-model concurrency tracking (mirrors BackgroundManager pattern)
@@ -135,7 +139,7 @@ function validateExtraArgs(extraArgs: string[] | undefined): string[] {
 }
 
 function validateCwd(cwd: string | undefined): string {
-  const resolved = cwd ?? process.cwd()
+  const resolved = cwd ?? MCP_HOME_DIR
   if (!existsSync(resolved)) {
     throw new Error(`Working directory does not exist: ${resolved}`)
   }

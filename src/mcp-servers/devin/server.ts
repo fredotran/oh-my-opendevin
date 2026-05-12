@@ -46,10 +46,10 @@ export function createDevinMcpServer(): McpServer {
     "devin_start",
     {
       description:
-        "Start a background Devin CLI session running `devin -p <prompt>`. Returns a session_id you can poll with devin_status. The session inherits the working directory unless `cwd` is given.",
+        "Start a background Devin CLI session running `devin -p <prompt>`. Returns a session_id you can poll with devin_status. RECOMMENDATION: always pass `cwd` explicitly; if omitted, the session uses the MCP server's startup directory.",
       inputSchema: {
         prompt: z.string().min(1).describe("Prompt to send to Devin."),
-        cwd: z.string().optional().describe("Working directory. Defaults to MCP server cwd."),
+        cwd: z.string().optional().describe("Working directory. Defaults to the MCP server's startup directory. Pass explicitly to avoid ambiguity when sessions fork."),
         model: z
           .string()
           .optional()
