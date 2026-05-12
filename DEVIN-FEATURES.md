@@ -5,7 +5,7 @@
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
 <<<<<<< Updated upstream
-**Last updated:** `f0d061e0`
+**Last updated:** `39aa4154`
 =======
 **Last updated:** `82c0d34f`
 >>>>>>> Stashed changes
@@ -210,6 +210,9 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+39aa4154 Merge branch 'fredotran/dev' of github.com:fredotran/oh-my-opendevin into fredotran/dev
+f3122e4f fix(reporter): strip trailing whitespace and flatten newlines before wrapping
+a392c6a2 docs: auto-update DEVIN-FEATURES.md [skip ci]
 f0d061e0 Merge branch 'fredotran/dev' of github.com:fredotran/oh-my-opendevin into fredotran/dev
 5aafca52 feat(devin-mcp): write .meta.json with spawn command + model for each session
 120b8cac docs: auto-update DEVIN-FEATURES.md [skip ci]
