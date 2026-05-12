@@ -73,6 +73,17 @@ export function resolveModelPipeline(
 
   const normalizedUserModel = normalizeModel(intent?.userModel)
   if (normalizedUserModel) {
+    // If the user configured a bare model name (no provider prefix), try to
+    // find a matching entry in the fallback chain and prepend the provider.
+    // This lets users write "deepseek-chat" instead of "opencode/deepseek-chat".
+    if (!normalizedUserModel.includes("/") && fallbackChain) {
+      const match = fallbackChain.find((entry) => entry.model === normalizedUserModel)
+      if (match) {
+        const providerPrefixed = `${match.providers[0]}/${normalizedUserModel}`
+        log("Model resolved via config override (provider prefixed from fallback chain)", { model: providerPrefixed })
+        return { model: providerPrefixed, provenance: "override" }
+      }
+    }
     log("Model resolved via config override", { model: normalizedUserModel })
     return { model: normalizedUserModel, provenance: "override" }
   }
