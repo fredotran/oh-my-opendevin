@@ -9,6 +9,7 @@ import { createMetisAgent } from "./metis"
 import { createAtlasAgent } from "./atlas"
 import { createSisyphusAgent } from "./sisyphus"
 import { createHephaestusAgent } from "./hephaestus"
+import { createDevinAgent } from "./devin"
 import { getAgentToolRestrictions } from "../shared/agent-tool-restrictions"
 
 const TEST_MODEL = "anthropic/claude-sonnet-4-5"
@@ -40,6 +41,7 @@ describe("read-only agent tool restrictions", () => {
       "momus",
       "multimodal-looker",
       "sisyphus-junior",
+      "devin",
       "custom-worker",
     ]
 
@@ -256,6 +258,29 @@ describe("read-only agent tool restrictions", () => {
         expect(permission.grep).toBeUndefined()
         expect(permission.glob).toBeUndefined()
       }
+    })
+  })
+
+  describe("Devin", () => {
+    test("denies task and call_omo_agent at agent config level", () => {
+      // given
+      const agent = createDevinAgent(TEST_MODEL)
+
+      // when
+      const permission = agent.permission as Record<string, string>
+
+      // then
+      expect(permission["task"]).toBe("deny")
+      expect(permission["call_omo_agent"]).toBe("deny")
+    })
+
+    test("denies task and call_omo_agent in session restrictions", () => {
+      // given / when
+      const restrictions = getAgentToolRestrictions("devin")
+
+      // then
+      expect(restrictions["task"]).toBe(false)
+      expect(restrictions["call_omo_agent"]).toBe(false)
     })
   })
 })

@@ -113,6 +113,16 @@ export function applyToolConfig(params: {
       ...denyTodoTools,
     };
   }
+  const devin = agentByKey(params.agentResult, "devin");
+  if (devin) {
+    devin.permission = {
+      ...devin.permission,
+      call_omo_agent: "deny",
+      task: "deny",
+      question: "deny",
+      ...denyTodoTools,
+    };
+  }
   const junior = agentByKey(params.agentResult, "sisyphus-junior");
   if (junior) {
     junior.permission = {
