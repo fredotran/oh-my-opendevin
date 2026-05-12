@@ -74,8 +74,18 @@ export async function run(options: RunOptions): Promise<number> {
     }
 
     const restoreInput = suppressRunInput()
+    let sessionID: string | undefined
+
+    const printResumeHint = () => {
+      if (sessionID && !options.json) {
+        console.log(pc.dim(`\nTo resume this session later:`))
+        console.log(pc.dim(`  oh-my-opencode run --session-id ${sessionID} "Continue the work"`))
+      }
+    }
+
     const handleSigint = () => {
       console.log(pc.yellow("\nInterrupted. Shutting down..."))
+      printResumeHint()
       restoreInput()
       cleanup()
       process.exit(130)
@@ -84,7 +94,7 @@ export async function run(options: RunOptions): Promise<number> {
     process.on("SIGINT", handleSigint)
 
     try {
-      const sessionID = await resolveSession({
+      sessionID = await resolveSession({
         client,
         sessionId: options.sessionId,
         directory,
@@ -163,6 +173,7 @@ export async function run(options: RunOptions): Promise<number> {
         })
       }
 
+      printResumeHint()
       return exitCode
     } catch (err) {
       cleanup()
