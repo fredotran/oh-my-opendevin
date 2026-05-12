@@ -189,17 +189,10 @@ export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
   },
   devin: {
     fallbackChain: [
-      { providers: ["opencode"], model: "inclusionai/ring-1t" },
       { providers: ["opencode"], model: "deepseek-v4-flash" },
       { providers: ["opencode"], model: "minimax-m2.5-free" },
       { providers: ["opencode"], model: "big-pickle" },
-      { providers: ["opencode"], model: "nvidia/nemotron-3-super-120b-a12b:free" },
-      { providers: ["opencode-go"], model: "qwen3.5-plus" },
-      { providers: ["opencode-go"], model: "minimax-m2.7" },
-      { providers: ["opencode-go"], model: "kimi-k2.6" },
-      { providers: ["opencode"], model: "gpt-5-nano" },
-      { providers: ["opencode"], model: "claude-haiku-4-5" },
-      { providers: ["opencode"], model: "gpt-5.4-nano" },
+      { providers: ["opencode"], model: "nemotron-3-super-120b-a12b:free" },
     ],
   },
 };

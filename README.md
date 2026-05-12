@@ -56,21 +56,14 @@ This fork introduces a unique **dual-primary-agent architecture** where Devin an
 
 #### Devin Model Configuration
 
-Devin's fallback chain is restricted to free/cheap OpenCode models:
+Devin's fallback chain uses only free OpenCode Zen models:
 
 | Priority | Provider | Model | Cost |
 |----------|----------|-------|------|
-| 1 | `opencode` | `inclusionai/ring-1t` | Free |
-| 2 | `opencode` | `deepseek-v4-flash` | Free (OpenCode Zen) |
-| 3 | `opencode` | `minimax-m2.5-free` | Free |
-| 4 | `opencode` | `big-pickle` | Free |
-| 5 | `opencode` | `nvidia/nemotron-3-super-120b-a12b:free` | Free |
-| 6 | `opencode-go` | `qwen3.5-plus` | Cheap |
-| 7 | `opencode-go` | `minimax-m2.7` | Cheap |
-| 8 | `opencode-go` | `kimi-k2.6` | Cheap |
-| 9 | `opencode` | `gpt-5-nano` | Cheap |
-| 10 | `opencode` | `claude-haiku-4-5` | Cheap |
-| 11 | `opencode` | `gpt-5.4-nano` | Cheap |
+| 1 | `opencode` | `deepseek-v4-flash` | Free (OpenCode Zen) |
+| 2 | `opencode` | `minimax-m2.5-free` | Free |
+| 3 | `opencode` | `big-pickle` | Free |
+| 4 | `opencode` | `nemotron-3-super-120b-a12b:free` | Free |
 
 **Override in your config** (`~/.config/opencode/oh-my-openagent.jsonc`):
 
@@ -89,7 +82,7 @@ Devin's fallback chain is restricted to free/cheap OpenCode models:
 }
 ```
 
-Restart OpenCode after changing. If no override is set, Devin resolves through the free/cheap fallback chain above.
+Restart OpenCode after changing. If no override is set, Devin resolves through the free fallback chain above.
 
 **Agent assembly order:** `Devin → Sisyphus → Hephaestus → Prometheus → Atlas`
 
@@ -190,6 +183,8 @@ cd oh-my-opendevin
 ```bash
 ./install-global.sh              # Install globally
 ./install-global.sh --uninstall  # Remove global installation
+./install-global.sh --restore    # Restore configs from most recent backup
+./install-global.sh --fix-mcp    # Repair MCP configuration without reinstalling
 ./install-global.sh --no-verify  # Skip verification step
 ./install-global.sh --help       # Show help
 ```
@@ -199,6 +194,13 @@ cd oh-my-opendevin
 - CLI commands available: `oh-my-opendevin` or `oh-my-opencode`
 - Run `oh-my-opendevin doctor` to verify installation
 - Or run `./check-installation.sh` for a quick diagnostic of all components
+
+**Resuming sessions:**
+When running `oh-my-opencode run "<task>"`, if you interrupt with Ctrl+C or the session completes, the CLI prints a resume hint with the session ID:
+```
+oh-my-opencode run --session-id <id> "Continue the work"
+```
+This lets you easily resume exactly where you left off.
 
 ### Alternative: Direct npm Install
 
@@ -253,7 +255,7 @@ The Devin CLI MCP server requires **Bun** to run. This is because the MCP server
 **For users installing via npm directly:**
 - You must have Bun installed on your system
 - Install Bun: `curl -fsSL https://bun.sh/install | bash`
-- Manually configure MCP in `~/.config/opencode/.mcp.json`:
+- Manually configure MCP in `~/.claude/.mcp.json`:
   ```json
   {
     "mcpServers": {
@@ -266,6 +268,8 @@ The Devin CLI MCP server requires **Bun** to run. This is because the MCP server
     }
   }
   ```
+
+  The plugin also checks `~/.config/opencode/.mcp.json` as a fallback for manual configurations.
 
 **For developers:**
 - Bun is required for both development and MCP integration
@@ -283,9 +287,9 @@ If you see errors about Bun not being installed or MCP integration fails:
    curl -fsSL https://bun.sh/install | bash
    ```
 
-2. **Restart your shell** to pick up the new PATH:
+2. **Restart your shell** to pick up the new PATH (the global installer does this automatically for bash and zsh):
    ```bash
-   source ~/.bashrc  # or ~/.zshrc
+   source ~/.bashrc  # or ~/.zshrc, .bash_profile, .zprofile
    ```
 
 3. **Verify Bun installation:**
@@ -299,6 +303,8 @@ If you see errors about Bun not being installed or MCP integration fails:
    ```
 
 If you prefer not to use Bun, the plugin will still work without MCP integration. You just won't be able to use the Devin CLI delegation features.
+
+If MCP was previously configured but stopped working, run `./install-global.sh --fix-mcp` to repair the configuration without reinstalling.
 
 #### Installation fails with permission errors
 
@@ -630,6 +636,8 @@ Add your own under `.opencode/skills/*/SKILL.md` or `~/.config/opencode/skills/*
 
 To remove oh-my-openagent:
 
+> **Note:** The global installer (`./install-global.sh --uninstall`) automatically creates timestamped backups of your configs (OpenCode config, MCP config, Devin launcher). If you uninstall accidentally, run `./install-global.sh --restore` to recover your setup.
+
 1. **Remove the plugin from your OpenCode config**
 
    Edit `~/.config/opencode/opencode.json` (or `opencode.jsonc`) and remove either `"oh-my-openagent"` or the legacy `"oh-my-opencode"` entry from the `plugin` array:
@@ -679,7 +687,7 @@ See full [Features Documentation](docs/reference/features.md).
 - **Doctor Command**: Built-in diagnostics (`bunx oh-my-opencode doctor`) verify plugin registration, config, models, and environment
 - **Model Fallbacks**: `fallback_models` can mix plain model strings with per-fallback object settings in the same array
 - **File Prompts**: Load prompts from files with `file://` support in agent configurations
-- **Session Recovery**: Automatic recovery from session errors, context window limits, and API failures
+- **Session Recovery**: Automatic recovery from session errors, context window limits, and API failures. The `run` command also prints a resume hint on interrupt or completion so you can pick up exactly where you left off.
 - **Model Setup**: Agent-model matching is built into the [Installation Guide](docs/guide/installation.md#step-5-understand-your-model-setup)
 
 **Fork-Specific Features:**
