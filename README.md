@@ -36,8 +36,6 @@ This fork includes a complete integration with the [Devin CLI](https://cli.devin
 - Anti-patterns and best practices
 
 **Slash Commands** (`src/features/builtin-commands/templates/devin.ts`)
-- `/devin "<task>"` - Delegate to Devin CLI with tiered model routing
-- `/devin-models` - Show model reference table
 - `/devin-status` - List or show session status
 - `/devin-cancel` - Cancel sessions
 
@@ -59,7 +57,7 @@ This fork introduces a **clear separation of responsibilities** between two prim
 
 #### Devin CLI Model Tiers
 
-When the Devin agent delegates to the Devin CLI sandbox, it chooses from a tiered model system based on task complexity. The Devin agent itself runs on free OpenCode Zen models; the CLI sandbox sessions can be routed to any available model.
+When the Devin agent delegates to the Devin CLI sandbox, it uses **explicit keyword-based tier selection** based on task complexity. The agent picks a tier keyword; the MCP server resolves it to the actual Devin model before spawning the session. The Devin agent itself runs on free OpenCode Zen models; the CLI sandbox sessions can be routed to any available model.
 
 | Tier | How to invoke | Resolved model | Use for |
 |------|---------------|----------------|---------|
@@ -687,7 +685,7 @@ See full [Features Documentation](docs/reference/features.md).
 
 **Fork-Specific Features:**
 - **Devin x Sisyphus Dual-Primary Architecture**: Devin (default) handles local execution + Devin CLI sandbox delegation. Sisyphus handles full specialist agent orchestration (Oracle, Librarian, Explore, Hephaestus, Atlas, Metis, Momus). Pick the right agent for the job.
-- **Devin CLI Integration**: MCP server for background Devin sessions with tiered model routing (Standard/Fast/Code Gen/Balanced/Deep) + built-in skill + slash commands (`/devin`, `/devin-models`, `/devin-status`, `/devin-cancel`)
+- **Devin CLI Integration**: MCP server for background Devin sessions with explicit keyword-based tiered model routing (Standard/Fast/Code Gen/Balanced/Deep) + built-in skill + slash commands (`/devin-status`, `/devin-cancel`)
 
 ## Configuration
 
