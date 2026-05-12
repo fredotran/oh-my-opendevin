@@ -33,7 +33,7 @@ DO NOT delegate when:
 
 | Tool | Purpose | Key arguments |
 |------|---------|---------------|
-| \`devin_start\` | Spawn \`devin -p <prompt>\` in the background | \`prompt\` (required), \`model?\`, \`cwd?\`, \`permission_mode?\` (\`auto\` \\| \`dangerous\`, default: \`dangerous\`), \`resume?\` |
+| \`devin_start\` | Spawn \`devin -p <prompt>\` in the background | \`prompt\` (required), \`model?\`, \`cwd?\`, \`permission_mode?\` (\`auto\` \| \`dangerous\`, default: \`dangerous\`), \`resume?\` |
 | \`devin_status\` | Get current status + tail of stdout/stderr log | \`session_id\`, \`tail_bytes?\` (default 8192), \`since_bytes?\` (incremental read) |
 | \`devin_wait\` | Block until exit or timeout | \`session_id\`, \`timeout_ms?\` (default 60000), \`tail_bytes?\` |
 | \`devin_cancel\` | Kill the background subprocess | \`session_id\` |
@@ -48,7 +48,12 @@ Each tool returns a human-readable text snapshot. \`session_id\` is a UUID — s
 
 1. **Compose a self-contained prompt.** Devin will not see your conversation history. The prompt must contain everything Devin needs: goal, constraints, file paths, acceptance criteria. Treat it like delegating to a remote engineer.
 2. **Pick a working directory.** Default is the MCP server cwd (this repo). Pass \`cwd\` explicitly if Devin should run in a sibling project.
-3. **Pick a model intelligently (optional).** Analyze the task and select the right model. Omit to use the user's Devin default (typically \`"swe-1-6"\`).
+3. **Pick a model tier (optional).** The Devin agent (you) runs on free models. When delegating to Devin CLI, choose the tier based on task complexity:
+   - **Standard** — omit \`model\` → defaults to \`kimi-k2.6\` (most tasks)
+   - **Fast/Cheap** — \`model: "swe"\` (simple edits, typos)
+   - **Code Gen** — \`model: "codex"\` (boilerplate, scaffolding)
+   - **Deep** — \`model: "opus"\` (architecture, complex debugging)
+   - **Balanced** — \`model: "claude-sonnet-4"\` (moderate complexity)
 4. **Start the session.** Call \`devin_start({ prompt, cwd?, model? })\`. Save the returned \`session_id\`.
 5. **Tell the user.** Briefly note that Devin is running in the background and return to whatever else you were doing.
 6. **Poll periodically (incremental).**
@@ -64,64 +69,42 @@ Each tool returns a human-readable text snapshot. \`session_id\` is a UUID — s
 
 ## Model selection guidelines
 
-Devin does not auto-select models — you must choose based on task analysis. Think like a smart engineer: match model capability to task complexity, time sensitivity, and cost.
+The Devin agent (you) runs on free models. When delegating to the Devin CLI sandbox, you choose the model tier. Default to standard tier unless the task clearly demands a different capability level.
 
-### Decision framework
+### Model tiers
 
-Ask yourself these questions to pick the right model:
+| Tier | How to invoke | Resolved model | Use for |
+|------|---------------|----------------|---------|
+| **Standard** | Omit \`model\` | \`kimi-k2.6\` | Most tasks — good balance of capability and cost |
+| **Fast/Cheap** | \`model: "swe"\` | \`swe-1-6\` | Simple edits, typos, single-file fixes, cost-sensitive batches |
+| **Code Gen** | \`model: "codex"\` | \`codex\` | Boilerplate, CRUD, test scaffolding, repetitive patterns |
+| **Balanced** | \`model: "claude-sonnet-4"\` | \`claude-sonnet-4-6\` | Moderate complexity, general purpose, documentation |
+| **Deep** | \`model: "opus"\` | \`opus\` | Architecture refactors, multi-file, complex debugging, critical correctness |
 
-1. **Task complexity**: Is this a multi-file refactor with deep architectural implications, or a straightforward single-file edit?
-2. **Reasoning depth**: Does the task require tracing dependencies, understanding abstractions, or making design decisions?
-3. **Time sensitivity**: Is the user waiting for results, or can this run in the background?
-4. **Cost tolerance**: Is this a critical task worth spending tokens on, or a quick check?
+### Selection heuristics
 
-### Model recommendations
-
-| Model | Use when | Examples | Trade-offs |
-|-------|----------|----------|------------|
-| \`"opus"\` | Multi-file refactors, architecture changes, deep reasoning, complex debugging | "Refactor the auth module to use the new TokenStore interface", "Investigate why the build is slow and fix it", "Redesign the data layer for performance" | Highest capability, highest cost, slower |
-| \`"gpt"\` or \`"gpt-5.5"\` | Complex refactors, cross-file changes, tasks requiring strong reasoning | "Update all API calls to use the new error handling pattern", "Refactor the state management to use the new library" | High capability, high cost, good balance |
-| \`"claude-sonnet-4-6"\` | General-purpose tasks, moderate complexity, balanced speed/cost | "Add tests for the auth module", "Update the README with the new deployment steps", "Fix the failing test in src/auth" | Balanced capability and cost, good default for most tasks |
-| \`"codex"\` | Code generation, boilerplate, repetitive patterns | "Generate a CRUD API for the User model", "Create unit tests for all service methods", "Write TypeScript types for the API response" | Fast for generation, less strong on reasoning |
-| \`"swe"\` or \`"swe-1-6"\` | Straightforward edits, bug fixes, quick questions, cost-sensitive tasks | "Fix the typo in the error message", "Update the import statement", "Why is this test failing?" | Fast, cheap, good for simple tasks |
-| \`"sonnet"\` | General-purpose, moderate complexity | "Review this PR for issues", "Explain how this code works" | Balanced, similar to claude-sonnet-4-6 |
-
-### Heuristics
-
-Use these rules of thumb:
-
-- **3+ files or architectural impact** → \`"opus"\` or \`"gpt"\`
-- **1-2 files, moderate complexity** → \`"claude-sonnet-4-6"\` or \`"sonnet"\`
-- **Single file, straightforward** → \`"swe"\` or \`"swe-1-6"\`
-- **Code generation from scratch** → \`"codex"\`
-- **User is waiting, time-sensitive** → favor faster models (\`"swe"\`, \`"codex"\`) even if less capable
-- **Critical correctness required** → favor stronger models (\`"opus"\`, \`"gpt"\`) even if slower
-- **Cost-sensitive, many small tasks** → use \`"swe"\` consistently
-
-### When to omit the model
-
-Omit \`model\` and let Devin use the user's configured default when:
-
-- The task is routine and the default model is sufficient
-- The user hasn't expressed a preference
-- You're unsure — the user's default is their preferred baseline
+- **Default to standard tier** (omit \`model\`) for almost everything. \`kimi-k2.6\` handles most engineering tasks well.
+- Use **\`"swe"\`** only for trivial tasks where speed matters more than reasoning (typos, import fixes).
+- Use **\`"codex"\`** for pure code generation (scaffolding, repetitive patterns).
+- Use **\`"opus"\`** sparingly — reserve for architectural refactors, deep debugging, or when correctness is critical.
+- Use **\`"claude-sonnet-4"\`** when you need more than \`swe\` but don't want \`opus\` cost.
 
 ### Examples
 
 **Task**: "Refactor the entire auth module to use the new TokenStore interface across 15 files."
-→ **Model**: \`"opus"\` (multi-file, architectural, deep reasoning)
+→ **Tier**: Deep (\`model: "opus"\`)
 
 **Task**: "Fix the typo in the error message on line 42."
-→ **Model**: \`"swe"\` or omit (single file, straightforward)
+→ **Tier**: Standard (omit \`model\`) or Fast (\`model: "swe"\`)
 
 **Task**: "Generate unit tests for all service methods in src/services/."
-→ **Model**: \`"codex"\` (code generation, repetitive pattern)
+→ **Tier**: Code Gen (\`model: "codex"\`)
 
 **Task**: "Update the README with the new deployment steps."
-→ **Model**: \`"claude-sonnet-4-6"\` (moderate complexity, documentation)
+→ **Tier**: Standard (omit \`model\`) or Balanced (\`model: "claude-sonnet-4"\`)
 
 **Task**: "Investigate why the build is failing and fix it."
-→ **Model**: \`"gpt"\` or \`"opus"\` (debugging, potentially complex)
+→ **Tier**: Deep (\`model: "opus"\`) or Standard (omit \`model\`)
 
 ---
 
@@ -162,7 +145,7 @@ Refactor src/auth/session.ts to use the new TokenStore interface from src/auth/t
 ### User: "Delegate the auth refactor to Devin while you work on the UI."
 
 \`\`\`
-1. Analyze task: multi-file refactor with architectural impact → choose "opus"
+1. Analyze task: multi-file refactor with architectural impact → choose Deep tier ("opus")
 2. devin_start({
      prompt: "<self-contained refactor brief>",
      cwd: "/path/to/repo",
@@ -182,13 +165,12 @@ Refactor src/auth/session.ts to use the new TokenStore interface from src/auth/t
 ### User: "Ask Devin to fix the typo in the error message."
 
 \`\`\`
-1. Analyze task: single-file, straightforward → use "swe" or omit
+1. Analyze task: single-file, straightforward → use Standard tier (omit model) or Fast ("swe")
 2. devin_start({
      prompt: "Fix the typo in the error message on line 42 of src/errors.ts",
      cwd: "/path/to/repo",
-     model: "swe",
    }) → session_id "def-456"
-3. Tell user: "Started Devin (session def-456, model swe) on the typo fix."
+3. Tell user: "Started Devin (session def-456, standard tier) on the typo fix."
 4. devin_wait({ session_id: "def-456" })
 5. Report: "Devin fixed the typo. Here's the change: ..."
 \`\`\`
