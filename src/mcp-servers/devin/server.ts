@@ -68,8 +68,16 @@ export function createDevinMcpServer(): McpServer {
         resume,
       })
       const snap = await snapshotDevinSession(session, 0)
+      const tierLabel = session.model
+        ? session.model === "kimi-k2.6" ? "Standard" :
+          session.model === "swe-1-6" ? "Fast/Cheap" :
+          session.model === "codex" ? "Code Gen" :
+          session.model === "sonnet" ? "Balanced" :
+          session.model === "opus" ? "Deep" : "Custom"
+        : "Standard"
       return asTextResult(
-        `Started Devin session ${session.id}.\nPoll with devin_status({session_id: "${session.id}"}).\n\n` +
+        `Started Devin session ${session.id} (tier: ${tierLabel}, model: ${session.model ?? "kimi-k2.6"}).\n` +
+        `Poll with devin_status({session_id: "${session.id}"}).\n\n` +
           renderSnapshot(snap),
       )
     },

@@ -55,7 +55,10 @@ Each tool returns a human-readable text snapshot. \`session_id\` is a UUID — s
    - **Deep** — \`model: "opus"\` (architecture, complex debugging)
    - **Balanced** — \`model: "sonnet"\` (moderate complexity)
 4. **Start the session.** Call \`devin_start({ prompt, cwd?, model? })\`. Save the returned \`session_id\`.
-5. **Tell the user.** Briefly note that Devin is running in the background and return to whatever else you were doing.
+5. **Tell the user the resolved model.** The \`devin_start\` response includes the resolved model and tier. ALWAYS tell the user which model was selected, e.g.:
+   - "Started Devin (session abc-123, **Standard tier**, model **kimi-k2.6**) on the auth refactor."
+   - "Started Devin (session def-456, **Deep tier**, model **opus**) on the architecture review."
+   This gives the user visibility into cost and capability level. Then return to whatever else you were doing.
 6. **Poll incrementally — CRITICAL.**
    - **First call**: \`devin_status({ session_id, tail_bytes: 8192 })\` — note the \`output_bytes\` field in the response.
    - **ALL subsequent calls**: **ALWAYS use \`since_bytes\`**, never \`tail_bytes\` again:
@@ -178,7 +181,7 @@ Run \`bunx oh-my-opencode devin-report\` to see a full session report with model
      cwd: "/path/to/repo",
      model: "opus",
    }) → session_id "abc-123"
-3. Tell user: "Started Devin (session abc-123, model opus) on the auth refactor. Working on the UI now."
+3. Tell user: "Started Devin (session abc-123, **Deep tier**, model **opus**) on the auth refactor. Working on the UI now."
 4. Continue with UI work.
 5. First poll: devin_status({ session_id: "abc-123", tail_bytes: 8192 })
    → Note output_bytes: 2048 from the response
@@ -197,7 +200,7 @@ Run \`bunx oh-my-opencode devin-report\` to see a full session report with model
      prompt: "Fix the typo in the error message on line 42 of src/errors.ts",
      cwd: "/path/to/repo",
    }) → session_id "def-456"
-3. Tell user: "Started Devin (session def-456, standard tier) on the typo fix."
+3. Tell user: "Started Devin (session def-456, **Standard tier**, model **kimi-k2.6**) on the typo fix."
 4. devin_wait({ session_id: "def-456" })
 5. Report: "Devin fixed the typo. Here's the change: ..."
 \`\`\`
