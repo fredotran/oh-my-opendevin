@@ -59,14 +59,14 @@ This fork introduces a **clear separation of responsibilities** between two prim
 
 #### Devin Model Configuration
 
-Devin's fallback chain uses only free OpenCode Zen models:
+Devin's fallback chain resolves through free models across multiple providers (not locked to opencode):
 
-| Priority | Provider | Model | Cost |
-|----------|----------|-------|------|
-| 1 | `opencode` | `deepseek-v4-flash` | Free (OpenCode Zen) |
-| 2 | `opencode` | `minimax-m2.5-free` | Free |
-| 3 | `opencode` | `big-pickle` | Free |
-| 4 | `opencode` | `nemotron-3-super-120b-a12b:free` | Free |
+| Priority | Providers | Model | Cost |
+|----------|-----------|-------|------|
+| 1 | `opencode`, `opencode-go`, `vercel` | `deepseek-v4-flash` | Free |
+| 2 | `opencode`, `opencode-go`, `vercel` | `minimax-m2.5-free` | Free |
+| 3 | `opencode`, `github-copilot` | `big-pickle` | Free |
+| 4 | `opencode`, `opencode-go`, `vercel` | `nemotron-3-super-120b-a12b:free` | Free |
 
 **Override in your config** (`~/.config/opencode/oh-my-openagent.jsonc`):
 
