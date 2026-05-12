@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `f753fdaa`
+**Last updated:** `66698218`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -276,6 +276,8 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+66698218 refactor(devin-mcp): extract shared tiers module + fix swe keyword tier mapping
+3e9ef027 docs: auto-update DEVIN-FEATURES.md [skip ci]
 f753fdaa feat(devin-mcp): disclose resolved model+tier to user on delegation
 c648d010 docs: auto-update DEVIN-FEATURES.md [skip ci]
 41f8c300 fix(devin-mcp): cap devin_wait at 30s, guide agents to since_bytes polling
