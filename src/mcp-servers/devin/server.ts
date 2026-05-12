@@ -79,7 +79,7 @@ export function createDevinMcpServer(): McpServer {
     "devin_status",
     {
       description:
-        "Get current status and output of a background Devin session. Returns the tail of the log file plus runtime metadata. Use `since_bytes` for incremental reads to avoid re-fetching the same output.",
+        "Get current status and output of a background Devin session. CRITICAL: after the first call, ALWAYS use `since_bytes` (not `tail_bytes`) for incremental reads to avoid re-fetching the same output and wasting context window. The response includes `output_bytes` — save it and pass as `since_bytes` on the next poll.",
       inputSchema: {
         session_id: z.string().describe("Session id returned by devin_start."),
         tail_bytes: z
@@ -88,13 +88,13 @@ export function createDevinMcpServer(): McpServer {
           .min(0)
           .max(262144)
           .optional()
-          .describe("How many bytes of trailing output to return (default 8192, max 262144). Ignored when since_bytes is provided."),
+          .describe("How many bytes of trailing output to return (default 8192, max 262144). USE ONLY for the first status check or when the user asks for 'full output'. For all repeated polling, use since_bytes instead."),
         since_bytes: z
           .number()
           .int()
           .min(0)
           .optional()
-          .describe("Return only new output written after this byte offset. Use the output_bytes from the previous call to read incrementally."),
+          .describe("Return ONLY new output written after this byte offset. Use the `output_bytes` field from the PREVIOUS devin_status or devin_wait response. This avoids redundant data transfer and context bloat."),
       },
     },
     async ({ session_id, tail_bytes, since_bytes }) => {
@@ -121,7 +121,7 @@ export function createDevinMcpServer(): McpServer {
     "devin_wait",
     {
       description:
-        "Block until a background Devin session finishes (or timeout). Returns the final snapshot. Use this when you have nothing else to do.",
+        "Block until a background Devin session finishes. Returns the final snapshot if the session exits, or a 'still running' status with polling guidance if it does not. The actual wait is capped at 30 seconds per call to avoid MCP client timeouts — if the session is still running after 30s, call devin_status with since_bytes for incremental polling, or call devin_wait again.",
       inputSchema: {
         session_id: z.string().describe("Session id returned by devin_start."),
         timeout_ms: z
@@ -130,19 +130,36 @@ export function createDevinMcpServer(): McpServer {
           .min(1000)
           .max(600000)
           .optional()
-          .describe("Max time to wait in ms (default 60000, max 600000)."),
+          .describe("Target max wait in ms (default 60000, max 600000). The tool returns after 30s if the session is still running, to avoid MCP-level timeouts. You can call devin_wait again or switch to devin_status with since_bytes."),
         tail_bytes: z.number().int().min(0).max(262144).optional(),
       },
     },
     async ({ session_id, timeout_ms, tail_bytes }) => {
       const session = getDevinSession(session_id)
       if (!session) return asTextResult(`unknown session_id: ${session_id}`)
-      const limit = timeout_ms ?? 60000
-      const timer = new Promise<"timeout">((resolve) => setTimeout(() => resolve("timeout"), limit))
+      const requestedLimit = timeout_ms ?? 60000
+      // Cap actual blocking to 30s to avoid MCP client timeout (-32001).
+      // The agent can call devin_wait again or switch to devin_status.
+      const actualLimit = Math.min(requestedLimit, 30000)
+      const startWait = Date.now()
+      const timer = new Promise<"timeout">((resolve) => setTimeout(() => resolve("timeout"), actualLimit))
       const result = await Promise.race([session.proc.exited.then(() => "exited" as const), timer])
+      const elapsed = Date.now() - startWait
       const snap = await snapshotDevinSession(session, tail_bytes ?? 8192)
-      const prefix = result === "timeout" ? `Wait timed out after ${limit}ms (session still running).\n\n` : ""
-      return asTextResult(prefix + renderSnapshot(snap))
+
+      if (result === "timeout") {
+        return asTextResult(
+          `Session ${session_id} is still running after ${elapsed}ms (capped at ${actualLimit}ms per call to avoid MCP timeout).\n\n` +
+          `NEXT STEPS — choose one:\n` +
+          `  1. Poll incrementally: devin_status({ session_id: "${session_id}", since_bytes: ${snap.outputBytes} })\n` +
+          `  2. Wait again: devin_wait({ session_id: "${session_id}", timeout_ms: ${requestedLimit} })\n` +
+          `  3. Cancel: devin_cancel({ session_id: "${session_id}" })\n\n` +
+          `Current snapshot:\n` +
+          renderSnapshot(snap),
+        )
+      }
+
+      return asTextResult(`Session ${session_id} exited.\n\n` + renderSnapshot(snap))
     },
   )
 
