@@ -51,7 +51,11 @@ Each tool returns a human-readable text snapshot. \`session_id\` is a UUID — s
 3. **Pick a model intelligently (optional).** Analyze the task and select the right model. Omit to use the user's Devin default (typically \`"swe-1-6"\`).
 4. **Start the session.** Call \`devin_start({ prompt, cwd?, model? })\`. Save the returned \`session_id\`.
 5. **Tell the user.** Briefly note that Devin is running in the background and return to whatever else you were doing.
-6. **Poll periodically.** Call \`devin_status({ session_id })\` every few of your own steps, or whenever the user asks. Look at \`status\` and the output tail.
+6. **Poll periodically (incremental).**
+   - **First call**: \`devin_status({ session_id, tail_bytes: 8192 })\` — note the \`output_bytes\` field in the response.
+   - **Subsequent calls**: \`devin_status({ session_id, since_bytes: <previous_output_bytes> })\` — this returns only *new* output since your last poll, avoiding redundant context bloat.
+   - If \`since_bytes\` returns "(no new output)", wait 10–15 seconds before polling again.
+   - Use \`tail_bytes\` instead of \`since_bytes\` only when you want a fresh full tail (e.g., user asks for "full output").
 7. **Wait if you have nothing else to do.** Call \`devin_wait({ session_id, timeout_ms })\` instead of busy-polling. \`timeout_ms\` max is 600000 (10 min); chain \`devin_wait\` calls if you need longer.
 8. **Report results.** When \`status\` is \`completed\`, summarize Devin's output for the user. If \`error\`, surface the error and either retry or fall back to handling it yourself.
 9. **Cancel if needed.** \`devin_cancel({ session_id })\` if the user changes their mind or Devin goes off-rails.
@@ -166,8 +170,13 @@ Refactor src/auth/session.ts to use the new TokenStore interface from src/auth/t
    }) → session_id "abc-123"
 3. Tell user: "Started Devin (session abc-123, model opus) on the auth refactor. Working on the UI now."
 4. Continue with UI work.
-5. Periodically: devin_status({ session_id: "abc-123" })
-6. When complete: report Devin's output and continue.
+5. First poll: devin_status({ session_id: "abc-123", tail_bytes: 8192 })
+   → Note output_bytes: 2048 from the response
+6. Subsequent polls: devin_status({ session_id: "abc-123", since_bytes: 2048 })
+   → Only new output since byte 2048 is returned
+   → Update tracker: output_bytes is now 4096
+7. Next poll: devin_status({ session_id: "abc-123", since_bytes: 4096 })
+8. When complete: report Devin's output and continue.
 \`\`\`
 
 ### User: "Ask Devin to fix the typo in the error message."
