@@ -4,7 +4,11 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
+<<<<<<< Updated upstream
 **Last updated:** `336ba20b`
+=======
+**Last updated:** `82c0d34f`
+>>>>>>> Stashed changes
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -141,6 +145,19 @@ This document tracks all features, fixes, and architectural changes added in the
 - **Commit:** `9ce4fa4a`
 - **What:** Added `devin` to `AgentOverridesSchema` so users can customize Devin agent config.
 
+### Devin CLI Test Reporter
+- **Commit:** `82c0d34f` (script added)
+- **Files:** `scripts/devin-test-reporter.py`
+- **What:** Standalone Python script (`uv run`) that retrieves and summarizes all Devin CLI sessions (direct CLI + MCP-spawned) to verify tiered model routing and session outcomes.
+- **Features:**
+  - Scans `devin list --format json` for CLI sessions (id, title/prompt, cwd, last activity)
+  - Scans `/tmp/oh-my-opencode-devin-mcp/` for MCP session logs (output size, timestamps)
+  - Aggregates by source (CLI vs MCP), status, and tier (when model is inferable)
+  - Shows per-session details with prompt summaries and working directories
+  - JSON output mode (`--json`) for CI integration
+  - Tier filter mode (`--tier <tier>`) for focused verification
+- **Limitation:** Neither the Devin CLI nor the MCP server persists the resolved model to disk. To verify which model was actually used, run the reporter WHILE sessions are active via MCP `devin_list` / `devin_status` tools, or enhance the MCP server to write `.meta.json` alongside `.log` files.
+
 ### README Fork Documentation
 - **Commit:** `efa50caf` (fork features), `5ceab6c0` (reorganization), `021e31d2` (installation guide), `c1ffce7e` (removed aliases), `8b098ff1` (tag-team architecture), `870bfa41` (tiered routing), `9e22df98` (diagram alignment)
 - **What:** Comprehensive fork-specific README with installation, Devin x Sisyphus tag-team architecture, model tier documentation, and corrected ASCII architecture diagram alignment.
@@ -193,12 +210,16 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+<<<<<<< Updated upstream
 336ba20b ci: extract fork-specific automation into dedicated fork-sync workflow
 0c5f58a7 ci: auto-update DEVIN-FEATURES.md on push to fredotran/dev
 82c0d34f  docs(readme): sync Devin CLI model section with DEVIN-FEATURES.md
 da323e1f ci: verify installer runs `bun run build` end-to-end
 3b9c8013 docs: correct Last updated commit hash in DEVIN-FEATURES.md
 55bf204f ci: add branch triggers, build verification, and installer checks
+=======
+82c0d34f docs(readme): sync Devin CLI model section with DEVIN-FEATURES.md + add test reporter script
+>>>>>>> Stashed changes
 9e22df98 Fix README architecture diagram alignment
 926a308e Merge branch 'fredotran/dev' of github.com:fredotran/oh-my-opendevin into fredotran/dev
 7fa5f766 Merge branch 'feature/devin-cwd-roaming-fix' into fredotran/dev
