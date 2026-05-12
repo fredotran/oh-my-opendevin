@@ -79,51 +79,77 @@ def run_devin_list() -> list[dict]:
 
 
 def get_mcp_sessions() -> list[dict]:
-    """Scan MCP server log directory for session log files."""
+    """Scan MCP server log directory for .meta.json files written by session-store.ts.
+    
+    Each .meta.json contains: id, model, prompt, cwd, command, startedAt, status,
+    and optionally endedAt + exitCode (written when the session exits).
+    """
     sessions = []
     if not MCP_LOG_DIR.exists():
         print(f"[info] MCP log dir not found: {MCP_LOG_DIR}", file=sys.stderr)
         return sessions
 
-    log_files = sorted(MCP_LOG_DIR.glob("*.log"))
-    for log_file in log_files:
+    meta_files = sorted(MCP_LOG_DIR.glob("*.meta.json"))
+    for meta_file in meta_files:
         try:
-            sid = log_file.stem
+            with open(meta_file, "r", encoding="utf-8") as f:
+                meta = json.load(f)
+
+            sid = meta.get("id", meta_file.stem.replace(".meta", ""))
+            log_file = meta_file.with_name(f"{sid}.log")
+            log_size = log_file.stat().st_size if log_file.exists() else 0
+
+            # Convert ms timestamps (from session-store.ts) to ISO strings
+            started_at = meta.get("startedAt")
+            ended_at = meta.get("endedAt")
+            start_iso = datetime.fromtimestamp(started_at / 1000, tz=timezone.utc).isoformat() if started_at else None
+            end_iso = datetime.fromtimestamp(ended_at / 1000, tz=timezone.utc).isoformat() if ended_at else None
+
+            sessions.append({
+                "id": sid,
+                "model": meta.get("model", "unknown"),
+                "status": meta.get("status", "unknown"),
+                "prompt": meta.get("prompt", "")[:120] + "..." if len(meta.get("prompt", "")) > 120 else meta.get("prompt", ""),
+                "cwd": meta.get("cwd", ""),
+                "command": meta.get("command", []),
+                "start_time": start_iso,
+                "end_time": end_iso,
+                "exit_code": meta.get("exitCode"),
+                "source": "mcp",
+                "log_size_bytes": log_size,
+            })
+        except Exception as e:
+            print(f"[warn] Failed to read {meta_file}: {e}", file=sys.stderr)
+
+    # Also include legacy MCP sessions that only have .log files (no .meta.json)
+    meta_ids = {s["id"] for s in sessions}
+    for log_file in sorted(MCP_LOG_DIR.glob("*.log")):
+        sid = log_file.stem
+        if sid in meta_ids:
+            continue
+        try:
             stat = log_file.stat()
             start_time = datetime.fromtimestamp(stat.st_ctime, tz=timezone.utc).isoformat()
             end_time = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()
             size = stat.st_size
 
-            # Try to extract prompt from first lines of log
             prompt = ""
             try:
                 with open(log_file, "r", encoding="utf-8", errors="replace") as f:
                     first_lines = f.read(2048)
-                    # Look for common prompt markers
                     lines = first_lines.strip().split("\n")
                     if lines and lines[0].strip():
                         prompt = lines[0].strip()
             except Exception:
                 pass
 
-            # Try to infer model from log content (model may be mentioned)
-            inferred_model = "unknown"
-            try:
-                with open(log_file, "r", encoding="utf-8", errors="replace") as f:
-                    content = f.read(8192)
-                    for model_name in TIER_MAP:
-                        if model_name in content:
-                            inferred_model = model_name
-                            break
-            except Exception:
-                pass
-
             sessions.append({
                 "id": sid,
-                "model": inferred_model,
-                "status": "unknown",  # MCP server doesn't persist status to disk
+                "model": "unknown",
+                "status": "unknown",
                 "prompt": prompt[:120] + "..." if len(prompt) > 120 else prompt,
                 "cwd": "",
+                "command": [],
                 "start_time": start_time,
                 "end_time": end_time,
                 "source": "mcp",
@@ -279,39 +305,50 @@ def print_text_report(report: dict, tier_filter: str | None = None):
     print()
 
     # ── Model Tracking Note ─────────────────────────────────────────────────
-    print("  MODEL TRACKING NOTE")
+    print("  MODEL TRACKING")
     print("  " + "-" * 86)
-    print("  Model info is NOT persisted by either the Devin CLI or the MCP server.")
-    print("  To verify tier routing, run this script WHILE sessions are active and use:")
-    print("    - MCP tool: devin_list / devin_status  (shows resolved model)")
-    print("    - CLI: devin list  (does not include model)")
+    mcp_with_meta = sum(1 for s in sessions if s["source"] == "mcp" and s["model"] != "unknown")
+    mcp_total = sum(1 for s in sessions if s["source"] == "mcp")
+    print(f"  MCP sessions with model metadata: {mcp_with_meta}/{mcp_total}")
+    print("  The MCP server now writes .meta.json alongside .log files containing:")
+    print("    - resolved model, prompt, cwd, spawn command, status, exit code")
+    print("  CLI sessions still do not expose model in devin list JSON.")
     print()
 
     # ── Per-Session Details ─────────────────────────────────────────────────
     print("  SESSION DETAILS")
     print("  " + "-" * 86)
-    print(f"  {'ID':<28} {'Source':<6} {'Tier':<12} {'Status':<10} {'Duration':>10} {'Log Size':>10} {'Last Act':>10}")
-    print(f"  {'-'*28} {'-'*6} {'-'*12} {'-'*10} {'-'*10} {'-'*10} {'-'*10}")
+    print(f"  {'ID':<28} {'Source':<6} {'Tier':<12} {'Model':<12} {'Status':<10} {'Duration':>10} {'Log Size':>10}")
+    print(f"  {'-'*28} {'-'*6} {'-'*12} {'-'*12} {'-'*10} {'-'*10} {'-'*10}")
 
     for s in sessions:
         dur = f"{s['duration_seconds']:.1f}s" if s["duration_seconds"] else "N/A"
         log_sz = f"{s['log_size_bytes'] / 1024:.1f}KB" if s["log_size_bytes"] > 1024 else f"{s['log_size_bytes']}B"
-        last_act = s.get("last_activity_ago", "")[:9]
-        print(f"  {s['id'][:28]:<28} {s['source']:<6} {s['tier']:<12} {s['status']:<10} {dur:>10} {log_sz:>10} {last_act:>10}")
+        model_short = s["model"][:11]
+        print(f"  {s['id'][:28]:<28} {s['source']:<6} {s['tier']:<12} {model_short:<12} {s['status']:<10} {dur:>10} {log_sz:>10}")
 
     print()
-    print("  PROMPTS & WORKING DIRECTORIES")
+    print("  PROMPTS, COMMANDS & WORKING DIRECTORIES")
     print("  " + "-" * 86)
     for s in sessions:
-        print(f"  [{s['source']}] {s['tier']} | {s['id'][:20]}...")
+        print(f"  [{s['source']}] {s['tier']} | {s['status']} | {s['id'][:20]}...")
+        if s.get("model") and s["model"] != "unknown":
+            print(f"    Model: {s['model']}")
         if s.get("cwd"):
-            print(f"    CWD:  {s['cwd']}")
+            print(f"    CWD:   {s['cwd']}")
+        cmd = s.get("command", [])
+        if cmd:
+            # Truncate long prompts in command display
+            cmd_display = " ".join(cmd)
+            if len(cmd_display) > 80:
+                cmd_display = cmd_display[:77] + "..."
+            print(f"    Spawn: {cmd_display}")
         prompt = s.get("prompt", "")
         if prompt:
-            # Wrap prompt at 80 chars
-            indent = "    "
             wrapped = re.sub(r"(.{80})", r"\1\n    ", prompt)
-            print(f"    Task: {wrapped}")
+            print(f"    Task:  {wrapped}")
+        if s.get("exit_code") is not None:
+            print(f"    Exit:  {s['exit_code']}")
         print()
 
     print("=" * 90)
