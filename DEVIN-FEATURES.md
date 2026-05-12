@@ -248,12 +248,15 @@ This document tracks all features, fixes, and architectural changes added in the
 - **Why:** Fixes the infinite `devin_wait` timeout → `devin_status` with `tail_bytes` polling loop that wastes context window and triggers MCP errors.
 
 ### Model Disclosure to User
-- **Files:** `src/mcp-servers/devin/server.ts`, `src/features/builtin-skills/skills/devin-cli.ts`
+- **Files:** `src/mcp-servers/devin/server.ts`, `src/mcp-servers/devin/tiers.ts`, `src/cli/devin-report/devin-report.ts`, `src/features/builtin-skills/skills/devin-cli.ts`
 - **What:**
   1. `devin_start` response now prominently includes the resolved tier and model: `Started Devin session <id> (tier: <TierName>, model: <model>).`
   2. Built-in skill instructs agents to **ALWAYS tell the user** which model was selected, e.g. "Started Devin (session abc-123, **Deep tier**, model **opus**) on the auth refactor."
   3. Example interactions updated to show tier + model in the user-facing message.
-- **Why:** Users need visibility into which Devin CLI model is running their task — for cost awareness, capability confirmation, and debugging.
+  4. New shared module `src/mcp-servers/devin/tiers.ts` with `resolveTierLabel()`, `resolveTierInfo()`, and `MODEL_TIER_MAP` — single source of truth for tier mapping consumed by both the MCP server and the `devin-report` CLI.
+  5. Both tier keywords (`"swe"`, `"codex"`, `"sonnet"`, `"opus"`) and fully-qualified model IDs (`"swe-1-6"`, etc.) are recognized — sessions started with either form display the correct tier.
+- **Why:** Users need visibility into which Devin CLI model is running their task — for cost awareness, capability confirmation, and debugging. The shared tier map ensures consistent labeling across the MCP server response, the CLI report, and any future consumers.
+- **Tests:** 13 new tests in `src/mcp-servers/devin/tiers.test.ts` covering all tier resolution paths.
 
 ---
 
@@ -262,10 +265,11 @@ This document tracks all features, fixes, and architectural changes added in the
 | Suite | Tests | Status |
 |-------|-------|--------|
 | `src/mcp-servers/devin/session-store.test.ts` | 19 | Pass — cache, batch cancel, incremental reads, reattach, pre-flight validation, idle detection |
+| `src/mcp-servers/devin/tiers.test.ts` | 13 | Pass — tier resolution for keywords + fully-qualified IDs, custom fallback, shared map invariants |
 | `src/cli/devin-report/formatter.test.ts` | 6 | Pass — JSON output, text output, empty state, tier breakdown |
 | `src/features/background-agent/manager.test.ts` | 157 | Pass — priority queue integration |
 | `src/features/builtin-skills/skills.test.ts` | 17 | Pass — skill structure validation |
-| **Total** | **199** | **0 failures** |
+| **Total** | **212** | **0 failures** |
 
 ---
 

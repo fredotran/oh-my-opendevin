@@ -12,6 +12,7 @@ import {
   shutdownAllSessions,
   startDevinSession,
 } from "./session-store"
+import { resolveTierLabel } from "./tiers"
 import type { DevinSessionSnapshot } from "./types"
 
 const SERVER_NAME = "devin"
@@ -68,13 +69,7 @@ export function createDevinMcpServer(): McpServer {
         resume,
       })
       const snap = await snapshotDevinSession(session, 0)
-      const tierLabel = session.model
-        ? session.model === "kimi-k2.6" ? "Standard" :
-          session.model === "swe-1-6" ? "Fast/Cheap" :
-          session.model === "codex" ? "Code Gen" :
-          session.model === "sonnet" ? "Balanced" :
-          session.model === "opus" ? "Deep" : "Custom"
-        : "Standard"
+      const tierLabel = resolveTierLabel(session.model)
       return asTextResult(
         `Started Devin session ${session.id} (tier: ${tierLabel}, model: ${session.model ?? "kimi-k2.6"}).\n` +
         `Poll with devin_status({session_id: "${session.id}"}).\n\n` +

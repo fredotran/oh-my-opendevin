@@ -37,6 +37,7 @@ Sessions live in memory (`session-store.ts` — `Map<id, DevinSession>`); logs a
 - **TTL reaper:** Completed/errored/cancelled/orphaned sessions are removed from memory after 1 hour (logs remain on disk).
 - **Idle detection:** Running sessions with no output growth for 30 minutes are marked `"stalled"` (not auto-cancelled).
 - **Model disclosure:** `devin_start` response includes resolved tier and model. Agents are instructed to tell the user which model is running their task.
+- **Tier mapping single source of truth:** `tiers.ts` exports `MODEL_TIER_MAP`, `resolveTierLabel()`, `resolveTierInfo()`, and `KNOWN_DEVIN_MODELS`. Both the MCP server (`devin_start` response) and the CLI (`devin-report`) consume this module so tier labels stay consistent. Both tier keywords (`"swe"`, `"codex"`, `"sonnet"`, `"opus"`) and fully-qualified IDs (`"swe-1-6"`, etc.) resolve to the same tier.
 - **Session statuses:** `running`, `completed`, `error`, `cancelled`, `orphaned`, `stalled`.
 
 ### Agent guidance

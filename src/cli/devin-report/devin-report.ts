@@ -2,22 +2,16 @@ import { readdir, stat } from "node:fs/promises"
 import { existsSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { resolveTierInfo } from "../../mcp-servers/devin/tiers"
 import type { SessionMetaFile } from "../../mcp-servers/devin/types"
 import { formatJsonOutput, formatTextOutput } from "./formatter"
 import type { DevinReportOptions, DevinReportResult, DevinReportSession, DevinReportSummary } from "./types"
 
 const MCP_LOG_DIR = join(tmpdir(), "oh-my-opencode-devin-mcp")
 
-const TIER_MAP: Record<string, { tier: string; keyword: string }> = {
-  "kimi-k2.6": { tier: "Standard", keyword: "omit model" },
-  "swe-1-6": { tier: "Fast/Cheap", keyword: '"swe"' },
-  "codex": { tier: "Code Gen", keyword: '"codex"' },
-  "sonnet": { tier: "Balanced", keyword: '"sonnet"' },
-  "opus": { tier: "Deep", keyword: '"opus"' },
-}
-
 function getTierInfo(model: string): { tier: string; keyword: string } {
-  return TIER_MAP[model] ?? { tier: "Unknown", keyword: model }
+  if (model === "unknown") return { tier: "Unknown", keyword: "unknown" }
+  return resolveTierInfo(model)
 }
 
 async function getMcpSessions(): Promise<DevinReportSession[]> {
