@@ -108,7 +108,7 @@ For long-running background tasks, use the MCP \`devin_*\` tools. The \`devin-cl
 | **Fast/Cheap** | \`model: "swe"\` | \`swe-1-6\` | Simple edits, typos, single-file fixes |
 | **Code Gen** | \`model: "codex"\` | \`codex\` | Boilerplate, CRUD, test scaffolding |
 | **Deep** | \`model: "opus"\` | \`opus\` | Architecture refactors, multi-file, complex debugging |
-| **Balanced** | \`model: "claude-sonnet-4"\` | \`claude-sonnet-4\` | Moderate complexity, general purpose |
+| **Balanced** | \`model: "sonnet"\` | \`sonnet\` | Moderate complexity, general purpose |
 
 ### Standard Workflow
 
@@ -153,7 +153,7 @@ devin_wait({ session_id: "abc-123", timeout_ms: 120000 })
 - Use **\`"swe"\`** only for trivial tasks where speed matters more than reasoning.
 - Use **\`"codex"\`** for pure code generation (scaffolding, repetitive patterns).
 - Use **\`"opus"\`** sparingly — reserve for architectural refactors, deep debugging, or when correctness is critical.
-- Use **\`"claude-sonnet-4"\`** when you need more than \`swe\` but don't want \`opus\` cost.
+- Use **\`"sonnet"\`** when you need more than \`swe\` but don't want \`opus\` cost.
 
 ### Prompt-writing Rules for Devin CLI
 

@@ -53,7 +53,7 @@ Each tool returns a human-readable text snapshot. \`session_id\` is a UUID — s
    - **Fast/Cheap** — \`model: "swe"\` (simple edits, typos)
    - **Code Gen** — \`model: "codex"\` (boilerplate, scaffolding)
    - **Deep** — \`model: "opus"\` (architecture, complex debugging)
-   - **Balanced** — \`model: "claude-sonnet-4"\` (moderate complexity)
+   - **Balanced** — \`model: "sonnet"\` (moderate complexity)
 4. **Start the session.** Call \`devin_start({ prompt, cwd?, model? })\`. Save the returned \`session_id\`.
 5. **Tell the user.** Briefly note that Devin is running in the background and return to whatever else you were doing.
 6. **Poll periodically (incremental).**
@@ -78,7 +78,7 @@ The Devin agent (you) runs on free models. When delegating to the Devin CLI sand
 | **Standard** | Omit \`model\` | \`kimi-k2.6\` | Most tasks — good balance of capability and cost |
 | **Fast/Cheap** | \`model: "swe"\` | \`swe-1-6\` | Simple edits, typos, single-file fixes, cost-sensitive batches |
 | **Code Gen** | \`model: "codex"\` | \`codex\` | Boilerplate, CRUD, test scaffolding, repetitive patterns |
-| **Balanced** | \`model: "claude-sonnet-4"\` | \`claude-sonnet-4-6\` | Moderate complexity, general purpose, documentation |
+| **Balanced** | \`model: "sonnet"\` | \`sonnet\` | Moderate complexity, general purpose, documentation |
 | **Deep** | \`model: "opus"\` | \`opus\` | Architecture refactors, multi-file, complex debugging, critical correctness |
 
 ### Selection heuristics
@@ -87,7 +87,7 @@ The Devin agent (you) runs on free models. When delegating to the Devin CLI sand
 - Use **\`"swe"\`** only for trivial tasks where speed matters more than reasoning (typos, import fixes).
 - Use **\`"codex"\`** for pure code generation (scaffolding, repetitive patterns).
 - Use **\`"opus"\`** sparingly — reserve for architectural refactors, deep debugging, or when correctness is critical.
-- Use **\`"claude-sonnet-4"\`** when you need more than \`swe\` but don't want \`opus\` cost.
+- Use **\`"sonnet"\`** when you need more than \`swe\` but don't want \`opus\` cost.
 
 ### Examples
 
@@ -101,7 +101,7 @@ The Devin agent (you) runs on free models. When delegating to the Devin CLI sand
 → **Tier**: Code Gen (\`model: "codex"\`)
 
 **Task**: "Update the README with the new deployment steps."
-→ **Tier**: Standard (omit \`model\`) or Balanced (\`model: "claude-sonnet-4"\`)
+→ **Tier**: Standard (omit \`model\`) or Balanced (\`model: "sonnet"\`)
 
 **Task**: "Investigate why the build is failing and fix it."
 → **Tier**: Deep (\`model: "opus"\`) or Standard (omit \`model\`)

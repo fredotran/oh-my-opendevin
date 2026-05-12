@@ -66,7 +66,7 @@ When the Devin agent delegates to the Devin CLI sandbox, it chooses from a tiere
 | **Standard** | Omit `model` | `kimi-k2.6` | Most tasks — good balance of capability and cost (default) |
 | **Fast/Cheap** | `model: "swe"` | `swe-1-6` | Simple edits, typos, single-file fixes |
 | **Code Gen** | `model: "codex"` | `codex` | Boilerplate, CRUD, test scaffolding |
-| **Balanced** | `model: "claude-sonnet-4"` | `claude-sonnet-4-6` | Moderate complexity, general purpose |
+| **Balanced** | `model: "sonnet"` | `sonnet` | Moderate complexity, general purpose |
 | **Deep** | `model: "opus"` | `opus` | Architecture refactors, multi-file, complex debugging |
 
 **Selection heuristics:**
@@ -74,7 +74,7 @@ When the Devin agent delegates to the Devin CLI sandbox, it chooses from a tiere
 - Use **Fast** (`"swe"`) only for trivial tasks where speed matters more than reasoning
 - Use **Code Gen** (`"codex"`) for pure scaffolding and repetitive patterns
 - Use **Deep** (`"opus"`) sparingly — reserve for architectural refactors or critical correctness
-- Use **Balanced** (`"claude-sonnet-4"`) when you need more than `swe` but don't want `opus` cost
+- Use **Balanced** (`"sonnet"`) when you need more than `swe` but don't want `opus` cost
 
 **Override the Devin agent model** in `~/.config/opencode/oh-my-openagent.jsonc`:
 
