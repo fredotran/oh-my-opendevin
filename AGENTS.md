@@ -252,4 +252,5 @@ bunx oh-my-opencode mcp-oauth login <server-url>  # Tier-3 MCP OAuth (PKCE + DCR
 - **Platform binaries:** detect AVX2 + libc family at runtime, fallback to baseline if needed.
 - **IntentGate (`keyword-detector`):** classifies user intent (`ultrawork`/`ulw`, `search`, `analyze`, `team`) and injects mode-specific prompts.
 - **Hashline edit:** every `Read` output tagged with `LINE#ID` content hashes (chars from `ZPMQVRWSNKTXJBYH`); edits reject on hash mismatch.
+- **Branch naming:** feature branches use `feat/` prefix (e.g., `feat/devin-activity-monitor`), not `fredotran/`. Use `git branch -m feat/<name>` when creating new feature branches.
 - **Docs:** see [`docs/guide/`](file:///Users/yeongyu/local-workspaces/omo/docs/guide/) for user-facing guides (overview, installation, orchestration, agent-model-matching, team-mode), [`docs/reference/`](file:///Users/yeongyu/local-workspaces/omo/docs/reference/) for CLI/configuration/features reference.
