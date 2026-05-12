@@ -19,6 +19,7 @@ import {
   createWebFetchRedirectGuardHook,
   createTeamToolGating,
   createFsyncSkipWarningHook,
+  createDevinActivityMonitorHook,
 } from "../../hooks"
 import {
   getOpenCodeVersion,
@@ -45,6 +46,7 @@ export type ToolGuardHooks = {
   webfetchRedirectGuard: ReturnType<typeof createWebFetchRedirectGuardHook> | null
   fsyncSkipWarning: ReturnType<typeof createFsyncSkipWarningHook> | null
   teamToolGating: ReturnType<typeof createTeamToolGating> | null
+  devinActivityMonitor: ReturnType<typeof createDevinActivityMonitorHook> | null
 }
 
 export function createToolGuardHooks(args: {
@@ -145,6 +147,10 @@ export function createToolGuardHooks(args: {
     ? safeHook("fsync-skip-warning", () => createFsyncSkipWarningHook())
     : null
 
+  const devinActivityMonitor = isHookEnabled("devin-activity-monitor")
+    ? safeHook("devin-activity-monitor", () => createDevinActivityMonitorHook(ctx))
+    : null
+
   return {
     commentChecker,
     toolOutputTruncator,
@@ -162,5 +168,6 @@ export function createToolGuardHooks(args: {
     webfetchRedirectGuard,
     fsyncSkipWarning,
     teamToolGating,
+    devinActivityMonitor,
   }
 }

@@ -50,10 +50,11 @@ Each tool returns a human-readable text snapshot. \`session_id\` is a UUID — s
 3. **Pick a model intelligently (optional).** Analyze the task and select the right model. Omit to use the user's Devin default (typically \`"swe-1-6"\`).
 4. **Start the session.** Call \`devin_start({ prompt, cwd?, model? })\`. Save the returned \`session_id\`.
 5. **Tell the user.** Briefly note that Devin is running in the background and return to whatever else you were doing.
-6. **Poll periodically.** Call \`devin_status({ session_id })\` every few of your own steps, or whenever the user asks. Look at \`status\` and the output tail.
-7. **Wait if you have nothing else to do.** Call \`devin_wait({ session_id, timeout_ms })\` instead of busy-polling. \`timeout_ms\` max is 600000 (10 min); chain \`devin_wait\` calls if you need longer.
-8. **Report results.** When \`status\` is \`completed\`, summarize Devin's output for the user. If \`error\`, surface the error and either retry or fall back to handling it yourself.
-9. **Cancel if needed.** \`devin_cancel({ session_id })\` if the user changes their mind or Devin goes off-rails.
+6. **Live updates are automatic.** The \`devin-activity-monitor\` hook injects Devin's live log output into your context as \`<system-reminder>\` messages every 5 seconds. You do NOT need to poll constantly — the updates will appear automatically.
+7. **Poll on demand.** Call \`devin_status({ session_id })\` only when the user asks, or before acting on Devin's work, or if you haven't seen an update in a while and want to verify status.
+8. **Wait if you have nothing else to do.** Call \`devin_wait({ session_id, timeout_ms })\` instead of busy-polling. \`timeout_ms\` max is 600000 (10 min); chain \`devin_wait\` calls if you need longer.
+9. **Report results.** When \`status\` is \`completed\`, summarize Devin's output for the user. If \`error\`, surface the error and either retry or fall back to handling it yourself.
+10. **Cancel if needed.** \`devin_cancel({ session_id })\` if the user changes their mind or Devin goes off-rails.
 
 ---
 
