@@ -3,6 +3,7 @@ import { existsSync, openSync, statSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { randomUUID } from "node:crypto"
+import { KNOWN_DEVIN_MODELS } from "./tiers"
 import type { DevinSession, DevinSessionSnapshot, SessionMetaFile } from "./types"
 
 const LOG_DIR = join(tmpdir(), "oh-my-opencode-devin-mcp")
@@ -16,7 +17,6 @@ const DEFAULT_DEVIN_MODEL = "kimi-k2.6"
 const COMPLETED_SESSION_TTL_MS = 60 * 60 * 1000 // 1 hour
 const IDLE_CHECK_INTERVAL_MS = 5 * 60 * 1000 // 5 minutes
 const IDLE_STALL_THRESHOLD_MS = 30 * 60 * 1000 // 30 minutes with no output → stalled
-const KNOWN_DEVIN_MODELS = ["kimi-k2.6", "swe-1-6", "codex", "sonnet", "opus"]
 
 // Capture the working directory at module load time so that
 // session fork / session roaming does not drift the default cwd.
