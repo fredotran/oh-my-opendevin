@@ -192,7 +192,7 @@ export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
       { providers: ["opencode", "opencode-go", "vercel"], model: "deepseek-v4-flash" },
       { providers: ["opencode", "opencode-go", "vercel"], model: "minimax-m2.5-free" },
       { providers: ["opencode", "github-copilot"], model: "big-pickle" },
-      { providers: ["opencode", "opencode-go", "vercel"], model: "nemotron-3-super-free" },
+      { providers: ["opencode", "opencode-go", "vercel"], model: "nemotron-3-super-120b-a12b:free" },
     ],
   },
 };
