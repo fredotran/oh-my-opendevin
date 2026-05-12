@@ -158,6 +158,21 @@ jobs:
             exit 1
           fi
 
+      - name: Verify installer build path
+        run: |
+          # The installer detects a local repo and runs `bun run build`.
+          # We exercise that path here to ensure it still works end-to-end.
+          export HOME="$(mktemp -d)"
+          mkdir -p "$HOME/.config/opencode"
+          ./install-global.sh --no-verify
+          # Verify the build artifacts the installer relies on
+          test -f dist/index.js || (echo "ERROR: installer did not produce dist/index.js" && exit 1)
+          test -f dist/cli/index.js || (echo "ERROR: installer did not produce dist/cli/index.js" && exit 1)
+          test -f dist/mcp-servers/devin/index.js || (echo "ERROR: installer did not produce dist/mcp-servers/devin/index.js" && exit 1)
+          # Verify global symlinks were created
+          test -L "$HOME/.npm-global/lib/node_modules/oh-my-opendevin" || (echo "ERROR: global module symlink missing" && exit 1)
+          test -L "$HOME/.npm-global/bin/oh-my-opendevin" || (echo "ERROR: global bin symlink missing" && exit 1)
+
   draft-release:
     runs-on: ubuntu-latest
     needs: [build]
