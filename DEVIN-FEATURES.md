@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `99082ffe`
+**Last updated:** `df155464`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -246,6 +246,8 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+df155464 feat(devin-mcp): add 5 resilience features for MCP server
+e571f6c0 docs: auto-update DEVIN-FEATURES.md [skip ci]
 99082ffe fix: anchor skip-ci detection to end of subject line
 e0e7139b fix: prevent auto-update commits from desyncing DEVIN-FEATURES.md
 2fd9043d fix: remove merge conflict markers from DEVIN-FEATURES.md and harden updater script
