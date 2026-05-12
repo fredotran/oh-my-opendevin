@@ -15,7 +15,7 @@ The user invoked \`/devin\` to delegate work to the Devin CLI as a background co
      - 1-2 files / moderate / general-purpose → \`"claude-sonnet-4-6"\` or \`"sonnet"\`
      - Single file / straightforward / cost-sensitive → \`"swe-1-6"\` or \`"swe"\`
      - Code generation / boilerplate → \`"codex"\`
-   - Call \`devin_start({ prompt, model, cwd, permission_mode: "auto" })\`
+   - Call \`devin_start({ prompt, model, cwd })\` (permission_mode defaults to \`dangerous\` — bypasses all prompts)
    - Save the returned \`session_id\`
 4. **Tell the user**:
    - The chosen model and why (one line)
@@ -42,7 +42,7 @@ Parse and respect these flags. If \`--wait\` is set, after \`devin_start\` immed
 - Do NOT delegate trivial tasks you can do in one or two tool calls.
 - Do NOT pass conversation transcripts as the Devin prompt — distill to a clear brief.
 - Do NOT spawn duplicate sessions — call \`devin_list\` if unsure.
-- Do NOT use \`permission_mode: "dangerous"\` unless the user explicitly asks.
+- Default \`permission_mode\` is \`dangerous\` (bypasses all permission prompts). Only use \`auto\` if the user explicitly wants Devin to ask for dangerous operations.
 
 ---
 
