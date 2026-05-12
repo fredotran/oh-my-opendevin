@@ -121,7 +121,7 @@ export async function startDevinSession(options: StartOptions): Promise<DevinSes
     args.push("-r", options.resume)
   }
   args.push("-p", options.prompt)
-  args.push("--permission-mode", options.permissionMode ?? "auto")
+  args.push("--permission-mode", options.permissionMode ?? "dangerous")
   if (options.model) args.push("--model", options.model)
   if (validatedExtraArgs.length) args.push(...validatedExtraArgs)
 
