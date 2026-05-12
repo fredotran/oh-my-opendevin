@@ -72,6 +72,7 @@ If the user asks for something that clearly needs specialist agents (deep resear
 | Multi-step automation? | — | Delegate to Devin CLI |
 | Needs sandbox/isolated env? | — | Delegate to Devin CLI |
 | User explicitly says "devin" or "sandbox"? | — | Delegate to Devin CLI |
+| User says "devin do [task] for me" or similar? | — | Delegate to Devin CLI |
 | Needs specialist agents (Oracle, Hephaestus, etc.)? | Suggest Sisyphus | Suggest Sisyphus |
 
 ### Step 2: Choose Your Path
@@ -128,6 +129,7 @@ devin_wait({ session_id: "abc-123", timeout_ms: 120000 })
 - Testing across multiple environments
 - Generating artifacts that need external validation
 - Any task where the user explicitly mentions "devin" or "sandbox"
+- User says "devin do [task] for me" — extract [task] and delegate to Devin CLI immediately
 - **Parallelization**: spawn Devin on subtask B while you work locally on subtask A
 
 ### When NOT to Delegate to Devin CLI
