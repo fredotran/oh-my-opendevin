@@ -63,10 +63,10 @@ Devin's fallback chain resolves through free models across multiple providers (n
 
 | Priority | Providers | Model | Cost |
 |----------|-----------|-------|------|
-| 1 | `opencode`, `opencode-go`, `vercel` | `deepseek-v4-flash` | Free |
+| 1 | `opencode`, `opencode-go`, `vercel` | `deepseek-chat` | Free |
 | 2 | `opencode`, `opencode-go`, `vercel` | `minimax-m2.5-free` | Free |
 | 3 | `opencode`, `github-copilot` | `big-pickle` | Free |
-| 4 | `opencode`, `opencode-go`, `vercel` | `nemotron-3-super-120b-a12b:free` | Free |
+| 4 | `opencode`, `opencode-go`, `vercel` | `nemotron-3-super-free` | Free |
 
 **Override in your config** (`~/.config/opencode/oh-my-openagent.jsonc`):
 
