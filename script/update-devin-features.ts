@@ -25,6 +25,12 @@ async function main() {
 
   const content = await Bun.file(DEVIN_FEATURES_PATH).text()
 
+  // Guard against merge-conflict debris
+  if (/<<<<<<<|=======|>>>>>>>/.test(content)) {
+    console.error(`ERROR: ${DEVIN_FEATURES_PATH} contains merge conflict markers. Resolve them before running this script.`)
+    process.exit(1)
+  }
+
   // Update Last updated line
   const updatedContent = content.replace(
     /(\*\*Last updated:\*\* `)[a-f0-9]+(`)/,
