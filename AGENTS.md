@@ -262,3 +262,26 @@ bunx oh-my-opencode mcp-oauth login <server-url>  # Tier-3 MCP OAuth (PKCE + DCR
 - **IntentGate (`keyword-detector`):** classifies user intent (`ultrawork`/`ulw`, `search`, `analyze`, `team`) and injects mode-specific prompts.
 - **Hashline edit:** every `Read` output tagged with `LINE#ID` content hashes (chars from `ZPMQVRWSNKTXJBYH`); edits reject on hash mismatch.
 - **Docs:** see [`docs/guide/`](file:///Users/yeongyu/local-workspaces/omo/docs/guide/) for user-facing guides (overview, installation, orchestration, agent-model-matching, team-mode), [`docs/reference/`](file:///Users/yeongyu/local-workspaces/omo/docs/reference/) for CLI/configuration/features reference.
+
+## FORK-SPECIFIC MAINTENANCE (`fredotran/dev`)
+
+The fork branch `fredotran/dev` diverges from upstream `dev`. **Every push or merge to `fredotran/dev` that adds, changes, or removes a fork-specific feature must update [`DEVIN-FEATURES.md`](file:///Users/yeongyu/local-workspaces/omo/DEVIN-FEATURES.md).**
+
+### What to document in DEVIN-FEATURES.md
+
+- **New features:** Add a subsection under the appropriate category (Devin CLI Integration, Devin Agent, Model System, Developer Experience, Performance Optimizations) with commit hash, files touched, and a clear description of what changed and why.
+- **Bug fixes:** If the fix is fork-specific (e.g., model name corrections, fallback chain changes), document it under the relevant category or a new "Bug Fixes" section.
+- **README changes:** If the README architecture diagram, tier documentation, or installation instructions are updated, add the commit to the "README Fork Documentation" entry.
+- **Commit log:** Append the new commit hash to the "Full Commit Log" section at the bottom of the file.
+
+### Update checklist
+
+Before pushing to `fredotran/dev`, verify:
+
+1. [ ] `DEVIN-FEATURES.md` exists and is not empty
+2. [ ] New commits since the last update are documented
+3. [ ] Commit hashes in `DEVIN-FEATURES.md` match `git log --oneline`
+4. [ ] Tier tables / model names match the current implementation in `src/agents/devin.ts`, `src/features/builtin-skills/skills/devin-cli.ts`, and `src/mcp-servers/devin/server.ts`
+5. [ ] The "Generated" timestamp and "Since commit" fields are current
+
+Failure to update `DEVIN-FEATURES.md` causes the fork's feature history to drift, making onboarding and debugging harder for future contributors.

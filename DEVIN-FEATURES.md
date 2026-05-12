@@ -3,7 +3,8 @@
 **Generated:** 2026-05-12  
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
-**Since commit:** `7d09d2c8` (last upstream merge before fork divergence)
+**Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
+**Last updated:** `9e22df98`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -44,14 +45,28 @@ This document tracks all features, fixes, and architectural changes added in the
 - **Files:** `src/features/builtin-commands/templates/devin.ts`
 - **What:** User-facing `/devin`, `/devin-status`, `/devin-cancel`, `/devin-models` commands. The `/devin` and `/devin-models` commands were later removed (`24f3d51c`) to reduce surface area; delegation now happens through the agent skill layer.
 
+### MCP Server CWD Anchoring
+- **Commit:** `28e345cc`
+- **Files:** `src/mcp-servers/devin/session-store.ts`
+- **What:** Captures the working directory at module load time (`MCP_HOME_DIR = process.cwd()`) so that session fork / session roaming does not drift the default cwd. Agents are instructed to always pass `cwd` explicitly in `devin_start` calls. Prevents subtle path resolution bugs when the MCP server outlives the originating session.
+
 ### Tiered Model Routing System
-- **Commit:** `b6b17f87` (UI), `8b098ff1` (docs), `870bfa41` (README docs)
-- **What:** Classification system that analyzes prompt complexity and auto-selects the right Devin model tier:
-  - **Standard** (default `kimi-k2.6`): balanced capability/cost
-  - **Fast/Cheap** (`swe-1-6`): simple edits, typos
-  - **Code Gen** (`codex`): boilerplate, scaffolding
-  - **Deep** (`opus`): architecture, multi-file refactors
-  - **Balanced** (`claude-sonnet-4-6`): moderate complexity
+- **Commit:** `b6b17f87` (UI), `8b098ff1` (docs), `870bfa41` (README docs), `7eb7a9d5` (model name fix), `9e22df98` (diagram alignment)
+- **What:** Explicit keyword-based tier selection when delegating to Devin CLI. The agent picks a tier based on task complexity; the MCP server resolves the keyword to the actual Devin model:
+
+| Tier | Keyword | Resolved Model | Use Case |
+|------|---------|---------------|----------|
+| **Standard** | omit `model` | `kimi-k2.6` | Most tasks — good balance of capability and cost |
+| **Fast/Cheap** | `"swe"` | `swe-1-6` | Simple edits, typos, single-file fixes |
+| **Code Gen** | `"codex"` | `codex` | Boilerplate, CRUD, test scaffolding |
+| **Balanced** | `"sonnet"` | `sonnet` | Moderate complexity, general purpose |
+| **Deep** | `"opus"` | `opus` | Architecture refactors, multi-file, complex debugging |
+
+- **Agent prompt** (`src/agents/devin.ts`): Includes tier table + selection heuristics (default to standard, reserve `opus` for complex tasks, etc.).
+- **Built-in skill** (`src/features/builtin-skills/skills/devin-cli.ts`): Documents tier workflow, table, heuristics, and examples.
+- **MCP server** (`src/mcp-servers/devin/server.ts`): `devin_start` schema accepts `model` parameter with description `"sonnet", "opus", "codex"`; defaults to `kimi-k2.6`.
+- **Session store** (`src/mcp-servers/devin/session-store.ts`): `DEFAULT_DEVIN_MODEL = "kimi-k2.6"`; `options.model ?? DEFAULT_DEVIN_MODEL` resolves before spawning.
+- **Note:** The original auto-classification (`classifyDevinModel`) was removed in favor of this explicit keyword system — agents choose the tier directly, which is more predictable and debuggable.
 
 ---
 
@@ -127,8 +142,8 @@ This document tracks all features, fixes, and architectural changes added in the
 - **What:** Added `devin` to `AgentOverridesSchema` so users can customize Devin agent config.
 
 ### README Fork Documentation
-- **Commit:** `efa50caf` (fork features), `5ceab6c0` (reorganization), `021e31d2` (installation guide), `c1ffce7e` (removed aliases), `8b098ff1` (tag-team architecture), `870bfa41` (tiered routing)
-- **What:** Comprehensive fork-specific README with installation, Devin x Sisyphus tag-team architecture, and model tier documentation.
+- **Commit:** `efa50caf` (fork features), `5ceab6c0` (reorganization), `021e31d2` (installation guide), `c1ffce7e` (removed aliases), `8b098ff1` (tag-team architecture), `870bfa41` (tiered routing), `9e22df98` (diagram alignment)
+- **What:** Comprehensive fork-specific README with installation, Devin x Sisyphus tag-team architecture, model tier documentation, and corrected ASCII architecture diagram alignment.
 
 ---
 
@@ -178,6 +193,13 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+9e22df98 Fix README architecture diagram alignment
+926a308e Merge branch 'fredotran/dev' of github.com:fredotran/oh-my-opendevin into fredotran/dev
+7fa5f766 Merge branch 'feature/devin-cwd-roaming-fix' into fredotran/dev
+28e345cc fix(devin): anchor MCP server cwd at module load time + recommend explicit cwd
+1dcabc21 fix(installer): correct --uninstall flag variable name from DO_UNLINK to DO_UNINSTALL
+7eb7a9d5 fix(devin): correct balanced tier model name to sonnet
+5435f58c docs: add DEVIN-FEATURES.md — comprehensive fork feature registry
 f2197075 fix(devin): use resolvedModel for concurrency slot acquisition
 870bfa41 docs(readme): document Devin CLI tiered model routing system
 8d5e1a37 feat(devin-cli): document model tier system in built-in skill
