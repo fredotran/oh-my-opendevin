@@ -5,7 +5,7 @@
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
 <<<<<<< Updated upstream
-**Last updated:** `336ba20b`
+**Last updated:** `dcefd6ff`
 =======
 **Last updated:** `82c0d34f`
 >>>>>>> Stashed changes
@@ -210,16 +210,15 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
-<<<<<<< Updated upstream
+dcefd6ff docs: add Devin CLI test reporter script and update DEVIN-FEATURES.md
+a234d44b fix: regenerate bun.lock for renamed package oh-my-opendevin
+7c10441b docs: auto-update DEVIN-FEATURES.md [skip ci]
 336ba20b ci: extract fork-specific automation into dedicated fork-sync workflow
 0c5f58a7 ci: auto-update DEVIN-FEATURES.md on push to fredotran/dev
 82c0d34f  docs(readme): sync Devin CLI model section with DEVIN-FEATURES.md
 da323e1f ci: verify installer runs `bun run build` end-to-end
 3b9c8013 docs: correct Last updated commit hash in DEVIN-FEATURES.md
 55bf204f ci: add branch triggers, build verification, and installer checks
-=======
-82c0d34f docs(readme): sync Devin CLI model section with DEVIN-FEATURES.md + add test reporter script
->>>>>>> Stashed changes
 9e22df98 Fix README architecture diagram alignment
 926a308e Merge branch 'fredotran/dev' of github.com:fredotran/oh-my-opendevin into fredotran/dev
 7fa5f766 Merge branch 'feature/devin-cwd-roaming-fix' into fredotran/dev
