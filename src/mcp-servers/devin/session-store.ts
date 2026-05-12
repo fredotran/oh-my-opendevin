@@ -151,12 +151,12 @@ async function cleanupOldLogs(): Promise<void> {
     const entries = await readdir(LOG_DIR)
     const now = Date.now()
     for (const entry of entries) {
-      if (!entry.endsWith(".log")) continue
-      const logPath = join(LOG_DIR, entry)
+      if (!entry.endsWith(".log") && !entry.endsWith(".meta.json")) continue
+      const filePath = join(LOG_DIR, entry)
       try {
-        const st = await stat(logPath)
+        const st = await stat(filePath)
         if (now - st.mtimeMs > LOG_RETENTION_MS) {
-          await unlink(logPath)
+          await unlink(filePath)
         }
       } catch {
         // Ignore per-file errors during cleanup
@@ -164,6 +164,21 @@ async function cleanupOldLogs(): Promise<void> {
     }
   } catch {
     // Directory may not exist yet
+  }
+}
+
+function updateMetaFile(session: { id: string; model?: string | undefined; status: string; exitCode?: number | null; endedAt?: number | null }): void {
+  try {
+    const metaPath = join(LOG_DIR, `${session.id}.meta.json`)
+    if (!existsSync(metaPath)) return
+    const raw = Bun.file(metaPath)
+    const meta = JSON.parse(raw.text() as unknown as string) as Record<string, unknown>
+    meta.status = session.status
+    if (session.exitCode !== undefined) meta.exitCode = session.exitCode
+    if (session.endedAt !== undefined) meta.endedAt = session.endedAt
+    Bun.write(metaPath, JSON.stringify(meta, null, 2))
+  } catch {
+    // Best-effort: don't crash the session if meta write fails
   }
 }
 
@@ -197,6 +212,7 @@ export async function startDevinSession(options: StartOptions): Promise<DevinSes
 
   const id = randomUUID()
   const logPath = join(LOG_DIR, `${id}.log`)
+  const metaPath = join(LOG_DIR, `${id}.meta.json`)
   const fd = openSync(logPath, "a")
 
   const args: string[] = []
@@ -207,6 +223,20 @@ export async function startDevinSession(options: StartOptions): Promise<DevinSes
   args.push("--permission-mode", options.permissionMode ?? "dangerous")
   args.push("--model", resolvedModel)
   if (validatedExtraArgs.length) args.push(...validatedExtraArgs)
+
+  // Write session metadata so external tools (e.g. test reporter) can
+  // inspect the resolved model, spawn command, and lifecycle timestamps
+  // without querying the in-memory session store.
+  const meta = {
+    id,
+    model: resolvedModel,
+    prompt: options.prompt,
+    cwd: resolvedCwd,
+    command: ["devin", ...args],
+    startedAt: Date.now(),
+    status: "running",
+  }
+  Bun.write(metaPath, JSON.stringify(meta, null, 2))
 
   const proc = Bun.spawn(["devin", ...args], {
     cwd: resolvedCwd,
@@ -234,12 +264,14 @@ export async function startDevinSession(options: StartOptions): Promise<DevinSes
       session.exitCode = exitCode
       session.endedAt = Date.now()
       session.status = exitCode === 0 ? "completed" : session.status === "cancelled" ? "cancelled" : "error"
+      updateMetaFile(session)
       releaseModelSlot(session.model)
     })
     .catch((err) => {
       session.endedAt = Date.now()
       session.status = "error"
       console.error(`[devin-mcp] Session ${id} process error:`, err)
+      updateMetaFile(session)
       releaseModelSlot(session.model)
     })
 
@@ -345,6 +377,7 @@ export async function cancelDevinSession(id: string): Promise<DevinSession | und
   if (session.status === "running") {
     session.status = "cancelled"
     await killWithGracefulFallback(session.proc, id)
+    updateMetaFile(session)
     releaseModelSlot(session.model)
   }
   return session
