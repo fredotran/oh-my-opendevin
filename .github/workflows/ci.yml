@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [master, dev]
+    branches: [master, dev, fredotran/dev]
   pull_request:
-    branches: [master, dev]
+    branches: [master, dev, fredotran/dev]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -98,6 +98,9 @@ jobs:
         run: |
           test -f dist/index.js || (echo "ERROR: dist/index.js not found!" && exit 1)
           test -f dist/index.d.ts || (echo "ERROR: dist/index.d.ts not found!" && exit 1)
+          test -f dist/cli/index.js || (echo "ERROR: dist/cli/index.js not found!" && exit 1)
+          test -f dist/mcp-servers/devin/index.js || (echo "ERROR: dist/mcp-servers/devin/index.js not found!" && exit 1)
+          test -f assets/oh-my-opencode.schema.json || (echo "ERROR: assets/oh-my-opencode.schema.json not found!" && exit 1)
 
       - name: Auto-commit schema changes
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
@@ -110,6 +113,34 @@ jobs:
             git add assets/oh-my-opencode.schema.json
             git commit -m "chore: auto-update schema.json"
             git push
+          fi
+
+  installer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check installer script syntax
+        run: |
+          bash -n install-global.sh
+          bash -n bin/devin-mcp-launcher.sh
+
+      - name: Run shellcheck (if available)
+        run: |
+          if command -v shellcheck &> /dev/null; then
+            shellcheck --severity=error install-global.sh || true
+            shellcheck --severity=error bin/devin-mcp-launcher.sh || true
+          else
+            echo "shellcheck not installed, skipping"
+          fi
+
+      - name: Smoke test installer argument parsing
+        run: |
+          ./install-global.sh --help || true
+          # Verify unknown args are rejected
+          if ./install-global.sh --unknown-arg 2>/dev/null; then
+            echo "ERROR: install-global.sh should reject unknown arguments"
+            exit 1
           fi
 
   draft-release:
