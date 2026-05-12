@@ -11,8 +11,6 @@ export type BuiltinCommandName =
   | "handoff"
   | "remove-ai-slops"
   | "hyperplan"
-  | "devin"
-  | "devin-models"
   | "devin-status"
   | "devin-cancel"
 
