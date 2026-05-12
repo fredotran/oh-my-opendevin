@@ -3,8 +3,10 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod"
 import {
   cancelDevinSession,
+  cancelDevinSessions,
   getDevinSession,
   listDevinSessions,
+  readSessionLogSince,
   snapshotDevinSession,
   shutdownAllSessions,
   startDevinSession,
@@ -76,7 +78,7 @@ export function createDevinMcpServer(): McpServer {
     "devin_status",
     {
       description:
-        "Get current status and recent stdout/stderr output of a background Devin session. Returns the tail of the log file plus runtime metadata.",
+        "Get current status and output of a background Devin session. Returns the tail of the log file plus runtime metadata. Use `since_bytes` for incremental reads to avoid re-fetching the same output.",
       inputSchema: {
         session_id: z.string().describe("Session id returned by devin_start."),
         tail_bytes: z
@@ -85,12 +87,30 @@ export function createDevinMcpServer(): McpServer {
           .min(0)
           .max(262144)
           .optional()
-          .describe("How many bytes of trailing output to return (default 8192, max 262144)."),
+          .describe("How many bytes of trailing output to return (default 8192, max 262144). Ignored when since_bytes is provided."),
+        since_bytes: z
+          .number()
+          .int()
+          .min(0)
+          .optional()
+          .describe("Return only new output written after this byte offset. Use the output_bytes from the previous call to read incrementally."),
       },
     },
-    async ({ session_id, tail_bytes }) => {
+    async ({ session_id, tail_bytes, since_bytes }) => {
       const session = getDevinSession(session_id)
       if (!session) return asTextResult(`unknown session_id: ${session_id}`)
+      if (since_bytes !== undefined) {
+        const newOutput = await readSessionLogSince(session_id, since_bytes)
+        const snap = await snapshotDevinSession(session, 0)
+        return asTextResult(
+          `session_id: ${snap.id}\n` +
+          `status: ${snap.status}` + (snap.exitCode !== undefined ? ` (exit ${snap.exitCode})` : "") + "\n" +
+          `output_bytes: ${snap.outputBytes}\n` +
+          `new_output_bytes: ${newOutput.length}\n\n` +
+          "--- new output ---\n" +
+          (newOutput || "(no new output)")
+        )
+      }
       const snap = await snapshotDevinSession(session, tail_bytes ?? 8192)
       return asTextResult(renderSnapshot(snap))
     },
@@ -138,6 +158,37 @@ export function createDevinMcpServer(): McpServer {
       if (!session) return asTextResult(`unknown session_id: ${session_id}`)
       const snap = await snapshotDevinSession(session, 0)
       return asTextResult(`Cancelled.\n\n` + renderSnapshot(snap))
+    },
+  )
+
+  server.registerTool(
+    "devin_cancel_batch",
+    {
+      description:
+        "Cancel multiple background Devin sessions in a single call. More efficient than calling devin_cancel repeatedly.",
+      inputSchema: {
+        session_ids: z
+          .array(z.string())
+          .min(1)
+          .max(50)
+          .describe("Array of session ids to cancel (max 50)."),
+      },
+    },
+    async ({ session_ids }) => {
+      const result = await cancelDevinSessions(session_ids)
+      const lines: string[] = []
+      if (result.cancelled.length > 0) {
+        lines.push(`Cancelled: ${result.cancelled.join(", ")}`)
+      }
+      if (result.unknown.length > 0) {
+        lines.push(`Unknown session_ids: ${result.unknown.join(", ")}`)
+      }
+      if (result.errors.length > 0) {
+        lines.push(
+          `Errors:\n${result.errors.map((e) => `  - ${e.id}: ${e.error}`).join("\n")}`,
+        )
+      }
+      return asTextResult(lines.join("\n") || "No sessions to cancel.")
     },
   )
 

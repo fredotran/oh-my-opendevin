@@ -487,6 +487,7 @@ export class BackgroundManager {
         attemptCount: 0,
         category: input.category,
         onSessionCreated: input.onSessionCreated,
+        priority: input.priority ?? 5,
       }
       const firstAttempt = startAttempt(task, input.model)
 
@@ -503,7 +504,9 @@ export class BackgroundManager {
       // Add to queue
       const key = this.getConcurrencyKeyFromInput(input)
       const queue = this.queuesByKey.get(key) ?? []
-      queue.push({ task, input, attemptID: firstAttempt.attemptId })
+      const priority = input.priority ?? 5
+      queue.push({ task, input, attemptID: firstAttempt.attemptId, priority })
+      queue.sort((a, b) => a.priority - b.priority)
       this.queuesByKey.set(key, queue)
 
       log("[background-agent] Task queued:", { taskId: task.id, key, queueLength: queue.length })

@@ -9,11 +9,83 @@ const LOG_DIR = join(tmpdir(), "oh-my-opencode-devin-mcp")
 const TAIL_BYTES_DEFAULT = 8192
 const TAIL_BYTES_MAX = 262144
 const MAX_CONCURRENT_SESSIONS = 50
+const DEFAULT_MODEL_CONCURRENCY = 5
 const LOG_RETENTION_MS = 24 * 60 * 60 * 1000 // 24 hours
 const KILL_GRACE_PERIOD_MS = 5000
 const DEFAULT_DEVIN_MODEL = "kimi-k2.6"
 
 const sessions = new Map<string, DevinSession>()
+
+// Per-model concurrency tracking (mirrors BackgroundManager pattern)
+const modelRunningCounts = new Map<string, number>()
+const modelPendingQueues = new Map<string, Array<{ resolve: () => void; reject: (err: Error) => void }>>()
+
+function getModelConcurrencyLimit(_model: string | undefined): number {
+  // Future: read from config. For now, use default.
+  return DEFAULT_MODEL_CONCURRENCY
+}
+
+function getRunningCount(model: string | undefined): number {
+  return modelRunningCounts.get(model ?? "__default") ?? 0
+}
+
+function incrementRunning(model: string | undefined): void {
+  const key = model ?? "__default"
+  modelRunningCounts.set(key, (modelRunningCounts.get(key) ?? 0) + 1)
+}
+
+function decrementRunning(model: string | undefined): void {
+  const key = model ?? "__default"
+  const current = (modelRunningCounts.get(key) ?? 0) - 1
+  if (current <= 0) {
+    modelRunningCounts.delete(key)
+  } else {
+    modelRunningCounts.set(key, current)
+  }
+}
+
+async function acquireModelSlot(model: string | undefined): Promise<void> {
+  const limit = getModelConcurrencyLimit(model)
+  if (getRunningCount(model) < limit) {
+    incrementRunning(model)
+    return
+  }
+  return new Promise<void>((resolve, reject) => {
+    const key = model ?? "__default"
+    const queue = modelPendingQueues.get(key) ?? []
+    queue.push({ resolve, reject })
+    modelPendingQueues.set(key, queue)
+  })
+}
+
+function releaseModelSlot(model: string | undefined): void {
+  decrementRunning(model)
+  const key = model ?? "__default"
+  const queue = modelPendingQueues.get(key)
+  if (queue && queue.length > 0) {
+    const next = queue.shift()!
+    incrementRunning(model)
+    next.resolve()
+  }
+  if (queue && queue.length === 0) {
+    modelPendingQueues.delete(key)
+  }
+}
+
+function cancelModelWaiters(model: string | undefined): void {
+  const key = model ?? "__default"
+  const queue = modelPendingQueues.get(key)
+  if (queue) {
+    for (const entry of queue) {
+      entry.reject(new Error("Session cancelled before starting"))
+    }
+    modelPendingQueues.delete(key)
+  }
+}
+
+// Cache for log snapshot output to avoid re-reading unchanged files.
+// Key: `${sessionId}:${fileSize}:${fileMtimeMs}`
+const snapshotCache = new Map<string, { output: string; outputBytes: number }>()
 
 export type StartOptions = {
   prompt: string
@@ -113,6 +185,9 @@ export async function startDevinSession(options: StartOptions): Promise<DevinSes
   const validatedExtraArgs = validateExtraArgs(options.extraArgs)
   const resolvedCwd = validateCwd(options.cwd)
 
+  // Wait for a per-model concurrency slot (mirrors BackgroundManager)
+  await acquireModelSlot(options.model)
+
   await mkdir(LOG_DIR, { recursive: true })
   await cleanupOldLogs()
 
@@ -155,11 +230,13 @@ export async function startDevinSession(options: StartOptions): Promise<DevinSes
       session.exitCode = exitCode
       session.endedAt = Date.now()
       session.status = exitCode === 0 ? "completed" : session.status === "cancelled" ? "cancelled" : "error"
+      releaseModelSlot(session.model)
     })
     .catch((err) => {
       session.endedAt = Date.now()
       session.status = "error"
       console.error(`[devin-mcp] Session ${id} process error:`, err)
+      releaseModelSlot(session.model)
     })
 
   return session
@@ -184,11 +261,18 @@ export async function snapshotDevinSession(
     const st = await stat(session.logPath)
     outputBytes = st.size
     if (limit > 0) {
-      const start = Math.max(0, outputBytes - limit)
-      const file = Bun.file(session.logPath)
-      const slice = file.slice(start, outputBytes)
-      output = await slice.text()
-      if (start > 0) output = `... [${start} earlier bytes truncated]\n` + output
+      const cacheKey = `${session.id}:${outputBytes}:${st.mtimeMs}:${limit}`
+      const cached = snapshotCache.get(cacheKey)
+      if (cached) {
+        output = cached.output
+      } else {
+        const start = Math.max(0, outputBytes - limit)
+        const file = Bun.file(session.logPath)
+        const slice = file.slice(start, outputBytes)
+        output = await slice.text()
+        if (start > 0) output = `... [${start} earlier bytes truncated]\n` + output
+        snapshotCache.set(cacheKey, { output, outputBytes })
+      }
     }
   }
   const endedAt = session.endedAt ?? Date.now()
@@ -242,14 +326,49 @@ async function killWithGracefulFallback(proc: DevinSession["proc"], sessionId: s
   await graceTimeout
 }
 
+function clearSnapshotCacheForSession(sessionId: string): void {
+  for (const key of snapshotCache.keys()) {
+    if (key.startsWith(`${sessionId}:`)) {
+      snapshotCache.delete(key)
+    }
+  }
+}
+
 export async function cancelDevinSession(id: string): Promise<DevinSession | undefined> {
   const session = sessions.get(id)
   if (!session) return undefined
+  clearSnapshotCacheForSession(id)
   if (session.status === "running") {
     session.status = "cancelled"
     await killWithGracefulFallback(session.proc, id)
+    releaseModelSlot(session.model)
   }
   return session
+}
+
+export type CancelBatchResult = {
+  cancelled: string[]
+  unknown: string[]
+  errors: { id: string; error: string }[]
+}
+
+export async function cancelDevinSessions(ids: string[]): Promise<CancelBatchResult> {
+  const result: CancelBatchResult = { cancelled: [], unknown: [], errors: [] }
+  await Promise.all(
+    ids.map(async (id) => {
+      try {
+        const session = await cancelDevinSession(id)
+        if (session) {
+          result.cancelled.push(id)
+        } else {
+          result.unknown.push(id)
+        }
+      } catch (err) {
+        result.errors.push({ id, error: err instanceof Error ? err.message : String(err) })
+      }
+    }),
+  )
+  return result
 }
 
 export async function readSessionLog(id: string, tailBytes = TAIL_BYTES_DEFAULT): Promise<string> {
@@ -259,7 +378,24 @@ export async function readSessionLog(id: string, tailBytes = TAIL_BYTES_DEFAULT)
   return snap.output
 }
 
+export async function readSessionLogSince(id: string, sinceBytes: number): Promise<string> {
+  const session = sessions.get(id)
+  if (!session) throw new Error(`unknown devin session: ${id}`)
+  if (!existsSync(session.logPath)) return ""
+  const st = await stat(session.logPath)
+  const totalBytes = st.size
+  if (sinceBytes >= totalBytes) return ""
+  const file = Bun.file(session.logPath)
+  const slice = file.slice(sinceBytes, totalBytes)
+  return slice.text()
+}
+
 export async function shutdownAllSessions(): Promise<void> {
+  snapshotCache.clear()
+  // Cancel all queued sessions waiting for a slot
+  for (const key of modelPendingQueues.keys()) {
+    cancelModelWaiters(key === "__default" ? undefined : key)
+  }
   const pending: Promise<unknown>[] = []
   for (const session of sessions.values()) {
     if (session.status === "running") {
@@ -268,4 +404,19 @@ export async function shutdownAllSessions(): Promise<void> {
     }
   }
   await Promise.all(pending)
+}
+
+// @allow — test-only helper to inject mock sessions without spawning processes
+export function registerTestSession(session: DevinSession): void {
+  sessions.set(session.id, session)
+}
+
+// @allow — test-only helper to clear all sessions and cache
+export function clearTestSessions(): void {
+  sessions.clear()
+  snapshotCache.clear()
+  modelRunningCounts.clear()
+  for (const key of modelPendingQueues.keys()) {
+    cancelModelWaiters(key === "__default" ? undefined : key)
+  }
 }

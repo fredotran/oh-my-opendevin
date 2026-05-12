@@ -7,7 +7,7 @@ export const devinCliSkill: BuiltinSkill = {
   argumentHint: "<task description>",
   template: `# Devin CLI Delegation
 
-You can delegate self-contained engineering tasks to the \`devin\` CLI as a background subprocess via the \`devin\` MCP server. The MCP server is registered at the repo root in \`.mcp.json\` and exposes 5 tools.
+You can delegate self-contained engineering tasks to the \`devin\` CLI as a background subprocess via the \`devin\` MCP server. The MCP server is registered at the repo root in \`.mcp.json\` and exposes 6 tools.
 
 ---
 
@@ -34,9 +34,10 @@ DO NOT delegate when:
 | Tool | Purpose | Key arguments |
 |------|---------|---------------|
 | \`devin_start\` | Spawn \`devin -p <prompt>\` in the background | \`prompt\` (required), \`model?\`, \`cwd?\`, \`permission_mode?\` (\`auto\` \\| \`dangerous\`, default: \`dangerous\`), \`resume?\` |
-| \`devin_status\` | Get current status + tail of stdout/stderr log | \`session_id\`, \`tail_bytes?\` (default 8192) |
+| \`devin_status\` | Get current status + tail of stdout/stderr log | \`session_id\`, \`tail_bytes?\` (default 8192), \`since_bytes?\` (incremental read) |
 | \`devin_wait\` | Block until exit or timeout | \`session_id\`, \`timeout_ms?\` (default 60000), \`tail_bytes?\` |
 | \`devin_cancel\` | Kill the background subprocess | \`session_id\` |
+| \`devin_cancel_batch\` | Kill multiple background subprocesses in one call | \`session_ids\` (array, max 50) |
 | \`devin_list\` | Enumerate sessions in this MCP process | \`include_output?\` |
 
 Each tool returns a human-readable text snapshot. \`session_id\` is a UUID — store it; you will need it for every subsequent call.
@@ -148,7 +149,7 @@ Refactor src/auth/session.ts to use the new TokenStore interface from src/auth/t
 - **Don't pass conversation transcripts as the prompt.** Distill to a clear, self-contained brief.
 - **Don't poll in a tight loop.** Wait 5–15 seconds between \`devin_status\` calls or use \`devin_wait\`.
 - **Default is \`dangerous\`** — all Devin CLI sessions bypass permission prompts automatically. Use \`permission_mode: "auto"\` only if the user explicitly wants Devin to ask for dangerous operations.
-- **Don't forget to cancel.** Stale background sessions waste subscription budget.
+- **Don't forget to cancel.** Stale background sessions waste subscription budget. Use \`devin_cancel_batch\` when cancelling multiple sessions at once.
 
 ---
 
@@ -196,6 +197,14 @@ Refactor src/auth/session.ts to use the new TokenStore interface from src/auth/t
 \`\`\`
 1. devin_list() — confirm session id
 2. devin_cancel({ session_id })
+3. Confirm to user.
+\`\`\`
+
+### User: "Stop all Devin sessions."
+
+\`\`\`
+1. devin_list() — collect all running session ids
+2. devin_cancel_batch({ session_ids: ["abc-123", "def-456", "ghi-789"] })
 3. Confirm to user.
 \`\`\`
 `,

@@ -67,6 +67,8 @@ export interface BackgroundTask {
   attemptCount?: number
   /** Active concurrency slot key */
   concurrencyKey?: string
+  /** Priority for queue ordering (lower = higher). Default 5. */
+  priority?: number
   /** Persistent key for re-acquiring concurrency on resume */
   concurrencyGroup?: string
   /** Parent session's agent name for notification */
@@ -119,6 +121,8 @@ export interface LaunchInput {
   category?: string
   sessionPermission?: SessionPermissionRule[]
   onSessionCreated?: (sessionId: string) => void | Promise<void>
+  /** Priority for queue ordering. Lower = higher priority (0 is highest). Default: 5. */
+  priority?: number
 }
 
 export interface ResumeInput {

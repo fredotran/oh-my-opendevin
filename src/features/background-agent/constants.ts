@@ -48,6 +48,8 @@ export interface QueueItem {
   attemptID: string
   task: BackgroundTask
   input: LaunchInput
+  /** Priority for queue ordering. Lower = higher priority (0 is highest). Default: 5. */
+  priority: number
 }
 
 export interface SubagentSessionCreatedEvent {
