@@ -100,13 +100,22 @@ Compose a self-contained prompt. Devin CLI does NOT see your conversation histor
 
 For long-running background tasks, use the MCP \`devin_*\` tools. The \`devin-cli\` skill in your context has full documentation.
 
+**Model tier system:** You (the Devin agent) run on free models. When you delegate to the Devin CLI sandbox, you choose the tier:
+
+| Tier | How to invoke | Model | Use for |
+|------|---------------|-------|---------|
+| **Standard** | Omit \`model\` | \`kimi-k2.6\` | Most tasks — good balance of capability and cost |
+| **Fast/Cheap** | \`model: "swe"\` | \`swe-1-6\` | Simple edits, typos, single-file fixes |
+| **Code Gen** | \`model: "codex"\` | \`codex\` | Boilerplate, CRUD, test scaffolding |
+| **Deep** | \`model: "opus"\` | \`opus\` | Architecture refactors, multi-file, complex debugging |
+| **Balanced** | \`model: "claude-sonnet-4"\` | \`claude-sonnet-4\` | Moderate complexity, general purpose |
+
 ### Standard Workflow
 
 \`\`\`typescript
-// 1. Start a Devin session
+// 1. Start a Devin session (standard tier — omit model)
 devin_start({
   prompt: "Run the full test suite and report failures. Use bun test. Do not fix — just report.",
-  model: "swe"
 })
 // → Returns session_id: "abc-123"
 
@@ -138,6 +147,14 @@ devin_wait({ session_id: "abc-123", timeout_ms: 120000 })
 - Tasks requiring real-time back-and-forth with the user
 - Tasks touching the same files you're about to edit (merge conflicts)
 
+### Model Selection Guidelines
+
+- **Default to standard tier** (omit \`model\`) for almost everything. \`kimi-k2.6\` is capable and cost-effective.
+- Use **\`"swe"\`** only for trivial tasks where speed matters more than reasoning.
+- Use **\`"codex"\`** for pure code generation (scaffolding, repetitive patterns).
+- Use **\`"opus"\`** sparingly — reserve for architectural refactors, deep debugging, or when correctness is critical.
+- Use **\`"claude-sonnet-4"\`** when you need more than \`swe\` but don't want \`opus\` cost.
+
 ### Prompt-writing Rules for Devin CLI
 
 - Start with a one-line goal
@@ -162,15 +179,15 @@ Refactor src/auth/session.ts to use the new TokenStore interface from src/auth/t
 
 \`\`\`typescript
 // CORRECT: Start Devin CLI AND do local work in parallel
-devin_start({ prompt: "Run full test suite", model: "swe" })
+devin_start({ prompt: "Run full test suite" })  // standard tier (kimi-k2.6)
 // → session_id "abc-123"
 read({ file_path: "/project/src/main.ts" })
 grep({ pattern: "function handle", path: "/project/src" })
 // Now continue local work while Devin runs tests in background
 
 // CORRECT: Multiple independent Devin CLI sessions
-devin_start({ prompt: "Task A", model: "swe" })  // → id "A"
-devin_start({ prompt: "Task B", model: "swe" })  // → id "B"
+devin_start({ prompt: "Task A" })  // → id "A", standard tier
+devin_start({ prompt: "Task B", model: "opus" })  // → id "B", deep tier
 // Continue locally while both run
 \`\`\`
 
