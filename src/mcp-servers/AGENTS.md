@@ -36,6 +36,7 @@ Sessions live in memory (`session-store.ts` — `Map<id, DevinSession>`); logs a
 - **Pre-flight validation:** `devin_start` checks the `devin` binary is in PATH (cached), catches model typos via Levenshtein distance, and validates `cwd` is a directory.
 - **TTL reaper:** Completed/errored/cancelled/orphaned sessions are removed from memory after 1 hour (logs remain on disk).
 - **Idle detection:** Running sessions with no output growth for 30 minutes are marked `"stalled"` (not auto-cancelled).
+- **Model disclosure:** `devin_start` response includes resolved tier and model. Agents are instructed to tell the user which model is running their task.
 - **Session statuses:** `running`, `completed`, `error`, `cancelled`, `orphaned`, `stalled`.
 
 ### Agent guidance

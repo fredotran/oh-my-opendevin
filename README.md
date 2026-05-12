@@ -45,6 +45,7 @@ This fork includes a complete integration with the [Devin CLI](https://cli.devin
 - Auto-cleanup of completed sessions from memory (1h TTL, logs remain on disk)
 - Idle session detection: sessions with no output for 30min marked as `"stalled"`
 - First-class CLI reporter: `bunx oh-my-opencode devin-report [--json] [--tier <tier>]`
+- Model disclosure: agents always tell you which tier and model was selected when delegating to Devin CLI
 
 ### Devin x Sisyphus Dual-Primary Architecture
 

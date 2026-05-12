@@ -19,6 +19,13 @@ This document tracks all features, fixes, and architectural changes added in the
 5. [Developer Experience](#developer-experience)
 6. [Performance Optimizations](#performance-optimizations)
 7. [Resilience & Maintainability](#resilience--maintainability)
+   - [Session Re-attachment](#session-re-attachment-on-mcp-server-restart)
+   - [Pre-flight Validation](#pre-flight-validation-in-devin_start)
+   - [Auto-cleanup](#auto-cleanup-of-completed-sessions-ttl-reaper)
+   - [Idle Detection](#idle-session-detection)
+   - [CLI Reporter](#cli-session-reporter-devin-report-subcommand)
+   - [devin_wait Timeout Fix](#devin_wait-mcp-timeout-fix--incremental-polling-guidance)
+   - [Model Disclosure](#model-disclosure-to-user)
 
 ---
 
@@ -239,6 +246,14 @@ This document tracks all features, fixes, and architectural changes added in the
      - Explicit next-step recommendations: `devin_status({ since_bytes })`, call `devin_wait` again, or `devin_cancel`
   3. `devin_status` tool description and built-in skill docs now emphatically instruct agents to use `since_bytes` (not `tail_bytes`) for all repeated polling, preventing the redundant output re-fetch loop shown in the agent logs.
 - **Why:** Fixes the infinite `devin_wait` timeout → `devin_status` with `tail_bytes` polling loop that wastes context window and triggers MCP errors.
+
+### Model Disclosure to User
+- **Files:** `src/mcp-servers/devin/server.ts`, `src/features/builtin-skills/skills/devin-cli.ts`
+- **What:**
+  1. `devin_start` response now prominently includes the resolved tier and model: `Started Devin session <id> (tier: <TierName>, model: <model>).`
+  2. Built-in skill instructs agents to **ALWAYS tell the user** which model was selected, e.g. "Started Devin (session abc-123, **Deep tier**, model **opus**) on the auth refactor."
+  3. Example interactions updated to show tier + model in the user-facing message.
+- **Why:** Users need visibility into which Devin CLI model is running their task — for cost awareness, capability confirmation, and debugging.
 
 ---
 
