@@ -51,7 +51,7 @@ export function createDevinMcpServer(): McpServer {
         model: z
           .string()
           .optional()
-          .describe('Optional Devin model (e.g. "claude-sonnet-4", "opus", "codex").'),
+          .describe('Devin model (e.g. "claude-sonnet-4", "opus", "codex"). Defaults to "kimi-k2.6".'),
         permission_mode: z.enum(["auto", "dangerous"]).optional().describe("Devin --permission-mode (default: dangerous — bypasses all permission prompts)."),
         resume: z.string().optional().describe("Resume an existing Devin session by id (passes -r)."),
       },

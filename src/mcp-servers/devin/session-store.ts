@@ -11,6 +11,7 @@ const TAIL_BYTES_MAX = 262144
 const MAX_CONCURRENT_SESSIONS = 50
 const LOG_RETENTION_MS = 24 * 60 * 60 * 1000 // 24 hours
 const KILL_GRACE_PERIOD_MS = 5000
+const DEFAULT_DEVIN_MODEL = "kimi-k2.6"
 
 const sessions = new Map<string, DevinSession>()
 
@@ -103,8 +104,11 @@ function enforceSessionLimit(): void {
 export async function startDevinSession(options: StartOptions): Promise<DevinSession> {
   enforceSessionLimit()
 
+  // Resolve model: explicit > default
+  const resolvedModel = options.model ?? DEFAULT_DEVIN_MODEL
+
   // Validate all user inputs before spawning
-  validateModel(options.model)
+  validateModel(resolvedModel)
   validateResumeId(options.resume)
   const validatedExtraArgs = validateExtraArgs(options.extraArgs)
   const resolvedCwd = validateCwd(options.cwd)
@@ -122,7 +126,7 @@ export async function startDevinSession(options: StartOptions): Promise<DevinSes
   }
   args.push("-p", options.prompt)
   args.push("--permission-mode", options.permissionMode ?? "dangerous")
-  if (options.model) args.push("--model", options.model)
+  args.push("--model", resolvedModel)
   if (validatedExtraArgs.length) args.push(...validatedExtraArgs)
 
   const proc = Bun.spawn(["devin", ...args], {
@@ -139,7 +143,7 @@ export async function startDevinSession(options: StartOptions): Promise<DevinSes
     startedAt: Date.now(),
     cwd: resolvedCwd,
     prompt: options.prompt,
-    model: options.model,
+    model: resolvedModel,
     status: "running",
     resumeId: options.resume,
   }

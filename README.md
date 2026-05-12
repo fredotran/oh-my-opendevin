@@ -31,12 +31,11 @@ This fork includes a complete integration with the [Devin CLI](https://cli.devin
 - `devin_list` - List all active sessions
 
 **Built-in Skill** (`src/features/builtin-skills/skills/devin-cli.ts`)
-- Intelligent model selection guidance based on task complexity
 - Standard workflow documentation for agents
 - Anti-patterns and best practices
 
 **Slash Commands** (`src/features/builtin-commands/templates/devin.ts`)
-- `/devin "<task>"` - Delegate with auto model selection
+- `/devin "<task>"` - Delegate to Devin CLI (defaults to `kimi-k2.6`)
 - `/devin-models` - Show model reference table
 - `/devin-status` - List or show session status
 - `/devin-cancel` - Cancel sessions
@@ -59,14 +58,7 @@ This fork introduces a **clear separation of responsibilities** between two prim
 
 #### Devin Model Configuration
 
-Devin's fallback chain resolves through free models across multiple providers (not locked to opencode):
-
-| Priority | Providers | Model | Cost |
-|----------|-----------|-------|------|
-| 1 | `opencode`, `opencode-go`, `vercel` | `deepseek-v4-flash` | Free |
-| 2 | `opencode`, `opencode-go`, `vercel` | `minimax-m2.5-free` | Free |
-| 3 | `opencode`, `github-copilot` | `big-pickle` | Free |
-| 4 | `opencode`, `opencode-go`, `vercel` | `nemotron-3-super-120b-a12b:free` | Free |
+Devin defaults to `kimi-k2.6` for all Devin CLI sandbox sessions. You can override this in your config:
 
 **Override in your config** (`~/.config/opencode/oh-my-openagent.jsonc`):
 
@@ -85,7 +77,16 @@ Devin's fallback chain resolves through free models across multiple providers (n
 }
 ```
 
-Restart OpenCode after changing. If no override is set, Devin resolves through the free fallback chain above.
+Restart OpenCode after changing. If no override is set, Devin CLI sessions use `kimi-k2.6`.
+
+If you prefer free models, clear the override or set an explicit free model:
+
+| Priority | Providers | Model | Cost |
+|----------|-----------|-------|------|
+| 1 | `opencode`, `opencode-go`, `vercel` | `deepseek-v4-flash` | Free |
+| 2 | `opencode`, `opencode-go`, `vercel` | `minimax-m2.5-free` | Free |
+| 3 | `opencode`, `github-copilot` | `big-pickle` | Free |
+| 4 | `opencode`, `opencode-go`, `vercel` | `nemotron-3-super-120b-a12b:free` | Free |
 
 **Agent assembly order:** `Devin → Sisyphus → Hephaestus → Prometheus → Atlas`
 
@@ -683,7 +684,7 @@ See full [Features Documentation](docs/reference/features.md).
 
 **Fork-Specific Features:**
 - **Devin x Sisyphus Dual-Primary Architecture**: Devin (default) handles local execution + Devin CLI sandbox delegation. Sisyphus handles full specialist agent orchestration (Oracle, Librarian, Explore, Hephaestus, Atlas, Metis, Momus). Pick the right agent for the job.
-- **Devin CLI Integration**: MCP server for background Devin sessions + built-in skill with model selection guidance + slash commands (`/devin`, `/devin-models`, `/devin-status`, `/devin-cancel`)
+- **Devin CLI Integration**: MCP server for background Devin sessions (defaults to `kimi-k2.6`) + built-in skill + slash commands (`/devin`, `/devin-models`, `/devin-status`, `/devin-cancel`)
 
 ## Configuration
 
