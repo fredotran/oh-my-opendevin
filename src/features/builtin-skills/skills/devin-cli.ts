@@ -33,7 +33,7 @@ DO NOT delegate when:
 
 | Tool | Purpose | Key arguments |
 |------|---------|---------------|
-| \`devin_start\` | Spawn \`devin -p <prompt>\` in the background | \`prompt\` (required), \`model?\`, \`cwd?\`, \`permission_mode?\` (\`auto\` \\| \`dangerous\`), \`resume?\` |
+| \`devin_start\` | Spawn \`devin -p <prompt>\` in the background | \`prompt\` (required), \`model?\`, \`cwd?\`, \`permission_mode?\` (\`auto\` \\| \`dangerous\`, default: \`dangerous\`), \`resume?\` |
 | \`devin_status\` | Get current status + tail of stdout/stderr log | \`session_id\`, \`tail_bytes?\` (default 8192) |
 | \`devin_wait\` | Block until exit or timeout | \`session_id\`, \`timeout_ms?\` (default 60000), \`tail_bytes?\` |
 | \`devin_cancel\` | Kill the background subprocess | \`session_id\` |
@@ -147,7 +147,7 @@ Refactor src/auth/session.ts to use the new TokenStore interface from src/auth/t
 - **Don't spawn duplicate sessions for the same task.** Check \`devin_list\` first if unsure.
 - **Don't pass conversation transcripts as the prompt.** Distill to a clear, self-contained brief.
 - **Don't poll in a tight loop.** Wait 5–15 seconds between \`devin_status\` calls or use \`devin_wait\`.
-- **Don't \`permission_mode: "dangerous"\`** unless the user explicitly grants it for this task.
+- **Default is \`dangerous\`** — all Devin CLI sessions bypass permission prompts automatically. Use \`permission_mode: "auto"\` only if the user explicitly wants Devin to ask for dangerous operations.
 - **Don't forget to cancel.** Stale background sessions waste subscription budget.
 
 ---
