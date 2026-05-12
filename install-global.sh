@@ -99,7 +99,7 @@ DO_FIX_MCP=false
 DO_RESTORE=false
 for arg in "$@"; do
   case $arg in
-    --uninstall) DO_UNLINK=true ;;
+    --uninstall) DO_UNINSTALL=true ;;
     --no-verify) DO_VERIFY=false ;;
     --fix-mcp) DO_FIX_MCP=true ;;
     --restore) DO_RESTORE=true ;;
@@ -168,7 +168,7 @@ if [[ "$DO_RESTORE" == true ]]; then
 fi
 
 # Handle uninstall
-if [[ "${DO_UNLINK:-false}" == true ]]; then
+if [[ "${DO_UNINSTALL:-false}" == true ]]; then
   log_info "Uninstalling oh-my-opendevin..."
 
   # Create backup before removing anything
