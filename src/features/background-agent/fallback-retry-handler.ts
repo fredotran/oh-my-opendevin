@@ -206,7 +206,7 @@ export async function tryFallbackRetry(args: {
     await abortWithTimeout(client, previousSessionID).catch(() => {})
   }
 
-  queue.push({ task, input: retryInput, attemptID: nextAttempt.attemptId })
+  queue.push({ task, input: retryInput, attemptID: nextAttempt.attemptId, priority: task.priority ?? 5 })
   queuesByKey.set(key, queue)
   processKey(key)
   return true

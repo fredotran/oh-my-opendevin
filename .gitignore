@@ -45,3 +45,6 @@ oauth-success.html
 # Debugging / session artifacts (skill workspace residue)
 .debug-journal*.md
 session-ses_*.md
+
+# Git worktrees
+.worktrees/
