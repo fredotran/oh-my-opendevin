@@ -186,7 +186,7 @@ export async function startDevinSession(options: StartOptions): Promise<DevinSes
   const resolvedCwd = validateCwd(options.cwd)
 
   // Wait for a per-model concurrency slot (mirrors BackgroundManager)
-  await acquireModelSlot(options.model)
+  await acquireModelSlot(resolvedModel)
 
   await mkdir(LOG_DIR, { recursive: true })
   await cleanupOldLogs()
