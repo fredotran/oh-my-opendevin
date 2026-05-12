@@ -48,4 +48,20 @@ export const SUPPLEMENTAL_MODEL_CAPABILITIES: Record<string, ModelCapabilitiesSn
 			output: 128000,
 		},
 	},
+	"nemotron-3-super-120b-a12b:free": {
+		id: "nemotron-3-super-120b-a12b:free",
+		family: "nemotron",
+		reasoning: true,
+		temperature: true,
+		toolCall: true,
+		modalities: {
+			input: ["text"],
+			output: ["text"],
+		},
+		limit: {
+			context: 131072,
+			input: 128000,
+			output: 8192,
+		},
+	},
 }

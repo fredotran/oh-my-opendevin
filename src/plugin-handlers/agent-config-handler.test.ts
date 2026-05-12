@@ -70,7 +70,7 @@ describe("applyAgentConfig builtin override protection", () => {
     name: "Builtin Sisyphus",
     prompt: "builtin prompt",
     mode: "primary",
-    order: 1,
+    order: 2,
   }
 
   const builtinOracleConfig: AgentConfig = {
