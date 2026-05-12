@@ -343,9 +343,11 @@ def print_text_report(report: dict, tier_filter: str | None = None):
             if len(cmd_display) > 80:
                 cmd_display = cmd_display[:77] + "..."
             print(f"    Spawn: {cmd_display}")
-        prompt = s.get("prompt", "")
+        prompt = s.get("prompt", "").strip()
         if prompt:
-            wrapped = re.sub(r"(.{80})", r"\1\n    ", prompt)
+            # Replace existing newlines with spaces to get a single wrapped block
+            prompt_flat = prompt.replace("\n", " ")
+            wrapped = re.sub(r"(.{80})", r"\1\n    ", prompt_flat)
             print(f"    Task:  {wrapped}")
         if s.get("exit_code") is not None:
             print(f"    Exit:  {s['exit_code']}")
