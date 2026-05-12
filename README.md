@@ -96,37 +96,37 @@ Restart OpenCode after changing. The agent model is separate from the CLI sandbo
 #### Architecture Diagram
 
 ```
-  +-------------------+                          +-------------------+
-  |   Devin (primary) |                          |  Sisyphus (primary)|
-  |   Default Agent   |                          |  Deep-work Agent |
-  +-------------------+                          +-------------------+
-          |                                              |
-          | Local execution OR Devin CLI                 | Specialist agent
-          | sandbox delegation ONLY                        | orchestration ONLY
-          |                                              |
-  +-------+-------+                                  +-------+-------+
-  |               |                                  |               |
-  v               v                                  v               v
-+--------+  +-----------+                      +----------+  +-----------+
-| Local  |  | Devin CLI |                      | Oracle   |  | Hephaestus|
-| Tools  |  | Sandbox   |                      | (review) |  | (deep)    |
-|        |  |           |                      +----------+  +-----------+
-| read   |  | devin_    |                          |               |
-| edit   |  | start     |                      +----------+  +-----------+
-| grep   |  | status    |                      | Librarian|  | Explore   |
-| LSP    |  | wait      |                      | (docs)   |  | (search)  |
-|        |  | cancel    |                      +----------+  +-----------+
+  +-------------------+                          +-----------------------+
+  |  Devin (primary)  |                          | Sisyphus (primary)    |
+  |   Default Agent   |                          |  Deep-work Agent      |
+  +-------------------+                          +-----------------------+
+          |                                                  |
+          | Local execution OR Devin CLI                     | Specialist agent
+          | sandbox delegation ONLY                          | orchestration ONLY
+          |                                                  |
+    +-------+-------+                                +-------+-------+
+    |               |                                |               |
+    v               v                                v               v
++--------+  +-----------+                      +----------+          +----------+
+| Local  |  | Devin CLI |                      |  Oracle  |          |Hephaestus|
+| Tools  |  |  Sandbox  |                      | (review) |          |  (deep)  |
+|        |  |           |                      +----------+          +----------+
+| read   |  | devin_    |                          |                     |
+| edit   |  | start     |                      +----------+          +----------+
+| grep   |  | status    |                      | Librarian|          | Explore  |
+| LSP    |  | wait      |                      |  (docs)  |          | (search) |
+|        |  | cancel    |                      +----------+          +----------+
 +--------+  +-----------+                          |
-                                                   +----------+
-                                                   | Atlas    |
-                                                   | (todos)  |
-                                                   +----------+
-                                                   | Metis    |
-                                                   | (plan)   |
-                                                   +----------+
-                                                   | Momus    |
-                                                   | (review) |
-                                                   +----------+
+                                               +----------+
+                                               |  Atlas   |
+                                               | (todos)  |
+                                               +----------+
+                                               |  Metis   |
+                                               |  (plan)  |
+                                               +----------+
+                                               |  Momus   |
+                                               | (review) |
+                                               +----------+
 ```
 
 #### Devin Decision Flow
