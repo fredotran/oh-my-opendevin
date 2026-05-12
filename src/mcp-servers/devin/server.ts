@@ -7,6 +7,7 @@ import {
   getDevinSession,
   listDevinSessions,
   readSessionLogSince,
+  reattachOrphanedSessions,
   snapshotDevinSession,
   shutdownAllSessions,
   startDevinSession,
@@ -222,6 +223,9 @@ export function createDevinMcpServer(): McpServer {
 }
 
 export async function runDevinMcpServer(): Promise<void> {
+  // Re-attach any sessions left behind by a previous server instance
+  await reattachOrphanedSessions()
+
   const server = createDevinMcpServer()
   const transport = new StdioServerTransport()
   const cleanup = () => {

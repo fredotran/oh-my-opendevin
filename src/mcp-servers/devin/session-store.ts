@@ -1,9 +1,9 @@
 import { mkdir, stat, readdir, unlink } from "node:fs/promises"
-import { existsSync, openSync } from "node:fs"
+import { existsSync, openSync, statSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { randomUUID } from "node:crypto"
-import type { DevinSession, DevinSessionSnapshot } from "./types"
+import type { DevinSession, DevinSessionSnapshot, SessionMetaFile } from "./types"
 
 const LOG_DIR = join(tmpdir(), "oh-my-opencode-devin-mcp")
 const TAIL_BYTES_DEFAULT = 8192
@@ -13,6 +13,10 @@ const DEFAULT_MODEL_CONCURRENCY = 5
 const LOG_RETENTION_MS = 24 * 60 * 60 * 1000 // 24 hours
 const KILL_GRACE_PERIOD_MS = 5000
 const DEFAULT_DEVIN_MODEL = "kimi-k2.6"
+const COMPLETED_SESSION_TTL_MS = 60 * 60 * 1000 // 1 hour
+const IDLE_CHECK_INTERVAL_MS = 5 * 60 * 1000 // 5 minutes
+const IDLE_STALL_THRESHOLD_MS = 30 * 60 * 1000 // 30 minutes with no output → stalled
+const KNOWN_DEVIN_MODELS = ["kimi-k2.6", "swe-1-6", "codex", "sonnet", "opus"]
 
 // Capture the working directory at module load time so that
 // session fork / session roaming does not drift the default cwd.
@@ -87,6 +91,159 @@ function cancelModelWaiters(model: string | undefined): void {
   }
 }
 
+// ─── Session Re-attachment (Feature #1) ─────────────────────────────────────
+// On startup, scan LOG_DIR for .meta.json with status:"running". Since the
+// actual process is gone after a restart, mark them as "orphaned" and register
+// as read-only sessions so devin_list / devin_status can still report them.
+
+const ORPHAN_PROC = {
+  exited: Promise.resolve(-1),
+  kill: () => {},
+  pid: -1,
+} as unknown as DevinSession["proc"]
+
+export async function reattachOrphanedSessions(): Promise<number> {
+  let count = 0
+  try {
+    await mkdir(LOG_DIR, { recursive: true })
+    const entries = await readdir(LOG_DIR)
+    for (const entry of entries) {
+      if (!entry.endsWith(".meta.json")) continue
+      const metaPath = join(LOG_DIR, entry)
+      try {
+        const raw = await Bun.file(metaPath).text()
+        const meta = JSON.parse(raw) as SessionMetaFile
+        if (meta.status !== "running") continue
+        if (sessions.has(meta.id)) continue
+
+        const logPath = join(LOG_DIR, `${meta.id}.log`)
+        const session: DevinSession = {
+          id: meta.id,
+          proc: ORPHAN_PROC,
+          logPath,
+          startedAt: meta.startedAt,
+          cwd: meta.cwd ?? MCP_HOME_DIR,
+          prompt: meta.prompt ?? "",
+          model: meta.model,
+          status: "orphaned",
+          resumeId: undefined,
+        }
+        sessions.set(meta.id, session)
+
+        // Update the .meta.json on disk to reflect orphaned status
+        meta.status = "orphaned"
+        await Bun.write(metaPath, JSON.stringify(meta, null, 2))
+
+        count++
+      } catch {
+        // Skip unparseable meta files
+      }
+    }
+  } catch {
+    // LOG_DIR may not exist yet on first run
+  }
+  if (count > 0) {
+    console.error(`[devin-mcp] Reattached ${count} orphaned session(s) from previous run`)
+  }
+  return count
+}
+
+// ─── Completed Session TTL Reaper (Feature #3) ──────────────────────────────
+// Removes finished sessions from the in-memory Map after COMPLETED_SESSION_TTL_MS
+// to prevent memory leaks. The .meta.json and .log files remain on disk.
+
+let reaperTimer: ReturnType<typeof setInterval> | null = null
+
+function startSessionReaper(): void {
+  if (reaperTimer) return
+  reaperTimer = setInterval(() => {
+    const now = Date.now()
+    for (const [id, session] of sessions) {
+      const isTerminal = session.status === "completed" || session.status === "error" ||
+        session.status === "cancelled" || session.status === "orphaned"
+      if (!isTerminal) continue
+      const endedAt = session.endedAt ?? session.startedAt
+      if (now - endedAt > COMPLETED_SESSION_TTL_MS) {
+        clearSnapshotCacheForSession(id)
+        sessions.delete(id)
+      }
+    }
+  }, 60_000) // check every minute
+  // Unref so the timer doesn't prevent process exit
+  if (typeof reaperTimer === "object" && "unref" in reaperTimer) {
+    reaperTimer.unref()
+  }
+}
+
+export function stopSessionReaper(): void {
+  if (reaperTimer) {
+    clearInterval(reaperTimer)
+    reaperTimer = null
+  }
+}
+
+// ─── Idle Session Detection (Feature #5) ─────────────────────────────────────
+// Periodically checks running sessions for output growth. If a session's log
+// hasn't grown in IDLE_STALL_THRESHOLD_MS, its status is set to "stalled".
+// The session is NOT auto-cancelled — the agent or user decides what to do.
+
+let idleTimer: ReturnType<typeof setInterval> | null = null
+
+function checkIdleSessions(): void {
+  const now = Date.now()
+  for (const session of sessions.values()) {
+    if (session.status !== "running") continue
+    try {
+      if (!existsSync(session.logPath)) continue
+      const st = statSync(session.logPath)
+      const currentBytes = st.size
+
+      if (session.lastOutputBytes === undefined) {
+        // First check — initialize tracking
+        session.lastOutputBytes = currentBytes
+        session.lastOutputAt = now
+        continue
+      }
+
+      if (currentBytes > session.lastOutputBytes) {
+        // Output grew — session is active
+        session.lastOutputBytes = currentBytes
+        session.lastOutputAt = now
+        continue
+      }
+
+      // Output hasn't grown — check how long since last growth
+      const idleSince = session.lastOutputAt ?? session.startedAt
+      if (now - idleSince > IDLE_STALL_THRESHOLD_MS) {
+        session.status = "stalled"
+        updateMetaFile(session)
+        console.error(`[devin-mcp] Session ${session.id} marked stalled (no output for ${Math.round((now - idleSince) / 60_000)}min)`)
+      }
+    } catch {
+      // Ignore per-session stat errors
+    }
+  }
+}
+
+function startIdleDetector(): void {
+  if (idleTimer) return
+  idleTimer = setInterval(checkIdleSessions, IDLE_CHECK_INTERVAL_MS)
+  if (typeof idleTimer === "object" && "unref" in idleTimer) {
+    idleTimer.unref()
+  }
+}
+
+export function stopIdleDetector(): void {
+  if (idleTimer) {
+    clearInterval(idleTimer)
+    idleTimer = null
+  }
+}
+
+// Start background maintenance on module load
+startSessionReaper()
+startIdleDetector()
+
 // Cache for log snapshot output to avoid re-reading unchanged files.
 // Key: `${sessionId}:${fileSize}:${fileMtimeMs}`
 const snapshotCache = new Map<string, { output: string; outputBytes: number }>()
@@ -143,7 +300,78 @@ function validateCwd(cwd: string | undefined): string {
   if (!existsSync(resolved)) {
     throw new Error(`Working directory does not exist: ${resolved}`)
   }
+  try {
+    const st = statSync(resolved)
+    if (!st.isDirectory()) {
+      throw new Error(`Working directory path is not a directory: ${resolved}`)
+    }
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("not a directory")) throw err
+    // stat failed — existsSync passed so this is unexpected, let it proceed
+  }
   return resolved
+}
+
+// ─── Pre-flight Validation (Feature #2) ─────────────────────────────────────
+// Validates that the devin binary is available and model is recognized before
+// spawning. Fails fast with actionable errors instead of silent failures.
+
+let devinBinaryChecked = false
+let devinBinaryAvailable = false
+
+async function validateDevinBinary(): Promise<void> {
+  if (devinBinaryChecked) {
+    if (!devinBinaryAvailable) {
+      throw new Error(
+        "devin CLI binary not found in PATH. Install from https://cli.devin.ai/docs",
+      )
+    }
+    return
+  }
+  devinBinaryChecked = true
+  try {
+    const proc = Bun.spawn(["which", "devin"], { stdout: "ignore", stderr: "ignore" })
+    const exitCode = await proc.exited
+    devinBinaryAvailable = exitCode === 0
+  } catch {
+    devinBinaryAvailable = false
+  }
+  if (!devinBinaryAvailable) {
+    throw new Error(
+      "devin CLI binary not found in PATH. Install from https://cli.devin.ai/docs",
+    )
+  }
+}
+
+function validateModelName(model: string): void {
+  // Check against known tier keywords for typo detection
+  if (KNOWN_DEVIN_MODELS.includes(model)) return
+  // Allow unknown models (future compatibility) but warn on near-misses
+  const nearMatch = KNOWN_DEVIN_MODELS.find((known) => {
+    const dist = levenshteinDistance(model.toLowerCase(), known.toLowerCase())
+    return dist > 0 && dist <= 2
+  })
+  if (nearMatch) {
+    throw new Error(
+      `Unknown model "${model}" — did you mean "${nearMatch}"? Known models: ${KNOWN_DEVIN_MODELS.join(", ")}`,
+    )
+  }
+}
+
+function levenshteinDistance(a: string, b: string): number {
+  const m = a.length
+  const n = b.length
+  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)),
+  )
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1])
+    }
+  }
+  return dp[m][n]
 }
 
 async function cleanupOldLogs(): Promise<void> {
@@ -200,9 +428,13 @@ export async function startDevinSession(options: StartOptions): Promise<DevinSes
 
   // Validate all user inputs before spawning
   validateModel(resolvedModel)
+  validateModelName(resolvedModel)
   validateResumeId(options.resume)
   const validatedExtraArgs = validateExtraArgs(options.extraArgs)
   const resolvedCwd = validateCwd(options.cwd)
+
+  // Pre-flight: ensure devin binary is available (cached after first check)
+  await validateDevinBinary()
 
   // Wait for a per-model concurrency slot (mirrors BackgroundManager)
   await acquireModelSlot(resolvedModel)
@@ -245,16 +477,19 @@ export async function startDevinSession(options: StartOptions): Promise<DevinSes
     stdin: "ignore",
   })
 
+  const now = Date.now()
   const session: DevinSession = {
     id,
     proc,
     logPath,
-    startedAt: Date.now(),
+    startedAt: now,
     cwd: resolvedCwd,
     prompt: options.prompt,
     model: resolvedModel,
     status: "running",
     resumeId: options.resume,
+    lastOutputBytes: 0,
+    lastOutputAt: now,
   }
 
   sessions.set(id, session)
@@ -428,6 +663,8 @@ export async function readSessionLogSince(id: string, sinceBytes: number): Promi
 }
 
 export async function shutdownAllSessions(): Promise<void> {
+  stopSessionReaper()
+  stopIdleDetector()
   snapshotCache.clear()
   // Cancel all queued sessions waiting for a slot
   for (const key of modelPendingQueues.keys()) {
@@ -456,4 +693,12 @@ export function clearTestSessions(): void {
   for (const key of modelPendingQueues.keys()) {
     cancelModelWaiters(key === "__default" ? undefined : key)
   }
+  devinBinaryChecked = false
+  devinBinaryAvailable = false
+}
+
+// @allow — test-only helper to bypass devin binary check
+export function setDevinBinaryAvailable(available: boolean): void {
+  devinBinaryChecked = true
+  devinBinaryAvailable = available
 }

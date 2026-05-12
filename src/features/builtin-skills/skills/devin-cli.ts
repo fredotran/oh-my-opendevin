@@ -140,6 +140,29 @@ Refactor src/auth/session.ts to use the new TokenStore interface from src/auth/t
 
 ---
 
+## Resilience features
+
+### Session re-attachment
+If the MCP server restarts, sessions from the previous run are automatically recovered as **orphaned** status. They appear in \`devin_list\` with their logs still readable via \`devin_status\`, but cannot be cancelled or waited on (the process is gone). This prevents "ghost" sessions that disappear silently.
+
+### Pre-flight validation
+Before spawning, \`devin_start\` validates:
+- The \`devin\` binary exists in PATH (cached after first check)
+- The model name is recognized — typos like \`"sonet"\` or \`"opsu"\` are caught with "did you mean?" suggestions
+- The working directory exists and is a directory
+This avoids silent spawn failures that waste time debugging.
+
+### Auto-cleanup
+Completed, errored, cancelled, and orphaned sessions are automatically removed from memory after 1 hour. Log and metadata files remain on disk for the \`devin-report\` CLI command.
+
+### Idle detection
+Running sessions are periodically checked for output growth. If a session produces no new output for 30 minutes, it is marked as **stalled**. Stalled sessions are NOT auto-cancelled — you decide whether to cancel or wait longer. Check \`devin_status\` and look for \`status: "stalled"\`.
+
+### CLI reporting
+Run \`bunx oh-my-opencode devin-report\` to see a full session report with model tiers, durations, and outcomes. Use \`--json\` for CI or \`--tier Deep\` to filter.
+
+---
+
 ## Example interactions
 
 ### User: "Delegate the auth refactor to Devin while you work on the UI."

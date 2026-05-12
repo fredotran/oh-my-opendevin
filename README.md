@@ -39,6 +39,13 @@ This fork includes a complete integration with the [Devin CLI](https://cli.devin
 - `/devin-status` - List or show session status
 - `/devin-cancel` - Cancel sessions
 
+**Resilience & Maintainability**
+- Session re-attachment on MCP server restart (orphaned sessions remain visible)
+- Pre-flight validation: binary existence check, model typo detection, cwd validation
+- Auto-cleanup of completed sessions from memory (1h TTL, logs remain on disk)
+- Idle session detection: sessions with no output for 30min marked as `"stalled"`
+- First-class CLI reporter: `bunx oh-my-opencode devin-report [--json] [--tier <tier>]`
+
 ### Devin x Sisyphus Dual-Primary Architecture
 
 This fork introduces a **clear separation of responsibilities** between two primary agents. Pick the right tool for the job:

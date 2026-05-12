@@ -1,10 +1,10 @@
-# src/cli/ — CLI: install, run, doctor, mcp-oauth
+# src/cli/ — CLI: install, run, doctor, mcp-oauth, devin-report
 
 **Generated:** 2026-05-08
 
 ## OVERVIEW
 
-Commander.js CLI with 6 commands. Entry: `index.ts` → `runCli()` in `cli-program.ts`.
+Commander.js CLI with 8 commands. Entry: `index.ts` → `runCli()` in `cli-program.ts`.
 
 ## COMMANDS
 
@@ -16,13 +16,15 @@ Commander.js CLI with 6 commands. Entry: `index.ts` → `runCli()` in `cli-progr
 | `get-local-version` | Version detection | Installed vs npm latest |
 | `mcp-oauth` | OAuth token management | login (PKCE), logout, status |
 | `refresh-model-capabilities` | Refresh models.dev cache | Model capabilities refresh |
+| `boulder` | Boulder progress and statistics | Per-work status, task progress |
+| `devin-report` | Devin CLI session report | Reads .meta.json from MCP log dir, tier/status/duration aggregation |
 
 ## STRUCTURE
 
 ```
 cli/
 ├── index.ts                     # Entry point → runCli()
-├── cli-program.ts               # Commander.js program (5 commands)
+├── cli-program.ts               # Commander.js program (8 commands)
 ├── install.ts                   # Routes to TUI or CLI installer
 ├── cli-installer.ts             # Non-interactive (console output)
 ├── tui-installer.ts             # Interactive (@clack/prompts)
@@ -47,6 +49,11 @@ cli/
 │   ├── session-resolver.ts      # Create/resume sessions
 │   ├── event-handlers.ts        # Event processing
 │   └── poll-for-completion.ts   # Wait for todos/background tasks
+├── devin-report/                # Devin CLI session reporter
+│   ├── devin-report.ts          # MCP .meta.json scanner + aggregation
+│   ├── formatter.ts             # Text/JSON output formatting
+│   ├── types.ts                 # Report types
+│   └── index.ts                 # Barrel
 └── mcp-oauth/                   # OAuth token management
 ```
 

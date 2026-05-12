@@ -6,10 +6,12 @@ import { doctor } from "./doctor"
 import { refreshModelCapabilities } from "./refresh-model-capabilities"
 import { createMcpOAuthCommand } from "./mcp-oauth"
 import { boulder } from "./boulder"
+import { devinReport } from "./devin-report"
 import type { InstallArgs } from "./types"
 import type { RunOptions } from "./run"
 import type { GetLocalVersionOptions } from "./get-local-version/types"
 import type { DoctorOptions } from "./doctor"
+import type { DevinReportOptions } from "./devin-report/types"
 import packageJson from "../../package.json" with { type: "json" }
 
 const VERSION = packageJson.version
@@ -215,6 +217,26 @@ program
       workId: options.workId,
       json: options.json ?? false,
     })
+    process.exit(exitCode)
+  })
+
+program
+  .command("devin-report")
+  .description("Show Devin CLI session report — model tiers, durations, and outcomes")
+  .option("--json", "Output as JSON")
+  .option("--tier <tier>", "Filter by tier (Standard, Fast/Cheap, Code Gen, Balanced, Deep)")
+  .addHelpText("after", `
+Examples:
+  $ bunx oh-my-opencode devin-report              # Full text report
+  $ bunx oh-my-opencode devin-report --json        # JSON output for CI
+  $ bunx oh-my-opencode devin-report --tier Deep   # Only Deep tier sessions
+`)
+  .action(async (options) => {
+    const reportOptions: DevinReportOptions = {
+      json: options.json ?? false,
+      tier: options.tier,
+    }
+    const exitCode = await devinReport(reportOptions)
     process.exit(exitCode)
   })
 

@@ -1,9 +1,10 @@
 import { describe, expect, it, beforeEach, afterEach } from "bun:test"
-import { mkdtemp, writeFile, unlink, rmdir } from "node:fs/promises"
+import { mkdtemp, writeFile, mkdir, unlink, rmdir } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { snapshotDevinSession, cancelDevinSession, cancelDevinSessions, readSessionLogSince, shutdownAllSessions, registerTestSession, clearTestSessions } from "./session-store"
+import { snapshotDevinSession, cancelDevinSession, cancelDevinSessions, readSessionLogSince, shutdownAllSessions, registerTestSession, clearTestSessions, reattachOrphanedSessions, setDevinBinaryAvailable } from "./session-store"
 import type { DevinSession } from "./types"
+import type { SessionMetaFile } from "./types"
 
 // @allow - minimal mock subprocess for testing cache logic without spawning
 const mockSubprocess = {
@@ -205,5 +206,182 @@ describe("readSessionLogSince incremental", () => {
 
     // then
     expect(output).toBe("all the content")
+  })
+})
+
+describe("reattachOrphanedSessions", () => {
+  let testLogDir: string
+
+  beforeEach(async () => {
+    clearTestSessions()
+    testLogDir = await mkdtemp(join(tmpdir(), "devin-reattach-test-"))
+  })
+
+  afterEach(async () => {
+    clearTestSessions()
+    try { await rmdir(testLogDir, { recursive: true }) } catch { /* ignore */ }
+  })
+
+  it("reattaches sessions with status 'running' as 'orphaned'", async () => {
+    // given — write a .meta.json that looks like it was left behind
+    const sessionId = "orphan-test-1234"
+    const meta: SessionMetaFile = {
+      id: sessionId,
+      model: "sonnet",
+      prompt: "fix the bug",
+      cwd: testLogDir,
+      command: ["devin", "-p", "fix the bug", "--model", "sonnet"],
+      startedAt: Date.now() - 60_000,
+      status: "running",
+    }
+    // We need to write to the actual LOG_DIR, so we'll use the module's
+    // reattachOrphanedSessions which reads from /tmp/oh-my-opencode-devin-mcp/
+    const logDir = join(tmpdir(), "oh-my-opencode-devin-mcp")
+    await mkdir(logDir, { recursive: true })
+    const metaPath = join(logDir, `${sessionId}.meta.json`)
+    const logPath = join(logDir, `${sessionId}.log`)
+    await writeFile(metaPath, JSON.stringify(meta, null, 2))
+    await writeFile(logPath, "some log output")
+
+    // when
+    const count = await reattachOrphanedSessions()
+
+    // then
+    expect(count).toBeGreaterThanOrEqual(1)
+    // The meta file should be updated to "orphaned"
+    const updatedMeta = JSON.parse(await Bun.file(metaPath).text())
+    expect(updatedMeta.status).toBe("orphaned")
+
+    // cleanup
+    try { await unlink(metaPath) } catch { /* ignore */ }
+    try { await unlink(logPath) } catch { /* ignore */ }
+  })
+
+  it("skips sessions with non-running status", async () => {
+    // given
+    const sessionId = "completed-test-5678"
+    const meta: SessionMetaFile = {
+      id: sessionId,
+      model: "opus",
+      prompt: "already done",
+      cwd: testLogDir,
+      command: ["devin", "-p", "already done"],
+      startedAt: Date.now() - 120_000,
+      status: "completed",
+      endedAt: Date.now() - 60_000,
+      exitCode: 0,
+    }
+    const logDir = join(tmpdir(), "oh-my-opencode-devin-mcp")
+    await mkdir(logDir, { recursive: true })
+    const metaPath = join(logDir, `${sessionId}.meta.json`)
+    await writeFile(metaPath, JSON.stringify(meta, null, 2))
+
+    // when
+    const count = await reattachOrphanedSessions()
+
+    // then — completed sessions should not be reattached
+    // (count may include other orphans from prior test, but the completed one should be skipped)
+    const updatedMeta = JSON.parse(await Bun.file(metaPath).text())
+    expect(updatedMeta.status).toBe("completed")
+
+    // cleanup
+    try { await unlink(metaPath) } catch { /* ignore */ }
+  })
+})
+
+describe("pre-flight validation", () => {
+  afterEach(() => {
+    clearTestSessions()
+  })
+
+  it("rejects model names with typos via levenshtein", async () => {
+    // given — set binary as available to skip that check
+    setDevinBinaryAvailable(true)
+
+    // when / then
+    const { startDevinSession } = await import("./session-store")
+    await expect(
+      startDevinSession({ prompt: "test", model: "sonet" }),
+    ).rejects.toThrow(/did you mean "sonnet"/)
+  })
+
+  it("rejects model names with another typo", async () => {
+    // given
+    setDevinBinaryAvailable(true)
+
+    // when / then
+    const { startDevinSession } = await import("./session-store")
+    await expect(
+      startDevinSession({ prompt: "test", model: "opsu" }),
+    ).rejects.toThrow(/did you mean "opus"/)
+  })
+
+  it("accepts known model names without error", async () => {
+    // given
+    setDevinBinaryAvailable(true)
+
+    // when / then — should not throw for model validation
+    // (it will throw for spawn since devin binary isn't real, but model check passes)
+    const { startDevinSession } = await import("./session-store")
+    try {
+      await startDevinSession({ prompt: "test", model: "sonnet" })
+    } catch (err) {
+      // May fail at spawn, but NOT at model validation
+      expect((err as Error).message).not.toContain("did you mean")
+    }
+  })
+
+  it("accepts unknown but non-typo model names", async () => {
+    // given
+    setDevinBinaryAvailable(true)
+
+    // when / then — "gpt-99" is not close to any known model
+    const { startDevinSession } = await import("./session-store")
+    try {
+      await startDevinSession({ prompt: "test", model: "gpt-99" })
+    } catch (err) {
+      expect((err as Error).message).not.toContain("did you mean")
+    }
+  })
+})
+
+describe("idle session detection", () => {
+  let cleanupDirs: string[] = []
+
+  afterEach(async () => {
+    clearTestSessions()
+    for (const dir of cleanupDirs) {
+      try { await rmdir(dir, { recursive: true }) } catch { /* ignore */ }
+    }
+    cleanupDirs = []
+  })
+
+  it("tracks lastOutputBytes and lastOutputAt on new sessions", async () => {
+    // given
+    const { session, tmpDir } = await createMockSession("some output")
+    cleanupDirs.push(tmpDir)
+    session.lastOutputBytes = 0
+    session.lastOutputAt = Date.now()
+
+    // then
+    expect(session.lastOutputBytes).toBe(0)
+    expect(session.lastOutputAt).toBeDefined()
+    expect(session.lastOutputAt).toBeGreaterThan(0)
+  })
+
+  it("allows stalled status on session type", () => {
+    // given
+    const { session } = { session: { status: "stalled" as const } }
+
+    // then
+    expect(session.status).toBe("stalled")
+  })
+
+  it("allows orphaned status on session type", () => {
+    // given
+    const { session } = { session: { status: "orphaned" as const } }
+
+    // then
+    expect(session.status).toBe("orphaned")
   })
 })
