@@ -229,6 +229,17 @@ This document tracks all features, fixes, and architectural changes added in the
   Scans `/tmp/oh-my-opencode-devin-mcp/` for `.meta.json` files and reports model tiers, durations, statuses, prompts, and working directories.
 - **Why:** Makes the session reporter discoverable and consistent with other CLI commands (`doctor`, `boulder`).
 
+### devin_wait MCP Timeout Fix & Incremental Polling Guidance
+- **Files:** `src/mcp-servers/devin/server.ts`, `src/features/builtin-skills/skills/devin-cli.ts`
+- **What:**
+  1. `devin_wait` now caps actual blocking at 30 seconds per call, preventing the MCP client from timing out with `-32001: Request timed out` when agents request long waits (e.g., 300s).
+  2. When `devin_wait` returns because the session is still running, the response includes:
+     - Elapsed wait time vs. requested timeout
+     - Current `output_bytes` value
+     - Explicit next-step recommendations: `devin_status({ since_bytes })`, call `devin_wait` again, or `devin_cancel`
+  3. `devin_status` tool description and built-in skill docs now emphatically instruct agents to use `since_bytes` (not `tail_bytes`) for all repeated polling, preventing the redundant output re-fetch loop shown in the agent logs.
+- **Why:** Fixes the infinite `devin_wait` timeout → `devin_status` with `tail_bytes` polling loop that wastes context window and triggers MCP errors.
+
 ---
 
 ## Test Coverage

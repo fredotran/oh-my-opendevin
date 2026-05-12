@@ -56,12 +56,14 @@ Each tool returns a human-readable text snapshot. \`session_id\` is a UUID — s
    - **Balanced** — \`model: "sonnet"\` (moderate complexity)
 4. **Start the session.** Call \`devin_start({ prompt, cwd?, model? })\`. Save the returned \`session_id\`.
 5. **Tell the user.** Briefly note that Devin is running in the background and return to whatever else you were doing.
-6. **Poll periodically (incremental).**
+6. **Poll incrementally — CRITICAL.**
    - **First call**: \`devin_status({ session_id, tail_bytes: 8192 })\` — note the \`output_bytes\` field in the response.
-   - **Subsequent calls**: \`devin_status({ session_id, since_bytes: <previous_output_bytes> })\` — this returns only *new* output since your last poll, avoiding redundant context bloat.
-   - If \`since_bytes\` returns "(no new output)", wait 10–15 seconds before polling again.
-   - Use \`tail_bytes\` instead of \`since_bytes\` only when you want a fresh full tail (e.g., user asks for "full output").
-7. **Wait if you have nothing else to do.** Call \`devin_wait({ session_id, timeout_ms })\` instead of busy-polling. \`timeout_ms\` max is 600000 (10 min); chain \`devin_wait\` calls if you need longer.
+   - **ALL subsequent calls**: **ALWAYS use \`since_bytes\`**, never \`tail_bytes\` again:
+     \`devin_status({ session_id, since_bytes: <previous_output_bytes> })\`
+     This returns ONLY new output since your last poll. Using \`tail_bytes\` repeatedly re-fetches the same output and wastes context window.
+   - If \`since_bytes\` returns "(no new output)", wait 15–30 seconds before polling again.
+   - Use \`tail_bytes\` ONLY when the user explicitly asks for "full output" or you're checking a session for the first time.
+7. **Wait if you have nothing else to do.** Call \`devin_wait({ session_id, timeout_ms })\` instead of busy-polling. **Important:** \`devin_wait\` caps blocking at 30 seconds per call to avoid MCP client timeouts. If the session is still running after 30s, the response tells you \`output_bytes\` and recommends using \`devin_status({ since_bytes: ... })\`. You can call \`devin_wait\` again or switch to incremental polling.
 8. **Report results.** When \`status\` is \`completed\`, summarize Devin's output for the user. If \`error\`, surface the error and either retry or fall back to handling it yourself.
 9. **Cancel if needed.** \`devin_cancel({ session_id })\` if the user changes their mind or Devin goes off-rails.
 
@@ -134,7 +136,9 @@ Refactor src/auth/session.ts to use the new TokenStore interface from src/auth/t
 
 - **Don't spawn duplicate sessions for the same task.** Check \`devin_list\` first if unsure.
 - **Don't pass conversation transcripts as the prompt.** Distill to a clear, self-contained brief.
-- **Don't poll in a tight loop.** Wait 5–15 seconds between \`devin_status\` calls or use \`devin_wait\`.
+- **DON'T use \`tail_bytes\` for repeated polling — always use \`since_bytes\` after the first status call.** Using \`tail_bytes\` repeatedly re-fetches the same output, wastes context window, and causes the MCP client to time out on large outputs. Track \`output_bytes\` from each response and pass it as \`since_bytes\` on the next poll.
+- **Don't poll in a tight loop.** Wait 15–30 seconds between \`devin_status\` calls. Use \`devin_wait\` if you have nothing else to do.
+- **Don't expect \`devin_wait\` to block for minutes.** It caps at 30 seconds per call to avoid MCP client timeout errors (-32001). If the session is still running, the response gives you \`output_bytes\` — use it with \`devin_status({ since_bytes })\` for incremental polling, or call \`devin_wait\` again.
 - **Default is \`dangerous\`** — all Devin CLI sessions bypass permission prompts automatically. Use \`permission_mode: "auto"\` only if the user explicitly wants Devin to ask for dangerous operations.
 - **Don't forget to cancel.** Stale background sessions waste subscription budget. Use \`devin_cancel_batch\` when cancelling multiple sessions at once.
 
