@@ -35,7 +35,7 @@ export function createDevinAgent(model: string): AgentConfig {
 
   return {
     description:
-      "Local execution agent + Devin CLI sandbox delegator. Handles user requests by executing locally with direct tools (read, edit, grep, LSP) or delegating to the Devin CLI sandbox for background/long-running tasks. Does NOT use specialist agents. Uses free OpenCode Zen models by default (deepseek-chat, minimax-m2.5-free, big-pickle, nemotron-3-super-free). (Devin - OhMyOpenCode)",
+      "Local execution agent + Devin CLI sandbox delegator. Handles user requests by executing locally with direct tools (read, edit, grep, LSP) or delegating to the Devin CLI sandbox for background/long-running tasks. Does NOT use specialist agents. Uses free OpenCode Zen models by default (deepseek-v4-flash, minimax-m2.5-free, big-pickle, nemotron-3-super-free). (Devin - OhMyOpenCode)",
     mode: MODE,
     model,
     temperature: 0.1,
