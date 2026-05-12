@@ -260,7 +260,7 @@ The Devin CLI MCP server requires **Bun** to run. This is because the MCP server
   }
   ```
 
-  The plugin also checks `~/.config/opencode/.mcp.json` as a fallback for manual configurations.
+The plugin also checks `~/.config/opencode/.mcp.json` as a fallback for manual configurations.
 
 **For developers:**
 - Bun is required for both development and MCP integration
