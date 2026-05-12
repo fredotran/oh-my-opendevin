@@ -5,7 +5,7 @@
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
 <<<<<<< Updated upstream
-**Last updated:** `39aa4154`
+**Last updated:** `a49d0717`
 =======
 **Last updated:** `82c0d34f`
 >>>>>>> Stashed changes
@@ -210,6 +210,8 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+a49d0717 test: fix fork-specific test failures on fredotran/dev
+d86084fc docs: auto-update DEVIN-FEATURES.md [skip ci]
 39aa4154 Merge branch 'fredotran/dev' of github.com:fredotran/oh-my-opendevin into fredotran/dev
 f3122e4f fix(reporter): strip trailing whitespace and flatten newlines before wrapping
 a392c6a2 docs: auto-update DEVIN-FEATURES.md [skip ci]
