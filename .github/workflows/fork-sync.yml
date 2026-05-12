@@ -1,0 +1,40 @@
+name: Fork Sync
+
+on:
+  push:
+    branches: [fredotran/dev]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  update-devin-features:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.12"
+
+      - name: Update DEVIN-FEATURES.md
+        run: bun run script/update-devin-features.ts
+
+      - name: Commit and push if changed
+        run: |
+          if git diff --quiet DEVIN-FEATURES.md; then
+            echo "No changes to DEVIN-FEATURES.md"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add DEVIN-FEATURES.md
+            git commit -m "docs: auto-update DEVIN-FEATURES.md [skip ci]"
+            git push
+          fi
