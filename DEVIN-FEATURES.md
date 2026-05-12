@@ -5,7 +5,7 @@
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
 <<<<<<< Updated upstream
-**Last updated:** `dcefd6ff`
+**Last updated:** `be21247d`
 =======
 **Last updated:** `82c0d34f`
 >>>>>>> Stashed changes
@@ -210,6 +210,8 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+be21247d ci: fix failing CI on fredotran/dev
+e675586c docs: auto-update DEVIN-FEATURES.md [skip ci]
 dcefd6ff docs: add Devin CLI test reporter script and update DEVIN-FEATURES.md
 a234d44b fix: regenerate bun.lock for renamed package oh-my-opendevin
 7c10441b docs: auto-update DEVIN-FEATURES.md [skip ci]
