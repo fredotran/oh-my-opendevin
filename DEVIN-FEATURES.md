@@ -18,6 +18,7 @@ This document tracks all features, fixes, and architectural changes added in the
 4. [Installation & Distribution](#installation--distribution)
 5. [Developer Experience](#developer-experience)
 6. [Performance Optimizations](#performance-optimizations)
+7. [Resilience & Maintainability](#resilience--maintainability)
 
 ---
 
@@ -192,14 +193,53 @@ This document tracks all features, fixes, and architectural changes added in the
 
 ---
 
+## Resilience & Maintainability
+
+### Session Re-attachment on MCP Server Restart
+- **Files:** `src/mcp-servers/devin/session-store.ts`, `src/mcp-servers/devin/server.ts`
+- **What:** On startup, scans `/tmp/oh-my-opencode-devin-mcp/` for `.meta.json` files with `status: "running"`. Since the process is gone after a restart, marks them as `"orphaned"` and registers as read-only sessions. `devin_list` and `devin_status` still report orphaned sessions with full log access.
+- **Why:** Prevents "ghost" sessions that silently disappear after a server restart. Agents and users can see what was running when the server went down.
+
+### Pre-flight Validation in devin_start
+- **Files:** `src/mcp-servers/devin/session-store.ts`
+- **What:** Before spawning a Devin process, validates:
+  1. The `devin` binary exists in PATH (result cached after first check)
+  2. The model name is recognized — typos like `"sonet"` are caught via Levenshtein distance with "did you mean?" suggestions
+  3. The working directory exists and is a directory (not just a file)
+- **Why:** Fails fast with actionable errors instead of silent spawn failures.
+
+### Auto-cleanup of Completed Sessions (TTL Reaper)
+- **Files:** `src/mcp-servers/devin/session-store.ts`
+- **What:** Background interval (every 60s) removes terminal sessions (`completed`, `error`, `cancelled`, `orphaned`) from the in-memory `Map` after 1 hour. The `.meta.json` and `.log` files remain on disk for the `devin-report` CLI command and test reporter script.
+- **Why:** Prevents memory leaks in long-running MCP server processes.
+
+### Idle Session Detection
+- **Files:** `src/mcp-servers/devin/session-store.ts`, `src/mcp-servers/devin/types.ts`
+- **What:** Background interval (every 5 min) checks running sessions for log output growth. If a session's log hasn't grown in 30 minutes, status is set to `"stalled"`. The session is NOT auto-cancelled — agents or users decide. New `DevinSessionStatus` values: `"orphaned"` and `"stalled"`.
+- **Why:** Surfaces hung sessions that waste compute, without destructive auto-cancellation.
+
+### CLI Session Reporter (devin-report subcommand)
+- **Files:** `src/cli/devin-report/`, `src/cli/cli-program.ts`
+- **What:** First-class CLI subcommand replacing the standalone Python script:
+  ```bash
+  bunx oh-my-opencode devin-report              # Full text report
+  bunx oh-my-opencode devin-report --json        # JSON output for CI
+  bunx oh-my-opencode devin-report --tier Deep   # Filter by tier
+  ```
+  Scans `/tmp/oh-my-opencode-devin-mcp/` for `.meta.json` files and reports model tiers, durations, statuses, prompts, and working directories.
+- **Why:** Makes the session reporter discoverable and consistent with other CLI commands (`doctor`, `boulder`).
+
+---
+
 ## Test Coverage
 
 | Suite | Tests | Status |
 |-------|-------|--------|
-| `src/mcp-servers/devin/session-store.test.ts` | 10 | Pass — cache, batch cancel, incremental reads |
+| `src/mcp-servers/devin/session-store.test.ts` | 19 | Pass — cache, batch cancel, incremental reads, reattach, pre-flight validation, idle detection |
+| `src/cli/devin-report/formatter.test.ts` | 6 | Pass — JSON output, text output, empty state, tier breakdown |
 | `src/features/background-agent/manager.test.ts` | 157 | Pass — priority queue integration |
 | `src/features/builtin-skills/skills.test.ts` | 17 | Pass — skill structure validation |
-| **Total** | **184** | **0 failures** |
+| **Total** | **199** | **0 failures** |
 
 ---
 

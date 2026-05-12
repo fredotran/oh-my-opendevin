@@ -28,7 +28,15 @@ Wraps the `devin` CLI binary as a background-session MCP server. The OpenCode/oh
 4. `devin_cancel({session_id})` → SIGKILL the subprocess
 5. `devin_list({include_output?})` → enumerate all sessions managed by this server instance
 
-Sessions live in memory (`session-store.ts` — `Map<id, DevinSession>`); logs persist on disk. State is per-MCP-process: if the MCP server restarts, in-memory sessions are gone but log files remain.
+Sessions live in memory (`session-store.ts` — `Map<id, DevinSession>`); logs and `.meta.json` persist on disk. On restart, sessions left as `"running"` in `.meta.json` are re-attached as `"orphaned"` (read-only, logs accessible).
+
+### Resilience features
+
+- **Re-attachment:** On startup, `reattachOrphanedSessions()` scans `LOG_DIR` for `.meta.json` with `status: "running"` and registers them as `"orphaned"`.
+- **Pre-flight validation:** `devin_start` checks the `devin` binary is in PATH (cached), catches model typos via Levenshtein distance, and validates `cwd` is a directory.
+- **TTL reaper:** Completed/errored/cancelled/orphaned sessions are removed from memory after 1 hour (logs remain on disk).
+- **Idle detection:** Running sessions with no output growth for 30 minutes are marked `"stalled"` (not auto-cancelled).
+- **Session statuses:** `running`, `completed`, `error`, `cancelled`, `orphaned`, `stalled`.
 
 ### Agent guidance
 
