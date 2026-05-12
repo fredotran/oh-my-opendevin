@@ -15,8 +15,17 @@ async function getCommitLog(): Promise<string[]> {
 }
 
 async function getHeadShort(): Promise<string> {
-  const sha = await $`git rev-parse --short HEAD`.text()
-  return sha.trim()
+  const log = await $`git log --format=%h%x00%B%x00`.text()
+  const entries = log.split("\0").filter(Boolean)
+  for (let i = 0; i < entries.length; i += 2) {
+    const sha = entries[i].trim()
+    const msg = entries[i + 1] ?? ""
+    if (!/\[\s*skip ci\s*\]/.test(msg)) {
+      return sha
+    }
+  }
+  const fallback = await $`git rev-parse --short HEAD`.text()
+  return fallback.trim()
 }
 
 async function main() {
