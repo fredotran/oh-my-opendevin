@@ -31,11 +31,12 @@ This fork includes a complete integration with the [Devin CLI](https://cli.devin
 - `devin_list` - List all active sessions
 
 **Built-in Skill** (`src/features/builtin-skills/skills/devin-cli.ts`)
+- Tiered model selection guidance (Standard → Fast → Code Gen → Balanced → Deep)
 - Standard workflow documentation for agents
 - Anti-patterns and best practices
 
 **Slash Commands** (`src/features/builtin-commands/templates/devin.ts`)
-- `/devin "<task>"` - Delegate to Devin CLI (defaults to `kimi-k2.6`)
+- `/devin "<task>"` - Delegate to Devin CLI with tiered model routing
 - `/devin-models` - Show model reference table
 - `/devin-status` - List or show session status
 - `/devin-cancel` - Cancel sessions
@@ -56,37 +57,39 @@ This fork introduces a **clear separation of responsibilities** between two prim
 - **Switching:** Start a new session with the agent you want. They operate independently.
 - Both agents are **eligible for Team Mode** — you can spawn a team with either Devin or Sisyphus as the lead.
 
-#### Devin Model Configuration
+#### Devin CLI Model Tiers
 
-Devin defaults to `kimi-k2.6` for all Devin CLI sandbox sessions. You can override this in your config:
+When the Devin agent delegates to the Devin CLI sandbox, it chooses from a tiered model system based on task complexity. The Devin agent itself runs on free OpenCode Zen models; the CLI sandbox sessions can be routed to any available model.
 
-**Override in your config** (`~/.config/opencode/oh-my-openagent.jsonc`):
+| Tier | How to invoke | Resolved model | Use for |
+|------|---------------|----------------|---------|
+| **Standard** | Omit `model` | `kimi-k2.6` | Most tasks — good balance of capability and cost (default) |
+| **Fast/Cheap** | `model: "swe"` | `swe-1-6` | Simple edits, typos, single-file fixes |
+| **Code Gen** | `model: "codex"` | `codex` | Boilerplate, CRUD, test scaffolding |
+| **Balanced** | `model: "claude-sonnet-4"` | `claude-sonnet-4-6` | Moderate complexity, general purpose |
+| **Deep** | `model: "opus"` | `opus` | Architecture refactors, multi-file, complex debugging |
+
+**Selection heuristics:**
+- Default to **Standard** (omit `model`) for almost everything — `kimi-k2.6` handles most engineering tasks well
+- Use **Fast** (`"swe"`) only for trivial tasks where speed matters more than reasoning
+- Use **Code Gen** (`"codex"`) for pure scaffolding and repetitive patterns
+- Use **Deep** (`"opus"`) sparingly — reserve for architectural refactors or critical correctness
+- Use **Balanced** (`"claude-sonnet-4"`) when you need more than `swe` but don't want `opus` cost
+
+**Override the Devin agent model** in `~/.config/opencode/oh-my-openagent.jsonc`:
 
 ```jsonc
 {
   "agents": {
     "devin": {
       "model": "github-copilot/claude-opus-4.6",
-      "variant": "high",
-      "ultrawork": {
-        "model": "github-copilot/claude-opus-4.6",
-        "variant": "high"
-      }
+      "variant": "high"
     }
   }
 }
 ```
 
-Restart OpenCode after changing. If no override is set, Devin CLI sessions use `kimi-k2.6`.
-
-If you prefer free models, clear the override or set an explicit free model:
-
-| Priority | Providers | Model | Cost |
-|----------|-----------|-------|------|
-| 1 | `opencode`, `opencode-go`, `vercel` | `deepseek-v4-flash` | Free |
-| 2 | `opencode`, `opencode-go`, `vercel` | `minimax-m2.5-free` | Free |
-| 3 | `opencode`, `github-copilot` | `big-pickle` | Free |
-| 4 | `opencode`, `opencode-go`, `vercel` | `nemotron-3-super-120b-a12b:free` | Free |
+Restart OpenCode after changing. The agent model is separate from the CLI sandbox tier — the agent's model config does not affect CLI session routing.
 
 **Agent assembly order:** `Devin → Sisyphus → Hephaestus → Prometheus → Atlas`
 
@@ -684,7 +687,7 @@ See full [Features Documentation](docs/reference/features.md).
 
 **Fork-Specific Features:**
 - **Devin x Sisyphus Dual-Primary Architecture**: Devin (default) handles local execution + Devin CLI sandbox delegation. Sisyphus handles full specialist agent orchestration (Oracle, Librarian, Explore, Hephaestus, Atlas, Metis, Momus). Pick the right agent for the job.
-- **Devin CLI Integration**: MCP server for background Devin sessions (defaults to `kimi-k2.6`) + built-in skill + slash commands (`/devin`, `/devin-models`, `/devin-status`, `/devin-cancel`)
+- **Devin CLI Integration**: MCP server for background Devin sessions with tiered model routing (Standard/Fast/Code Gen/Balanced/Deep) + built-in skill + slash commands (`/devin`, `/devin-models`, `/devin-status`, `/devin-cancel`)
 
 ## Configuration
 
