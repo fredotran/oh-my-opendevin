@@ -44,15 +44,52 @@ This fork introduces a unique **dual-primary-agent architecture** where Devin an
 
 | Agent | Mode | Role | When to Use |
 |-------|------|------|-------------|
-| **Devin** (default) | primary | Main router & orchestrator. Decides whether to execute locally, delegate to the Devin CLI sandbox, or route to specialist agents. | Quick edits, context gathering, Devin CLI delegation, task routing |
+| **Devin** (default) | primary | Main router & orchestrator. Uses free OpenCode Zen models by default (`deepseek-v4-flash`, `big-pickle`, `qwen3.5-plus`). Decides whether to execute locally, delegate to the Devin CLI sandbox, or route to specialist agents. | Quick edits, context gathering, Devin CLI delegation, task routing |
 | **Sisyphus** | primary | Deep autonomous worker. Plans, delegates, and executes complex multi-file changes independently. | Large refactors, architecture changes, multi-step implementations |
 
 **How the tag-team works:**
-- Devin is the **default agent** when you start OpenCode (respects your UI-selected model).
+- Devin is the **default agent** when you start OpenCode. By default it uses cheap/free OpenCode models; you can override this in config.
 - Sisyphus remains fully available — switch to it anytime for heavy lifting.
 - Devin's prompt teaches it when to hand off to Sisyphus for deep work, and when to keep things local or delegate to the Devin CLI sandbox.
 - Specialist agents (Oracle, Librarian, Explore, Hephaestus, Atlas, Metis, Momus) are available to both Devin and Sisyphus.
 - Both agents are **eligible for Team Mode** — you can spawn a team with either Devin or Sisyphus as the lead.
+
+#### Devin Model Configuration
+
+Devin's fallback chain is restricted to free/cheap OpenCode models:
+
+| Priority | Provider | Model | Cost |
+|----------|----------|-------|------|
+| 1 | `opencode` | `inclusionai/ring-1t` | Free |
+| 2 | `opencode` | `deepseek-v4-flash` | Free (OpenCode Zen) |
+| 3 | `opencode` | `minimax-m2.5-free` | Free |
+| 4 | `opencode` | `big-pickle` | Free |
+| 5 | `opencode` | `nvidia/nemotron-3-super-120b-a12b:free` | Free |
+| 6 | `opencode-go` | `qwen3.5-plus` | Cheap |
+| 7 | `opencode-go` | `minimax-m2.7` | Cheap |
+| 8 | `opencode-go` | `kimi-k2.6` | Cheap |
+| 9 | `opencode` | `gpt-5-nano` | Cheap |
+| 10 | `opencode` | `claude-haiku-4-5` | Cheap |
+| 11 | `opencode` | `gpt-5.4-nano` | Cheap |
+
+**Override in your config** (`~/.config/opencode/oh-my-openagent.jsonc`):
+
+```jsonc
+{
+  "agents": {
+    "devin": {
+      "model": "github-copilot/claude-opus-4.6",
+      "variant": "high",
+      "ultrawork": {
+        "model": "github-copilot/claude-opus-4.6",
+        "variant": "high"
+      }
+    }
+  }
+}
+```
+
+Restart OpenCode after changing. If no override is set, Devin resolves through the free/cheap fallback chain above.
 
 **Agent assembly order:** `Devin → Sisyphus → Hephaestus → Prometheus → Atlas`
 

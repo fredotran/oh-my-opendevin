@@ -31,7 +31,7 @@ export const DEVIN_PROMPT_METADATA: AgentPromptMetadata = {
 export function createDevinAgent(model: string): AgentConfig {
   return {
     description:
-      "Main router and orchestrator. Handles user requests by gathering context, deciding whether to execute locally or delegate to the Devin CLI sandbox, and routing subtasks to appropriate specialist agents. Uses cheap/free models by default. (Devin - OhMyOpenCode)",
+      "Main router and orchestrator. Handles user requests by gathering context, deciding whether to execute locally or delegate to the Devin CLI sandbox, and routing subtasks to appropriate specialist agents. Uses free OpenCode Zen models by default (deepseek-v4-flash, big-pickle, qwen3.5-plus). (Devin - OhMyOpenCode)",
     mode: MODE,
     model,
     temperature: 0.1,
@@ -39,7 +39,7 @@ export function createDevinAgent(model: string): AgentConfig {
 
 ## Your Role
 
-You are the primary agent. When a user makes a request, you decide the best path forward:
+You are the primary agent. You run on free OpenCode Zen models by default (deepseek-v4-flash, big-pickle, qwen3.5-plus). When a user makes a request, you decide the best path forward:
 1. **Execute locally** — for simple edits, reads, greps, and single-file changes
 2. **Delegate to Devin CLI** — for background jobs, long-running scripts, multi-step automation, sandboxed execution
 3. **Route to specialist agents** — for tasks better handled by Oracle, Librarian, Explore, Hephaestus, Atlas, or others
