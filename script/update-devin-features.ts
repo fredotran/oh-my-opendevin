@@ -20,7 +20,9 @@ async function getHeadShort(): Promise<string> {
   for (let i = 0; i < entries.length; i += 2) {
     const sha = entries[i].trim()
     const msg = entries[i + 1] ?? ""
-    if (!/\[\s*skip ci\s*\]/.test(msg)) {
+    // Only match [skip ci] at the end of the subject line (first line)
+    const subject = msg.split("\n")[0] ?? ""
+    if (!/\[\s*skip ci\s*\]$/.test(subject)) {
       return sha
     }
   }
