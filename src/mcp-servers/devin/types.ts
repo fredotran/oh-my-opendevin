@@ -18,6 +18,8 @@ export type DevinSession = {
   lastOutputBytes?: number
   /** Tracked by idle detector: timestamp when output last grew */
   lastOutputAt?: number
+  /** Maximum allowed duration in ms before auto-cancellation */
+  maxDurationMs?: number
 }
 
 export type DevinSessionSnapshot = Omit<DevinSession, "proc"> & {
