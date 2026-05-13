@@ -383,64 +383,38 @@ This document tracks all features, fixes, and architectural changes added in the
 
 ```
 575bddf9 fix(toast): show correct default agent in startup toast
-f847db37 docs: auto-update DEVIN-FEATURES.md [skip ci]
 c323b6b1 docs: update DEVIN-FEATURES.md with README commit
 1fac2095 docs(readme): add Devin CLI Reliability section and update fork features
-e7493f1b docs: auto-update DEVIN-FEATURES.md [skip ci]
 48e451af docs: add model selection rationale and spawned CLI command to DEVIN-FEATURES.md
-d77c75d9 docs: auto-update DEVIN-FEATURES.md [skip ci]
 79e50cbb docs: update DEVIN-FEATURES.md with reliability pack and limit recovery features
-1c226e0e docs: auto-update DEVIN-FEATURES.md [skip ci]
 6dd71484 docs(devin-mcp): update AGENTS.md with all reliability features
-9b78f0b6 docs: auto-update DEVIN-FEATURES.md [skip ci]
 f6cf6532 docs: update DEVIN-FEATURES.md — model disclosure now on first line
-82de09e3 docs: auto-update DEVIN-FEATURES.md [skip ci]
 8a120f41 feat(devin-mcp): put model info on first line of devin_start response
-88e04b63 docs: auto-update DEVIN-FEATURES.md [skip ci]
 283d1440 feat(devin-mcp): structured error hints + agent fallback chain for limit recovery
 caa99dc3 docs(superpowers): add devin limit/quota error recovery design spec
-1f7747d3 docs: auto-update DEVIN-FEATURES.md [skip ci]
 a6892032 feat(devin-mcp): reliability pack — max duration, log caps, error handling, schema fix
 2492b81a docs(devin-mcp): remove stale references to deleted /devin and /devin-models slash commands
 b7797d43 docs(superpowers): add devin-mcp-reliability-pack design
-3f184411 docs: auto-update DEVIN-FEATURES.md [skip ci]
 2fd4b76b docs: update DEVIN-FEATURES.md with latest fork features
-f514b4d6 docs: auto-update DEVIN-FEATURES.md [skip ci]
 1db2ce97 feat(devin-mcp): add stdin EOF handler for parent process crash detection
-41e0f4df docs: auto-update DEVIN-FEATURES.md [skip ci]
 803332bb feat(devin-mcp): make model/tier info prominent in all tool outputs
-44dc1fe1 docs: auto-update DEVIN-FEATURES.md [skip ci]
 95fdcf67 feat(devin-cli): stronger guidance for very long tasks — tell user once, then be silent
-620d725a docs: auto-update DEVIN-FEATURES.md [skip ci]
 fca188fa feat(devin-cli): add dedicated guidance for very long tasks (Docker builds)
-7a2e42c1 docs: auto-update DEVIN-FEATURES.md [skip ci]
 9ceec636 feat(devin-cli): add ultrawork safeguard and cleaner wait logging to skill template
-18b1b2d2 docs: auto-update DEVIN-FEATURES.md [skip ci]
 00eeeeb4 refactor(devin-mcp): extract shared tiers module + fix swe keyword tier mapping
-8d1fc9b0 docs: auto-update DEVIN-FEATURES.md [skip ci]
 275f7bb8 feat(devin-mcp): disclose resolved model+tier to user on delegation
-19fe77f1 docs: auto-update DEVIN-FEATURES.md [skip ci]
 32963465 fix(devin-mcp): cap devin_wait at 30s, guide agents to since_bytes polling
-4785ebff docs: auto-update DEVIN-FEATURES.md [skip ci]
 2de60da6 feat(devin-mcp): add 5 resilience features for MCP server
-e035c55d docs: auto-update DEVIN-FEATURES.md [skip ci]
 648e03c4 fix: anchor skip-ci detection to end of subject line
 7be3dea7 fix: prevent auto-update commits from desyncing DEVIN-FEATURES.md
 c0a0edf6 fix: remove merge conflict markers from DEVIN-FEATURES.md and harden updater script
-b51efd47 docs: auto-update DEVIN-FEATURES.md [skip ci]
 1446a64a test: fix additional fork-specific test failures
-bb97d343 docs: auto-update DEVIN-FEATURES.md [skip ci]
 7884ffc1 test: fix fork-specific test failures on fredotran/dev
-1eb6e5f5 docs: auto-update DEVIN-FEATURES.md [skip ci]
-c8f9a25b docs: auto-update DEVIN-FEATURES.md [skip ci]
 23795ba7 fix(reporter): strip trailing whitespace and flatten newlines before wrapping
-690dffe6 docs: auto-update DEVIN-FEATURES.md [skip ci]
 57595368 feat(devin-mcp): write .meta.json with spawn command + model for each session
 8be9d69d ci: fix failing CI on fredotran/dev
-c45e75b3 docs: auto-update DEVIN-FEATURES.md [skip ci]
 99f129f1 docs: add Devin CLI test reporter script and update DEVIN-FEATURES.md
 2762b419 fix: regenerate bun.lock for renamed package oh-my-opendevin
-61fa223d docs: auto-update DEVIN-FEATURES.md [skip ci]
 5374954c ci: extract fork-specific automation into dedicated fork-sync workflow
 8c27070b ci: auto-update DEVIN-FEATURES.md on push to fredotran/dev
 d7a4719c  docs(readme): sync Devin CLI model section with DEVIN-FEATURES.md
