@@ -26,7 +26,8 @@ export interface UpdateCheckResult {
 
 export interface AutoUpdateCheckerOptions {
   showStartupToast?: boolean
-  isSisyphusEnabled?: boolean
+  /** Name of the default agent (e.g. "devin", "sisyphus") — drives startup toast message */
+  defaultAgent?: string
   autoUpdate?: boolean
   modelCapabilities?: ModelCapabilitiesConfig
 }

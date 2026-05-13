@@ -11,12 +11,11 @@ export async function showVersionToast(ctx: PluginInput, version: string | null,
 export async function showLocalDevToast(
   ctx: PluginInput,
   version: string | null,
-  isSisyphusEnabled: boolean
+  defaultAgent: string | undefined,
 ): Promise<void> {
   const displayVersion = version ?? "dev"
-  const message = isSisyphusEnabled
-    ? "Sisyphus running in local development mode."
-    : "Running in local development mode. oMoMoMo..."
+  const agentName = defaultAgent ?? "sisyphus"
+  const message = `${agentName} running in local development mode.`
   await showSpinnerToast(ctx, `${displayVersion} (dev)`, message)
-  log(`[auto-update-checker] Local dev toast shown: v${displayVersion}`)
+  log(`[auto-update-checker] Local dev toast shown: v${displayVersion} agent=${agentName}`)
 }

@@ -30,6 +30,7 @@ This document tracks all features, fixes, and architectural changes added in the
    - [CLI Reporter](#cli-session-reporter-devin-report-subcommand)
    - [devin_wait Timeout Fix](#devin_wait-mcp-timeout-fix--incremental-polling-guidance)
    - [Model Disclosure](#model-disclosure-to-user)
+   - [Startup Toast Fix](#startup-toast-shows-correct-default-agent)
    - [Parent Process Crash Detection](#parent-process-crash-detection-stdin-eof-handler)
    - [Very Long Task Guidance](#very-long-task-guidance-docker-builds)
    - [Ultrawork Safeguard](#ultrawork-safeguard)
@@ -322,6 +323,15 @@ This document tracks all features, fixes, and architectural changes added in the
   5. Both tier keywords (`"swe"`, `"codex"`, `"sonnet"`, `"opus"`) and fully-qualified model IDs (`"swe-1-6"`, etc.) are recognized — sessions started with either form display the correct tier.
 - **Why:** Users need visibility into which Devin CLI model is running their task — for cost awareness, capability confirmation, and debugging. In CLI mode the tool output scrolls by inline; putting the model on the first line ensures it cannot be missed regardless of scrollback length.
 - **Tests:** 13 new tests in `src/mcp-servers/devin/tiers.test.ts` covering all tier resolution paths.
+
+### Startup Toast Shows Correct Default Agent
+- **Commit:** `c323b6b1`
+- **Files:** `src/hooks/auto-update-checker/hook/startup-toasts.ts`, `src/hooks/auto-update-checker/hook.ts`, `src/plugin/hooks/create-session-hooks.ts`
+- **What:** Fixed the startup toast that incorrectly said "Sisyphus running in local development mode." even when Devin was the default agent. The toast now dynamically reflects the actual default agent:
+  - If `default_run_agent` is configured in the user's config, that agent name is shown (e.g., "sisyphus running in local development mode.")
+  - Otherwise, "devin running in local development mode." is shown (since Devin is the fork's default)
+  - The version toast message also uses the agent name: `<agent> is steering OpenCode.`
+- **Why:** The previous logic checked `sisyphus_agent?.disabled !== true` which only verified that Sisyphus was *enabled*, not that it was the *default*. Since the fork keeps Sisyphus available (but not default) alongside Devin, the toast was misleading.
 
 ### Parent Process Crash Detection (Stdin EOF Handler)
 - **Commit:** `1db2ce97`
