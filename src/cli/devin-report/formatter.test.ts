@@ -18,6 +18,7 @@ function createTestSession(overrides: Partial<DevinReportSession> = {}): DevinRe
     tier: "Balanced",
     keyword: '"sonnet"',
     durationSeconds: 300,
+    estimatedCostUSD: 1.5,
     ...overrides,
   }
 }
@@ -38,9 +39,11 @@ function createTestResult(sessions: DevinReportSession[] = []): DevinReportResul
           models: ["sonnet"],
           totalDurationSeconds: 300,
           avgDurationSeconds: 300,
+          estimatedCostUSD: 1.5,
         },
       },
       totalDurationSeconds: 300,
+      totalEstimatedCostUSD: 1.5,
     },
   }
 }
@@ -111,6 +114,7 @@ describe("devin-report formatter", () => {
           byStatus: {},
           byTier: {},
           totalDurationSeconds: 0,
+          totalEstimatedCostUSD: 0,
         },
       }
 
@@ -121,11 +125,11 @@ describe("devin-report formatter", () => {
       expect(output).toContain("No sessions found")
     })
 
-    it("shows tier breakdown", () => {
+    it("shows tier breakdown with cost estimates", () => {
       // given
       const sessions = [
-        createTestSession({ tier: "Deep", model: "opus" }),
-        createTestSession({ id: "test-2", tier: "Standard", model: "kimi-k2.6" }),
+        createTestSession({ tier: "Deep", model: "opus", estimatedCostUSD: 4.5 }),
+        createTestSession({ id: "test-2", tier: "Standard", model: "kimi-k2.6", estimatedCostUSD: 0.9 }),
       ]
       const result: DevinReportResult = {
         sessions,
@@ -134,10 +138,11 @@ describe("devin-report formatter", () => {
           bySource: { mcp: 2 },
           byStatus: { completed: 2 },
           byTier: {
-            Deep: { count: 1, models: ["opus"], totalDurationSeconds: 300, avgDurationSeconds: 300 },
-            Standard: { count: 1, models: ["kimi-k2.6"], totalDurationSeconds: 300, avgDurationSeconds: 300 },
+            Deep: { count: 1, models: ["opus"], totalDurationSeconds: 300, avgDurationSeconds: 300, estimatedCostUSD: 4.5 },
+            Standard: { count: 1, models: ["kimi-k2.6"], totalDurationSeconds: 300, avgDurationSeconds: 300, estimatedCostUSD: 0.9 },
           },
           totalDurationSeconds: 600,
+          totalEstimatedCostUSD: 5.4,
         },
       }
 
@@ -148,6 +153,8 @@ describe("devin-report formatter", () => {
       expect(output).toContain("BY TIER")
       expect(output).toContain("Deep")
       expect(output).toContain("Standard")
+      expect(output).toContain("Est Cost")
+      expect(output).toContain("Total est cost")
     })
   })
 })

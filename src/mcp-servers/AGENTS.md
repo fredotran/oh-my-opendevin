@@ -8,7 +8,7 @@ Each subdirectory is a self-contained stdio server that can be spawned by any MC
 
 | Server | Dir | Tools | Wrapped CLI |
 |--------|-----|-------|-------------|
-| **devin** | `devin/` | `devin_start`, `devin_status`, `devin_wait`, `devin_cancel`, `devin_list` | [`devin`](https://cli.devin.ai/docs) — runs background Devin sessions via `devin -p` |
+| **devin** | `devin/` | `devin_start`, `devin_status`, `devin_wait`, `devin_cancel`, `devin_cancel_batch`, `devin_list`, `devin_health`, `devin_resumable` | [`devin`](https://cli.devin.ai/docs) — runs background Devin sessions via `devin -p` |
 
 ## Conventions
 
@@ -30,7 +30,10 @@ Wraps the `devin` CLI binary as a background-session MCP server. The OpenCode/oh
 3. `devin_wait({session_id, timeout_ms?, tail_bytes?})` → blocks until exit (or timeout)
    - `timeout_ms` hard-capped at 30000ms per call to avoid MCP client timeouts
 4. `devin_cancel({session_id})` → SIGKILL the subprocess
-5. `devin_list({include_output?})` → enumerate all sessions managed by this server instance
+5. `devin_cancel_batch({session_ids})` → cancel up to 50 sessions in one call
+6. `devin_list({include_output?})` → enumerate all sessions managed by this server instance
+7. `devin_health()` → check binary availability, disk usage, slot usage, orphaned count
+8. `devin_resumable({limit?})` → list completed/error sessions on disk eligible for resume
 
 Sessions live in memory (`session-store.ts` — `Map<id, DevinSession>`); logs and `.meta.json` persist on disk. On restart, sessions left as `"running"` in `.meta.json` are re-attached as `"orphaned"` (read-only, logs accessible).
 
@@ -48,7 +51,8 @@ Sessions live in memory (`session-store.ts` — `Map<id, DevinSession>`); logs a
 - **Tool error wrapping:** All MCP tool handlers are wrapped with `safeToolHandler()` so unexpected errors are caught and returned as text results instead of propagating as unhandled exceptions.
 - **Concurrent session limit:** Maximum 50 running sessions enforced at spawn time.
 - **Model disclosure:** `devin_start` response includes resolved tier and model. Agents are instructed to tell the user which model is running their task.
-- **Tier mapping single source of truth:** `tiers.ts` exports `MODEL_TIER_MAP`, `resolveTierLabel()`, `resolveTierInfo()`, `FALLBACK_CHAIN`, `getFallbackModel()`, and `KNOWN_DEVIN_MODELS`. Both the MCP server (`devin_start` response) and the CLI (`devin-report`) consume this module so tier labels stay consistent. Both tier keywords (`"swe"`, `"codex"`, `"sonnet"`, `"opus"`) and fully-qualified IDs (`"swe-1-6"`, etc.) resolve to the same tier.
+- **Tier mapping single source of truth:** `tiers.ts` exports `MODEL_TIER_MAP`, `resolveTierLabel()`, `resolveTierInfo()`, `FALLBACK_CHAIN`, `getFallbackModel()`, `KNOWN_DEVIN_MODELS`, and `TIER_COST_MAP`. Both the MCP server (`devin_start` response) and the CLI (`devin-report`) consume this module so tier labels and cost estimates stay consistent. Both tier keywords (`"swe"`, `"codex"`, `"sonnet"`, `"opus"`) and fully-qualified IDs (`"swe-1-6"`, etc.) resolve to the same tier.
+- **Cost estimation:** `devin-report` multiplies session duration by `TIER_COST_MAP` rates to produce directional USD spend estimates per session and per tier.
 - **Session statuses:** `running`, `completed`, `error`, `cancelled`, `orphaned`, `stalled`.
 
 ### Agent guidance

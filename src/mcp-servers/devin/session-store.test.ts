@@ -637,3 +637,127 @@ describe("spawn error detection", () => {
     expect(hint.tag).toBe("UNKNOWN")
   })
 })
+
+describe("getDevinHealth", () => {
+  afterEach(() => {
+    clearTestSessions()
+  })
+
+  it("reports zero slots used when no sessions are running", async () => {
+    // given
+    clearTestSessions()
+
+    // when
+    const { getDevinHealth } = await import("./session-store")
+    const health = await getDevinHealth()
+
+    // then
+    expect(health.slotsUsed).toBe(0)
+    expect(health.slotsMax).toBeGreaterThan(0)
+    expect(health.totalSessionsInMemory).toBe(0)
+  })
+
+  it("counts running sessions as slots used", async () => {
+    // given
+    const { session, tmpDir } = await createMockSession("running session")
+    registerTestSession(session)
+
+    // when
+    const { getDevinHealth } = await import("./session-store")
+    const health = await getDevinHealth()
+
+    // then
+    expect(health.slotsUsed).toBe(1)
+    expect(health.totalSessionsInMemory).toBe(1)
+
+    // cleanup
+    try { await rmdir(tmpDir, { recursive: true }) } catch { /* ignore */ }
+  })
+})
+
+describe("getResumableSessions", () => {
+  let cleanupPaths: string[] = []
+
+  afterEach(async () => {
+    clearTestSessions()
+    for (const p of cleanupPaths) {
+      try { await unlink(p) } catch { /* ignore */ }
+    }
+    cleanupPaths = []
+  })
+
+  it("returns empty array when no completed/error meta files exist", async () => {
+    // when
+    const { getResumableSessions } = await import("./session-store")
+    const resumable = await getResumableSessions()
+
+    // then
+    expect(resumable).toEqual([])
+  })
+
+  it("returns completed sessions that are not in memory", async () => {
+    // given — write a completed .meta.json to LOG_DIR
+    const logDir = join(tmpdir(), "oh-my-opencode-devin-mcp")
+    await mkdir(logDir, { recursive: true })
+    const sessionId = "resumable-test-abc"
+    const metaPath = join(logDir, `${sessionId}.meta.json`)
+    const meta = {
+      id: sessionId,
+      model: "sonnet",
+      prompt: "fix typo",
+      cwd: "/tmp",
+      command: ["devin", "-p", "fix typo"],
+      startedAt: Date.now() - 120_000,
+      status: "completed",
+      endedAt: Date.now() - 60_000,
+      exitCode: 0,
+    }
+    await writeFile(metaPath, JSON.stringify(meta, null, 2))
+    cleanupPaths.push(metaPath)
+
+    // when
+    const { getResumableSessions } = await import("./session-store")
+    const resumable = await getResumableSessions()
+
+    // then
+    const found = resumable.find((r) => r.id === sessionId)
+    expect(found).toBeDefined()
+    expect(found?.status).toBe("completed")
+    expect(found?.exitCode).toBe(0)
+  })
+
+  it("skips error sessions that are already in memory", async () => {
+    // given — register an error session in memory
+    const { session, tmpDir } = await createMockSession("error session")
+    session.status = "error"
+    registerTestSession(session)
+
+    // also write a meta for it on disk
+    const logDir = join(tmpdir(), "oh-my-opencode-devin-mcp")
+    await mkdir(logDir, { recursive: true })
+    const metaPath = join(logDir, `${session.id}.meta.json`)
+    const meta = {
+      id: session.id,
+      model: "sonnet",
+      prompt: "fix typo",
+      cwd: "/tmp",
+      command: ["devin", "-p", "fix typo"],
+      startedAt: Date.now() - 120_000,
+      status: "error",
+      endedAt: Date.now() - 60_000,
+      exitCode: 1,
+    }
+    await writeFile(metaPath, JSON.stringify(meta, null, 2))
+    cleanupPaths.push(metaPath)
+
+    // when
+    const { getResumableSessions } = await import("./session-store")
+    const resumable = await getResumableSessions()
+
+    // then
+    expect(resumable.some((r) => r.id === session.id)).toBe(false)
+
+    // cleanup
+    try { await rmdir(tmpDir, { recursive: true }) } catch { /* ignore */ }
+  })
+})

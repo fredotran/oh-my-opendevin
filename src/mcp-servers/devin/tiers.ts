@@ -54,6 +54,18 @@ export function resolveTierInfo(model: string | undefined): TierEntry {
  */
 export const FALLBACK_CHAIN = ["opus", "sonnet", "kimi-k2.6", "swe"]
 
+/** Rough per-second cost estimates (USD) for Devin CLI models.
+ *  Used by devin-report for directional spend estimation only.
+ *  These are placeholders — adjust to match actual Devin pricing. */
+export const TIER_COST_MAP: Record<DevinTier, number> = {
+  Standard: 0.003,
+  "Fast/Cheap": 0.001,
+  "Code Gen": 0.002,
+  Balanced: 0.005,
+  Deep: 0.015,
+  Custom: 0.003,
+}
+
 /** Returns the next model in the fallback chain, or undefined if at the end. */
 export function getFallbackModel(current: string | undefined): string | undefined {
   const idx = FALLBACK_CHAIN.indexOf(current ?? "")

@@ -4,7 +4,9 @@ import { z } from "zod"
 import {
   cancelDevinSession,
   cancelDevinSessions,
+  getDevinHealth,
   getDevinSession,
+  getResumableSessions,
   listDevinSessions,
   readSessionLogSince,
   reattachOrphanedSessions,
@@ -88,15 +90,19 @@ export function createDevinMcpServer(): McpServer {
           .describe('Devin model (e.g. "sonnet", "opus", "codex"). Defaults to "kimi-k2.6".'),
         permission_mode: z.enum(["auto", "dangerous"]).optional().describe("Devin --permission-mode (default: dangerous — bypasses all permission prompts)."),
         resume: z.string().optional().describe("Resume an existing Devin session by id (passes -r)."),
+        max_duration_ms: z.number().int().min(60000).optional().describe("Maximum allowed duration in ms before auto-cancellation. Default: 2 hours (7200000). Minimum: 1 minute (60000)."),
+        auto_fallback: z.boolean().optional().describe("If true and devin_start fails with QUOTA_EXCEEDED, automatically retry with the next model in the fallback chain. Default: false."),
       },
     },
-    safeToolHandler("devin_start", async ({ prompt, cwd, model, permission_mode, resume }) => {
+    safeToolHandler("devin_start", async ({ prompt, cwd, model, permission_mode, resume, max_duration_ms, auto_fallback }) => {
       const session = await startDevinSession({
         prompt,
         cwd,
         model,
         permissionMode: permission_mode,
         resume,
+        maxDurationMs: max_duration_ms,
+        autoFallback: auto_fallback,
       })
       const snap = await snapshotDevinSession(session, 0)
       const tierLabel = resolveTierLabel(session.model)
@@ -257,6 +263,62 @@ export function createDevinMcpServer(): McpServer {
         }),
       )
       return asTextResult(parts.join("\n"))
+    }),
+  )
+
+  server.registerTool(
+    "devin_health",
+    {
+      description:
+        "Check the health of the Devin MCP server environment before starting sessions. Reports binary availability, disk usage, concurrent slot usage, and orphaned sessions.",
+      inputSchema: {},
+    },
+    safeToolHandler("devin_health", async () => {
+      const health = await getDevinHealth()
+      const lines = [
+        `devin_binary_found: ${health.devinBinaryFound}`,
+        health.devinBinaryVersion ? `devin_binary_version: ${health.devinBinaryVersion}` : null,
+        `log_dir: ${health.logDir}`,
+        `log_dir_total_bytes: ${health.logDirTotalBytes}`,
+        `slots: ${health.slotsUsed} / ${health.slotsMax}`,
+        `total_sessions_in_memory: ${health.totalSessionsInMemory}`,
+        `orphaned_sessions: ${health.orphanedCount}`,
+        "",
+        "--- model slot usage ---",
+        health.modelSlotUsage.length > 0
+          ? health.modelSlotUsage
+            .map((m) => `  ${m.model}: ${m.running} running / ${m.limit} limit (${m.queued} queued)`)
+            .join("\n")
+          : "  (no active model slots)",
+      ].filter((line): line is string => line !== null)
+      return asTextResult(lines.join("\n"))
+    }),
+  )
+
+  server.registerTool(
+    "devin_resumable",
+    {
+      description:
+        "List Devin sessions on disk that are eligible for resume (completed or error status, not currently in memory). Use this to discover a `resume` id before calling `devin_start`.",
+      inputSchema: {
+        limit: z.number().int().min(1).max(50).optional().describe("Max number of resumable sessions to return (default 20)."),
+      },
+    },
+    safeToolHandler("devin_resumable", async ({ limit }) => {
+      const all = await getResumableSessions()
+      const capped = all.slice(0, limit ?? 20)
+      if (capped.length === 0) return asTextResult("(no resumable sessions found)")
+      const lines = capped.map((s) => {
+        const parts = [
+          `- ${s.id}`,
+          `  status: ${s.status}` + (s.exitCode !== undefined ? ` (exit ${s.exitCode})` : ""),
+          `  model: ${s.model ?? "unknown"}`,
+          `  cwd: ${s.cwd}`,
+          `  prompt: ${s.prompt.slice(0, 120)}${s.prompt.length > 120 ? "..." : ""}`,
+        ]
+        return parts.join("\n")
+      })
+      return asTextResult(lines.join("\n"))
     }),
   )
 

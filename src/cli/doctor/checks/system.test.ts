@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, mock } from "bun:test"
 import { PLUGIN_NAME } from "../../../shared"
 import type { PluginInfo } from "./system-plugin"
 import type { OpenCodeBinaryInfo } from "./system-binary"
+import type { DevinBinaryInfo } from "./system-devin-binary"
 import { checkSystem } from "./system"
 
 const mockFindOpenCodeBinary = mock<() => Promise<OpenCodeBinaryInfo | null>>(async () => ({
@@ -12,6 +13,11 @@ const mockFindOpenCodeBinary = mock<() => Promise<OpenCodeBinaryInfo | null>>(as
 }))
 const mockGetOpenCodeVersion = mock(async () => "1.0.200")
 const mockCompareVersions = mock((_leftVersion?: string, _rightVersion?: string) => true)
+const mockFindDevinBinary = mock<() => Promise<DevinBinaryInfo>>(async () => ({
+  found: true,
+  path: "/usr/local/bin/devin",
+  version: "1.0.50",
+}))
 const mockGetPluginInfo = mock((): PluginInfo => ({
   registered: true,
   entry: "oh-my-opencode",
@@ -36,6 +42,7 @@ function createSystemDeps() {
     findOpenCodeBinary: mockFindOpenCodeBinary,
     getOpenCodeVersion: mockGetOpenCodeVersion,
     compareVersions: mockCompareVersions,
+    findDevinBinary: mockFindDevinBinary,
     getPluginInfo: mockGetPluginInfo,
     getLoadedPluginVersion: mockGetLoadedPluginVersion,
     getLatestPluginVersion: mockGetLatestPluginVersion,
@@ -48,6 +55,7 @@ describe("system check", () => {
     mockFindOpenCodeBinary.mockReset()
     mockGetOpenCodeVersion.mockReset()
     mockCompareVersions.mockReset()
+    mockFindDevinBinary.mockReset()
     mockGetPluginInfo.mockReset()
     mockGetLoadedPluginVersion.mockReset()
     mockGetLatestPluginVersion.mockReset()
@@ -59,6 +67,11 @@ describe("system check", () => {
     })
     mockGetOpenCodeVersion.mockResolvedValue("1.0.200")
     mockCompareVersions.mockReturnValue(true)
+    mockFindDevinBinary.mockResolvedValue({
+      found: true,
+      path: "/usr/local/bin/devin",
+      version: "1.0.50",
+    })
     mockGetPluginInfo.mockReturnValue({
       registered: true,
       entry: "oh-my-opencode",
@@ -194,6 +207,33 @@ describe("system check", () => {
 
       //#then
       expect(result.issues.some((issue) => issue.title === "Using legacy package name")).toBe(false)
+    })
+  })
+
+  describe("#given Devin CLI binary is missing", () => {
+    it("adds a warning when devin is not found", async () => {
+      //#given
+      mockFindDevinBinary.mockResolvedValue({ found: false, path: null, version: null })
+
+      //#when
+      const result = await checkSystem(createSystemDeps())
+
+      //#then
+      const devinIssue = result.issues.find((issue) => issue.title === "Devin CLI binary not found")
+      expect(devinIssue).toBeDefined()
+      expect(devinIssue?.severity).toBe("warning")
+      expect(devinIssue?.affects).toContain("devin delegation")
+    })
+
+    it("includes devin status in details when found", async () => {
+      //#given
+      mockFindDevinBinary.mockResolvedValue({ found: true, path: "/usr/local/bin/devin", version: "1.0.50" })
+
+      //#when
+      const result = await checkSystem(createSystemDeps())
+
+      //#then
+      expect(result.details?.some((d) => d.includes("Devin CLI: 1.0.50"))).toBe(true)
     })
   })
 })

@@ -13,6 +13,12 @@ function formatDuration(seconds: number | null): string {
   return `${mins}m ${secs}s`
 }
 
+function formatCost(usd: number | null): string {
+  if (usd === null) return "N/A"
+  if (usd < 0.01) return `<$0.01`
+  return `~$${usd.toFixed(2)}`
+}
+
 export function formatJsonOutput(result: DevinReportResult): string {
   return JSON.stringify(result, null, 2)
 }
@@ -21,25 +27,26 @@ export function formatTextOutput(result: DevinReportResult): string {
   const { sessions, summary } = result
   const lines: string[] = []
 
-  lines.push("=".repeat(90))
+  lines.push("=".repeat(100))
   lines.push("  DEVIN CLI SESSION REPORT")
-  lines.push("=".repeat(90))
+  lines.push("=".repeat(100))
   lines.push("")
 
   // Summary
   lines.push("  SUMMARY")
-  lines.push("  " + "-".repeat(86))
+  lines.push("  " + "-".repeat(96))
   lines.push(`  Total sessions:     ${summary.totalSessions}`)
   for (const [source, count] of Object.entries(summary.bySource).sort()) {
     lines.push(`  Source: ${source.padEnd(10)} ${count}`)
   }
   lines.push(`  Total wall time:    ${formatDuration(summary.totalDurationSeconds)}`)
+  lines.push(`  Total est cost:     ${formatCost(summary.totalEstimatedCostUSD)}`)
   lines.push("")
 
   // By Status
   if (Object.keys(summary.byStatus).length > 0) {
     lines.push("  BY STATUS")
-    lines.push("  " + "-".repeat(86))
+    lines.push("  " + "-".repeat(96))
     const maxCount = Math.max(...Object.values(summary.byStatus))
     for (const [status, count] of Object.entries(summary.byStatus).sort()) {
       const barLen = maxCount > 0 ? Math.round((count / maxCount) * 20) : 0
@@ -52,13 +59,13 @@ export function formatTextOutput(result: DevinReportResult): string {
   // By Tier
   if (Object.keys(summary.byTier).length > 0) {
     lines.push("  BY TIER")
-    lines.push("  " + "-".repeat(86))
-    lines.push(`  ${"Tier".padEnd(14)} ${"Count".padStart(6)} ${"Models".padEnd(30)} ${"Total Time".padStart(12)} ${"Avg Time".padStart(10)}`)
-    lines.push(`  ${"-".repeat(14)} ${"-".repeat(6)} ${"-".repeat(30)} ${"-".repeat(12)} ${"-".repeat(10)}`)
+    lines.push("  " + "-".repeat(100))
+    lines.push(`  ${"Tier".padEnd(14)} ${"Count".padStart(6)} ${"Models".padEnd(30)} ${"Total Time".padStart(12)} ${"Avg Time".padStart(10)} ${"Est Cost".padStart(10)}`)
+    lines.push(`  ${"-".repeat(14)} ${"-".repeat(6)} ${"-".repeat(30)} ${"-".repeat(12)} ${"-".repeat(10)} ${"-".repeat(10)}`)
     for (const [tier, info] of Object.entries(summary.byTier)) {
       const modelsStr = info.models.join(", ").slice(0, 28)
       lines.push(
-        `  ${tier.padEnd(14)} ${String(info.count).padStart(6)} ${modelsStr.padEnd(30)} ${formatDuration(info.totalDurationSeconds).padStart(12)} ${formatDuration(info.avgDurationSeconds).padStart(10)}`,
+        `  ${tier.padEnd(14)} ${String(info.count).padStart(6)} ${modelsStr.padEnd(30)} ${formatDuration(info.totalDurationSeconds).padStart(12)} ${formatDuration(info.avgDurationSeconds).padStart(10)} ${formatCost(info.estimatedCostUSD).padStart(10)}`,
       )
     }
     lines.push("")
@@ -67,23 +74,23 @@ export function formatTextOutput(result: DevinReportResult): string {
   // Session Details
   if (sessions.length > 0) {
     lines.push("  SESSION DETAILS")
-    lines.push("  " + "-".repeat(86))
+    lines.push("  " + "-".repeat(100))
     lines.push(
-      `  ${"ID".padEnd(28)} ${"Source".padEnd(6)} ${"Tier".padEnd(12)} ${"Model".padEnd(12)} ${"Status".padEnd(10)} ${"Duration".padStart(10)} ${"Log Size".padStart(10)}`,
+      `  ${"ID".padEnd(28)} ${"Source".padEnd(6)} ${"Tier".padEnd(12)} ${"Model".padEnd(12)} ${"Status".padEnd(10)} ${"Duration".padStart(10)} ${"Est Cost".padStart(10)} ${"Log Size".padStart(10)}`,
     )
     lines.push(
-      `  ${"-".repeat(28)} ${"-".repeat(6)} ${"-".repeat(12)} ${"-".repeat(12)} ${"-".repeat(10)} ${"-".repeat(10)} ${"-".repeat(10)}`,
+      `  ${"-".repeat(28)} ${"-".repeat(6)} ${"-".repeat(12)} ${"-".repeat(12)} ${"-".repeat(10)} ${"-".repeat(10)} ${"-".repeat(10)} ${"-".repeat(10)}`,
     )
 
     for (const s of sessions) {
       lines.push(
-        `  ${s.id.slice(0, 28).padEnd(28)} ${s.source.padEnd(6)} ${s.tier.padEnd(12)} ${s.model.slice(0, 11).padEnd(12)} ${s.status.padEnd(10)} ${formatDuration(s.durationSeconds).padStart(10)} ${formatLogSize(s.logSizeBytes).padStart(10)}`,
+        `  ${s.id.slice(0, 28).padEnd(28)} ${s.source.padEnd(6)} ${s.tier.padEnd(12)} ${s.model.slice(0, 11).padEnd(12)} ${s.status.padEnd(10)} ${formatDuration(s.durationSeconds).padStart(10)} ${formatCost(s.estimatedCostUSD).padStart(10)} ${formatLogSize(s.logSizeBytes).padStart(10)}`,
       )
     }
     lines.push("")
 
     lines.push("  PROMPTS & COMMANDS")
-    lines.push("  " + "-".repeat(86))
+    lines.push("  " + "-".repeat(100))
     for (const s of sessions) {
       lines.push(`  [${s.source}] ${s.tier} | ${s.status} | ${s.id.slice(0, 20)}...`)
       if (s.model && s.model !== "unknown") lines.push(`    Model: ${s.model}`)
@@ -97,6 +104,7 @@ export function formatTextOutput(result: DevinReportResult): string {
         lines.push(`    Task:  ${flat}`)
       }
       if (s.exitCode !== undefined) lines.push(`    Exit:  ${s.exitCode}`)
+      if (s.estimatedCostUSD != null) lines.push(`    Cost:  ${formatCost(s.estimatedCostUSD)} (estimate)`)
       lines.push("")
     }
   } else {
@@ -104,6 +112,6 @@ export function formatTextOutput(result: DevinReportResult): string {
     lines.push("")
   }
 
-  lines.push("=".repeat(90))
+  lines.push("=".repeat(100))
   return lines.join("\n")
 }

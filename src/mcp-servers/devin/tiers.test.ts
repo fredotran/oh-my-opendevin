@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test"
-import { resolveTierLabel, resolveTierInfo, MODEL_TIER_MAP, KNOWN_DEVIN_MODELS, FALLBACK_CHAIN, getFallbackModel } from "./tiers"
+import { resolveTierLabel, resolveTierInfo, MODEL_TIER_MAP, KNOWN_DEVIN_MODELS, FALLBACK_CHAIN, getFallbackModel, TIER_COST_MAP } from "./tiers"
 
 describe("tiers", () => {
   describe("#given resolveTierLabel", () => {
@@ -100,6 +100,22 @@ describe("tiers", () => {
 
     it("returns first model for undefined", () => {
       expect(getFallbackModel(undefined)).toBe("opus")
+    })
+  })
+
+  describe("#given TIER_COST_MAP", () => {
+    it("has a positive cost for every defined tier", () => {
+      expect(TIER_COST_MAP.Standard).toBeGreaterThan(0)
+      expect(TIER_COST_MAP["Fast/Cheap"]).toBeGreaterThan(0)
+      expect(TIER_COST_MAP["Code Gen"]).toBeGreaterThan(0)
+      expect(TIER_COST_MAP.Balanced).toBeGreaterThan(0)
+      expect(TIER_COST_MAP.Deep).toBeGreaterThan(0)
+      expect(TIER_COST_MAP.Custom).toBeGreaterThan(0)
+    })
+
+    it("orders Deep as the most expensive tier", () => {
+      const costs = Object.values(TIER_COST_MAP)
+      expect(Math.max(...costs)).toBe(TIER_COST_MAP.Deep)
     })
   })
 })

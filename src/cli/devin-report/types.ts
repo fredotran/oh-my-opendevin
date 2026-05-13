@@ -18,6 +18,8 @@ export type DevinReportSession = {
   tier: string
   keyword: string
   durationSeconds: number | null
+  /** Estimated cost in USD (directional only). */
+  estimatedCostUSD: number | null
 }
 
 export type DevinReportSummary = {
@@ -29,8 +31,10 @@ export type DevinReportSummary = {
     models: string[]
     totalDurationSeconds: number
     avgDurationSeconds: number
+    estimatedCostUSD: number
   }>
   totalDurationSeconds: number
+  totalEstimatedCostUSD: number
 }
 
 export type DevinReportResult = {
