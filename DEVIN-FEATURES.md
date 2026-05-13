@@ -1,6 +1,6 @@
 # Oh My Opendevin — Fork-Specific Features
 
-**Generated:** 2026-05-12  
+**Generated:** 2026-05-13  
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
@@ -26,6 +26,9 @@ This document tracks all features, fixes, and architectural changes added in the
    - [CLI Reporter](#cli-session-reporter-devin-report-subcommand)
    - [devin_wait Timeout Fix](#devin_wait-mcp-timeout-fix--incremental-polling-guidance)
    - [Model Disclosure](#model-disclosure-to-user)
+   - [Parent Process Crash Detection](#parent-process-crash-detection-stdin-eof-handler)
+   - [Very Long Task Guidance](#very-long-task-guidance-docker-builds)
+   - [Ultrawork Safeguard](#ultrawork-safeguard)
 
 ---
 
@@ -257,6 +260,36 @@ This document tracks all features, fixes, and architectural changes added in the
   5. Both tier keywords (`"swe"`, `"codex"`, `"sonnet"`, `"opus"`) and fully-qualified model IDs (`"swe-1-6"`, etc.) are recognized — sessions started with either form display the correct tier.
 - **Why:** Users need visibility into which Devin CLI model is running their task — for cost awareness, capability confirmation, and debugging. The shared tier map ensures consistent labeling across the MCP server response, the CLI report, and any future consumers.
 - **Tests:** 13 new tests in `src/mcp-servers/devin/tiers.test.ts` covering all tier resolution paths.
+
+### Parent Process Crash Detection (Stdin EOF Handler)
+- **Commit:** `1db2ce97`
+- **Files:** `src/mcp-servers/devin/server.ts`
+- **What:** Added `process.stdin.on('end')` handler to detect when the parent OpenCode process crashes or abruptly closes the stdio pipe. On EOF:
+  - Logs a clear diagnostic message to stderr
+  - Triggers `shutdownAllSessions()` to cancel all running Devin sessions
+  - Exits cleanly after cleanup
+- **Why:** Prevents the MCP server from hanging indefinitely while Devin sessions continue running in the background, burning subscription credits when the parent process dies.
+- **Limitation:** This is a best-effort safety net for app crashes and process kills. It does NOT handle agent turn interruption because the stdio pipe stays open across turns by design.
+
+### Very Long Task Guidance (Docker Builds)
+- **Commit:** `fca188fa`, `95fdcf67`, `9ceec636`
+- **Files:** `src/features/builtin-skills/skills/devin-cli.ts`
+- **What:** Added dedicated workflow guidance for tasks that take 10+ minutes (e.g., Docker builds):
+  - Explicitly states `devin_wait` caps at 30s regardless of `timeout_ms` — agents must not loop `devin_wait` every 30s for 20-minute builds
+  - Correct pattern: `devin_wait` once → do other work for 2-3 min → `devin_status({ since_bytes })` → repeat spaced out
+  - Tell the user ONCE with clear expectations (e.g., "This typically takes 15-30 minutes"), then be completely silent until actual news
+  - For >10 minute tasks, check every 5 minutes (not 2-3)
+  - Only break silence on: completed, error, cancelled, stalled, or user asks
+- **Why:** Prevents the "Let me wait more..." x40 log spam seen in production traces when agents get stuck in tight `devin_wait` loops for long-running Docker builds.
+
+### Ultrawork Safeguard
+- **Commit:** `9ceec636`
+- **Files:** `src/features/builtin-skills/skills/devin-cli.ts`
+- **What:** Added safeguard section warning agents that Devin cannot participate in Oracle verification. Instructs them to:
+  - NOT emit `<promise>DONE</promise>` until Devin is fully complete
+  - Fully integrate Devin's output before claiming completion
+  - Describes the practical workflow: delegate → work in parallel → integrate → only then emit completion promise
+- **Why:** Prevents premature completion promises when Devin is still running in the background, which would violate the ultrawork contract and leave tasks incomplete.
 
 ---
 
