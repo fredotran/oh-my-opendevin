@@ -55,10 +55,11 @@ Each tool returns a human-readable text snapshot. \`session_id\` is a UUID — s
    - **Deep** — \`model: "opus"\` (architecture, complex debugging)
    - **Balanced** — \`model: "sonnet"\` (moderate complexity)
 4. **Start the session.** Call \`devin_start({ prompt, cwd?, model? })\`. Save the returned \`session_id\`.
-5. **Tell the user the resolved model.** The \`devin_start\` response includes the resolved model and tier. ALWAYS tell the user which model was selected, e.g.:
+5. **Tell the user the resolved model — this is MANDATORY.** The \`devin_start\` response includes the resolved model and tier in the FIRST line. ALWAYS echo this back to the user immediately. Do NOT bury it or skip it. Examples:
    - "Started Devin (session abc-123, **Standard tier**, model **kimi-k2.6**) on the auth refactor."
    - "Started Devin (session def-456, **Deep tier**, model **opus**) on the architecture review."
    This gives the user visibility into cost and capability level. Then return to whatever else you were doing.
+   - **In CLI mode:** the model appears inline in the tool output. Read the first line of the \`devin_start\` result and repeat it to the user verbatim.
 6. **Poll incrementally — CRITICAL.**
    - **First call**: \`devin_status({ session_id, tail_bytes: 8192 })\` — note the \`output_bytes\` field in the response.
    - **ALL subsequent calls**: **ALWAYS use \`since_bytes\`**, never \`tail_bytes\` again:
