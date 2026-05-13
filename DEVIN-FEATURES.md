@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `575bddf9`
+**Last updated:** `44c1a442`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -382,6 +382,8 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+44c1a442 feat(devin-mcp): add health/resumable tools, cost estimates, doctor check, and schema fixes
+8e2d732f ci: filter [skip ci] commits from DEVIN-FEATURES.md auto-updater
 575bddf9 fix(toast): show correct default agent in startup toast
 c323b6b1 docs: update DEVIN-FEATURES.md with README commit
 1fac2095 docs(readme): add Devin CLI Reliability section and update fork features
