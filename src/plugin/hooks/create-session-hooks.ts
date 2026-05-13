@@ -184,11 +184,13 @@ export function createSessionHooks(args: {
         createAnthropicContextWindowLimitRecoveryHook(ctx, { experimental: pluginConfig.experimental, pluginConfig }))
     : null
 
+  // In this fork Devin is the default primary agent when not overridden by config.
+  const resolvedDefaultAgent = pluginConfig.default_run_agent ?? "devin"
   const autoUpdateChecker = isHookEnabled("auto-update-checker")
     ? safeHook("auto-update-checker", () =>
         createAutoUpdateCheckerHook(ctx, {
           showStartupToast: isHookEnabled("startup-toast"),
-          isSisyphusEnabled: pluginConfig.sisyphus_agent?.disabled !== true,
+          defaultAgent: resolvedDefaultAgent,
           autoUpdate: pluginConfig.auto_update ?? true,
           modelCapabilities: pluginConfig.model_capabilities,
         }))
