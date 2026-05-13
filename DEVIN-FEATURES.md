@@ -251,14 +251,15 @@ This document tracks all features, fixes, and architectural changes added in the
 - **Why:** Fixes the infinite `devin_wait` timeout → `devin_status` with `tail_bytes` polling loop that wastes context window and triggers MCP errors.
 
 ### Model Disclosure to User
+- **Commit:** `8a120f41` (first-line placement), earlier: `803332bb` (initial)
 - **Files:** `src/mcp-servers/devin/server.ts`, `src/mcp-servers/devin/tiers.ts`, `src/cli/devin-report/devin-report.ts`, `src/features/builtin-skills/skills/devin-cli.ts`
 - **What:**
-  1. `devin_start` response now prominently includes the resolved tier and model: `Started Devin session <id> (tier: <TierName>, model: <model>).`
-  2. Built-in skill instructs agents to **ALWAYS tell the user** which model was selected, e.g. "Started Devin (session abc-123, **Deep tier**, model **opus**) on the auth refactor."
+  1. `devin_start` response puts the resolved tier and model on the **first line**: `Started Devin session <id> (tier: <TierName>, model: <model>)`. This makes it impossible to miss in CLI scrollback. Previously it was buried at the bottom inside a `=== MODEL INFO ===` block.
+  2. Built-in skill marks model disclosure as **MANDATORY** (not just recommended) and adds explicit CLI-mode instruction: read the first line of the `devin_start` result and repeat it to the user verbatim.
   3. Example interactions updated to show tier + model in the user-facing message.
   4. New shared module `src/mcp-servers/devin/tiers.ts` with `resolveTierLabel()`, `resolveTierInfo()`, and `MODEL_TIER_MAP` — single source of truth for tier mapping consumed by both the MCP server and the `devin-report` CLI.
   5. Both tier keywords (`"swe"`, `"codex"`, `"sonnet"`, `"opus"`) and fully-qualified model IDs (`"swe-1-6"`, etc.) are recognized — sessions started with either form display the correct tier.
-- **Why:** Users need visibility into which Devin CLI model is running their task — for cost awareness, capability confirmation, and debugging. The shared tier map ensures consistent labeling across the MCP server response, the CLI report, and any future consumers.
+- **Why:** Users need visibility into which Devin CLI model is running their task — for cost awareness, capability confirmation, and debugging. In CLI mode the tool output scrolls by inline; putting the model on the first line ensures it cannot be missed regardless of scrollback length.
 - **Tests:** 13 new tests in `src/mcp-servers/devin/tiers.test.ts` covering all tier resolution paths.
 
 ### Parent Process Crash Detection (Stdin EOF Handler)
