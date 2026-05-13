@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `a91e86ce`
+**Last updated:** `1db2ce97`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -276,105 +276,117 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
-a91e86ce feat(devin-mcp): make model/tier info prominent in all tool outputs
-1461bd5c docs: auto-update DEVIN-FEATURES.md [skip ci]
-4ad54d11 feat(devin-cli): stronger guidance for very long tasks — tell user once, then be silent
-c6fae0e1 docs: auto-update DEVIN-FEATURES.md [skip ci]
-3cf5ee7a feat(devin-cli): add dedicated guidance for very long tasks (Docker builds)
-8a3a6927 docs: auto-update DEVIN-FEATURES.md [skip ci]
-f4cc383b feat(devin-cli): add ultrawork safeguard and cleaner wait logging to skill template
-d9533de1 docs: auto-update DEVIN-FEATURES.md [skip ci]
-66698218 refactor(devin-mcp): extract shared tiers module + fix swe keyword tier mapping
-3e9ef027 docs: auto-update DEVIN-FEATURES.md [skip ci]
-f753fdaa feat(devin-mcp): disclose resolved model+tier to user on delegation
-c648d010 docs: auto-update DEVIN-FEATURES.md [skip ci]
-41f8c300 fix(devin-mcp): cap devin_wait at 30s, guide agents to since_bytes polling
-f09bf237 docs: auto-update DEVIN-FEATURES.md [skip ci]
-df155464 feat(devin-mcp): add 5 resilience features for MCP server
-e571f6c0 docs: auto-update DEVIN-FEATURES.md [skip ci]
-99082ffe fix: anchor skip-ci detection to end of subject line
-e0e7139b fix: prevent auto-update commits from desyncing DEVIN-FEATURES.md
-2fd9043d fix: remove merge conflict markers from DEVIN-FEATURES.md and harden updater script
-408bfb28 docs: auto-update DEVIN-FEATURES.md [skip ci]
-9b69476f test: fix additional fork-specific test failures
-86f4389a docs: auto-update DEVIN-FEATURES.md [skip ci]
-a49d0717 test: fix fork-specific test failures on fredotran/dev
-d86084fc docs: auto-update DEVIN-FEATURES.md [skip ci]
-39aa4154 Merge branch 'fredotran/dev' of github.com:fredotran/oh-my-opendevin into fredotran/dev
-f3122e4f fix(reporter): strip trailing whitespace and flatten newlines before wrapping
-a392c6a2 docs: auto-update DEVIN-FEATURES.md [skip ci]
-f0d061e0 Merge branch 'fredotran/dev' of github.com:fredotran/oh-my-opendevin into fredotran/dev
-5aafca52 feat(devin-mcp): write .meta.json with spawn command + model for each session
-120b8cac docs: auto-update DEVIN-FEATURES.md [skip ci]
-be21247d ci: fix failing CI on fredotran/dev
-e675586c docs: auto-update DEVIN-FEATURES.md [skip ci]
-dcefd6ff docs: add Devin CLI test reporter script and update DEVIN-FEATURES.md
-a234d44b fix: regenerate bun.lock for renamed package oh-my-opendevin
-7c10441b docs: auto-update DEVIN-FEATURES.md [skip ci]
-336ba20b ci: extract fork-specific automation into dedicated fork-sync workflow
-0c5f58a7 ci: auto-update DEVIN-FEATURES.md on push to fredotran/dev
-82c0d34f  docs(readme): sync Devin CLI model section with DEVIN-FEATURES.md
-da323e1f ci: verify installer runs `bun run build` end-to-end
-3b9c8013 docs: correct Last updated commit hash in DEVIN-FEATURES.md
-55bf204f ci: add branch triggers, build verification, and installer checks
-9e22df98 Fix README architecture diagram alignment
-926a308e Merge branch 'fredotran/dev' of github.com:fredotran/oh-my-opendevin into fredotran/dev
-7fa5f766 Merge branch 'feature/devin-cwd-roaming-fix' into fredotran/dev
-28e345cc fix(devin): anchor MCP server cwd at module load time + recommend explicit cwd
-1dcabc21 fix(installer): correct --uninstall flag variable name from DO_UNLINK to DO_UNINSTALL
-7eb7a9d5 fix(devin): correct balanced tier model name to sonnet
-5435f58c docs: add DEVIN-FEATURES.md — comprehensive fork feature registry
-f2197075 fix(devin): use resolvedModel for concurrency slot acquisition
-870bfa41 docs(readme): document Devin CLI tiered model routing system
-8d5e1a37 feat(devin-cli): document model tier system in built-in skill
-f91eb037 feat(devin): add incremental polling instructions and model tier guidance
-ec5e4060 Merge branch 'feature/devin-cli-optimizations' into fredotran/dev
-71b66abb feat(devin): optimize CLI calls and task management
-e5bdb26a feat(devin-mcp): default devin-cli model to kimi-k2.6
-48718a34 feat(devin): add 'devin do [task]' prompt recognition + remove deepseek-v4-flash from fallback
-60b0c757 fix(devin): restore original nemotron model name — nemotron-3-super-120b-a12b:free
-92faf2d1 fix(devin): correct deepseek model name — deepseek-v4-flash
-0367a0cf fix(model-resolution): auto-prefix provider for bare model names in config overrides
-fa0217d8 fix(devin): use valid model IDs in fallback chain
-8d1c3ff4 feat(devin): broaden fallback chain providers — remove opencode-only lock
-a8e0790f docs(readme): fix indentation of paragraph after MCP JSON block
-24f3d51c feat(commands): remove /devin and /devin-models slash commands
-32a0a391 feat(devin-cli): default permission_mode to dangerous — always bypass permission prompts
-82e56f88 feat(devin): harden agent separation — enforce Devin never delegates to specialists
-eedd14cc fix(devin): restrict fallback to free models and fix delegation prompt
-8e4e017e feat(devin): configure cheap/free OpenCode model fallbacks
-9ce4fa4a feat(config): add devin to AgentOverridesSchema
-abadf8ca feat(run): show session resume hint on interrupt and completion
-b19ce813 fix(identity): set published package name to oh-my-opendevin
-b36dfdcf fix(team-mode): cast test fixture ask return to satisfy Effect type
-8b098ff1 docs(readme): document Devin x Sisyphus tag-team architecture
-352b7fac feat(agents): promote Devin to primary default agent
-60d1a235 feat(agents): register Devin as a built-in subagent
-c1ffce7e docs(readme): remove session alias system references
-b6b17f87 feat(devin-models): improve model selector display with tiers and examples
-f2139460 fix(version-detection): recognize oh-my-opendevin package name for version toast
-446aa60d fix(mcp): write .mcp.json to ~/.claude/ where the plugin actually reads
-853ede47 feat(installer): auto-detect shell rc and source after PATH change
-8bbd17d8 feat(installer): add config backup/restore for uninstall
-413d70d0 fix(mcp): resolve MCP integration failures and harden security
-bfd6dd24 feat(mcp): add global MCP configuration for Devin server
-7fe9801b feat(installer): add fallback to local installation via symlinks
-f3c402b5 refactor: change package name from scoped to unscoped
-021e31d2 docs: update README with comprehensive installation guide
-65c56f7f chore: remove local development installation scripts
-005871f2 feat(installer): add global installation script for npm package
-1655e455 Revert 'feat(install): use fixed project path for global installation'
-cb6da4d6 feat(install): use fixed project path for global installation
-1d6c6481 Fix README title: this is an oh-my-openagent fork
-5ceab6c0 Reorganize README: put fork-specific content before base project
-efa50caf Update README.md with fork-specific features
-1cfcf683 Fix doctor check warning for local development installation
-5869eee6 Add local development installation script
-b28fe863 feat: add /devin slash commands for easier delegation in OpenCode
-8851e10b fix: update model names to use specific versions (swe-1-6, claude-sonnet-4-6)
-0f02158e feat: add intelligent model selection guidance to devin-cli skill
-b1b91003 feat: add devin-cli built-in skill for MCP delegation guidance
-bff58671 feat: add Devin CLI MCP server for background session delegation
+1db2ce97 feat(devin-mcp): add stdin EOF handler for parent process crash detection
+41e0f4df docs: auto-update DEVIN-FEATURES.md [skip ci]
+803332bb feat(devin-mcp): make model/tier info prominent in all tool outputs
+44dc1fe1 docs: auto-update DEVIN-FEATURES.md [skip ci]
+95fdcf67 feat(devin-cli): stronger guidance for very long tasks — tell user once, then be silent
+620d725a docs: auto-update DEVIN-FEATURES.md [skip ci]
+fca188fa feat(devin-cli): add dedicated guidance for very long tasks (Docker builds)
+7a2e42c1 docs: auto-update DEVIN-FEATURES.md [skip ci]
+9ceec636 feat(devin-cli): add ultrawork safeguard and cleaner wait logging to skill template
+18b1b2d2 docs: auto-update DEVIN-FEATURES.md [skip ci]
+00eeeeb4 refactor(devin-mcp): extract shared tiers module + fix swe keyword tier mapping
+8d1fc9b0 docs: auto-update DEVIN-FEATURES.md [skip ci]
+275f7bb8 feat(devin-mcp): disclose resolved model+tier to user on delegation
+19fe77f1 docs: auto-update DEVIN-FEATURES.md [skip ci]
+32963465 fix(devin-mcp): cap devin_wait at 30s, guide agents to since_bytes polling
+4785ebff docs: auto-update DEVIN-FEATURES.md [skip ci]
+2de60da6 feat(devin-mcp): add 5 resilience features for MCP server
+e035c55d docs: auto-update DEVIN-FEATURES.md [skip ci]
+648e03c4 fix: anchor skip-ci detection to end of subject line
+7be3dea7 fix: prevent auto-update commits from desyncing DEVIN-FEATURES.md
+c0a0edf6 fix: remove merge conflict markers from DEVIN-FEATURES.md and harden updater script
+b51efd47 docs: auto-update DEVIN-FEATURES.md [skip ci]
+1446a64a test: fix additional fork-specific test failures
+bb97d343 docs: auto-update DEVIN-FEATURES.md [skip ci]
+7884ffc1 test: fix fork-specific test failures on fredotran/dev
+1eb6e5f5 docs: auto-update DEVIN-FEATURES.md [skip ci]
+c8f9a25b docs: auto-update DEVIN-FEATURES.md [skip ci]
+23795ba7 fix(reporter): strip trailing whitespace and flatten newlines before wrapping
+690dffe6 docs: auto-update DEVIN-FEATURES.md [skip ci]
+57595368 feat(devin-mcp): write .meta.json with spawn command + model for each session
+8be9d69d ci: fix failing CI on fredotran/dev
+c45e75b3 docs: auto-update DEVIN-FEATURES.md [skip ci]
+99f129f1 docs: add Devin CLI test reporter script and update DEVIN-FEATURES.md
+2762b419 fix: regenerate bun.lock for renamed package oh-my-opendevin
+61fa223d docs: auto-update DEVIN-FEATURES.md [skip ci]
+5374954c ci: extract fork-specific automation into dedicated fork-sync workflow
+8c27070b ci: auto-update DEVIN-FEATURES.md on push to fredotran/dev
+d7a4719c  docs(readme): sync Devin CLI model section with DEVIN-FEATURES.md
+76519775 ci: verify installer runs `bun run build` end-to-end
+451179bc docs: correct Last updated commit hash in DEVIN-FEATURES.md
+575f309c ci: add branch triggers, build verification, and installer checks
+41d4e507 Fix README architecture diagram alignment
+6725189c fix(installer): correct --uninstall flag variable name from DO_UNLINK to DO_UNINSTALL
+91432ae0 fix(devin): anchor MCP server cwd at module load time + recommend explicit cwd
+9fe75f3c fix(devin): correct balanced tier model name to sonnet
+1a953000 docs: add DEVIN-FEATURES.md — comprehensive fork feature registry
+eacc32dc fix(devin): use resolvedModel for concurrency slot acquisition
+d8ee20b9 docs(readme): document Devin CLI tiered model routing system
+f78a1683 feat(devin-cli): document model tier system in built-in skill
+19d155e5 feat(devin): add incremental polling instructions and model tier guidance
+b6609303 feat(devin): optimize CLI calls and task management
+761792bd feat(devin-mcp): default devin-cli model to kimi-k2.6
+532a5c32 feat(devin): add 'devin do [task]' prompt recognition + remove deepseek-v4-flash from fallback
+56855f38 fix(devin): restore original nemotron model name — nemotron-3-super-120b-a12b:free
+1ec5e6ea fix(devin): correct deepseek model name — deepseek-v4-flash
+ade36c0b fix(model-resolution): auto-prefix provider for bare model names in config overrides
+ce1b65ef fix(devin): use valid model IDs in fallback chain
+d1a1e105 feat(devin): broaden fallback chain providers — remove opencode-only lock
+e791dc18 docs(readme): fix indentation of paragraph after MCP JSON block
+048d8991 feat(commands): remove /devin and /devin-models slash commands
+8b2dbd30 feat(devin-cli): default permission_mode to dangerous — always bypass permission prompts
+cd1f26bd feat(devin): harden agent separation — enforce Devin never delegates to specialists
+d35495d6 fix(devin): restrict fallback to free models and fix delegation prompt
+e1c6160f feat(devin): configure cheap/free OpenCode model fallbacks
+488a7575 feat(config): add devin to AgentOverridesSchema
+5487a58b feat(run): show session resume hint on interrupt and completion
+ff43fead fix(identity): set published package name to oh-my-opendevin
+dfd69860 fix(team-mode): cast test fixture ask return to satisfy Effect type
+d6a30d6f docs(readme): document Devin x Sisyphus tag-team architecture
+b7350049 feat(agents): promote Devin to primary default agent
+8d03b99d feat(agents): register Devin as a built-in subagent
+d837fd44 docs(readme): remove session alias system references
+03c2ec13 feat(devin-models): improve model selector display with tiers and examples
+ff640217 fix(version-detection): recognize oh-my-opendevin package name for version toast
+973eb916 fix(mcp): write .mcp.json to ~/.claude/ where the plugin actually reads
+25d76aa0 feat(installer): auto-detect shell rc and source after PATH change
+c6db5767 feat(installer): add config backup/restore for uninstall
+1fc3f57d fix(mcp): resolve MCP integration failures and harden security
+b947e452 feat(mcp): add global MCP configuration for Devin server
+ab735c8e feat(installer): add fallback to local installation via symlinks
+2b9dc575 refactor: change package name from scoped to unscoped
+896670da docs: update README with comprehensive installation guide
+216c2e73 chore: remove local development installation scripts
+8c34e139 feat(installer): add global installation script for npm package
+99956ba4 Revert 'feat(install): use fixed project path for global installation'
+fb1f37c3 feat(install): use fixed project path for global installation
+3206fc29 Fix README title: this is an oh-my-openagent fork
+183768bf Reorganize README: put fork-specific content before base project
+16347494 Update README.md with fork-specific features
+32b146d6 Fix doctor check warning for local development installation
+71c57855 Add local development installation script
+491f9aea feat: add /devin slash commands for easier delegation in OpenCode
+9c7a9244 fix: update model names to use specific versions (swe-1-6, claude-sonnet-4-6)
+99011cf6 feat: add intelligent model selection guidance to devin-cli skill
+ee2fa4c9 feat: add devin-cli built-in skill for MCP delegation guidance
+23193a47 feat: add Devin CLI MCP server for background session delegation
+1fa97c6e docs(publish): require discord announcement
+f44d9441 release: v4.1.1
+3b4d2431 fix(hooks): guard stale idle prompts
+a337635e fix(background-agent): defer active parent wakes
+0b99168b @EmiyaKiritsugu3 has signed the CLA in code-yeongyu/oh-my-openagent#3990
+39fb0143 Merge pull request #3986 from code-yeongyu/fix/continuation-message-dispatch
+36f51ddb fix(continuation): mark fallback resumes synthetic
+1189b96d fix(continuation): mark atlas resumes synthetic
+e49ba947 chore(deps): refresh platform lock entries
+38b1433f fix(continuation): mark resumes synthetic
+3f922643 fix(interactive-bash): prohibit tmux kill-server
+286f5ccf when publish always discord
+9edaa6e9 release: v4.1.0
+21460713 .opencode to .agents
+a0b46309 remove hyperplan for .opencode (not as a feature)
 75825eb9 fix(todo-description-override): add OpenCode schema contract for string priorities
 c740ed8a fix(delegate-task): route sync prompts by directory
 6035a551 fix(background-agent): route session prompts by directory
