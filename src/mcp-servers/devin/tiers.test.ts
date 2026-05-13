@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test"
-import { resolveTierLabel, resolveTierInfo, MODEL_TIER_MAP, KNOWN_DEVIN_MODELS } from "./tiers"
+import { resolveTierLabel, resolveTierInfo, MODEL_TIER_MAP, KNOWN_DEVIN_MODELS, FALLBACK_CHAIN, getFallbackModel } from "./tiers"
 
 describe("tiers", () => {
   describe("#given resolveTierLabel", () => {
@@ -68,6 +68,38 @@ describe("tiers", () => {
       for (const model of KNOWN_DEVIN_MODELS) {
         expect(MODEL_TIER_MAP[model]).toBeDefined()
       }
+    })
+  })
+
+  describe("#given FALLBACK_CHAIN", () => {
+    it("orders models from most to least capable", () => {
+      expect(FALLBACK_CHAIN).toEqual(["opus", "sonnet", "kimi-k2.6", "swe"])
+    })
+  })
+
+  describe("#given getFallbackModel", () => {
+    it("returns sonnet from opus", () => {
+      expect(getFallbackModel("opus")).toBe("sonnet")
+    })
+
+    it("returns kimi-k2.6 from sonnet", () => {
+      expect(getFallbackModel("sonnet")).toBe("kimi-k2.6")
+    })
+
+    it("returns swe from kimi-k2.6", () => {
+      expect(getFallbackModel("kimi-k2.6")).toBe("swe")
+    })
+
+    it("returns undefined at end of chain", () => {
+      expect(getFallbackModel("swe")).toBeUndefined()
+    })
+
+    it("returns first model for unknown input", () => {
+      expect(getFallbackModel("unknown-model")).toBe("opus")
+    })
+
+    it("returns first model for undefined", () => {
+      expect(getFallbackModel(undefined)).toBe("opus")
     })
   })
 })

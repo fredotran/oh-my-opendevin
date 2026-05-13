@@ -584,3 +584,56 @@ describe("log size caps", () => {
     expect(session.status).toBe("running")
   })
 })
+
+describe("spawn error detection", () => {
+  it("detects RATE_LIMIT from 'rate limit' text", () => {
+    const { detectSpawnError } = require("./session-store")
+    const hint = detectSpawnError("API rate limit exceeded. Please retry after 30 seconds.")
+    expect(hint.tag).toBe("RATE_LIMIT")
+    expect(hint.retryAfterMs).toBe(30000)
+  })
+
+  it("detects RATE_LIMIT from 429 status", () => {
+    const { detectSpawnError } = require("./session-store")
+    const hint = detectSpawnError("Error 429: Too Many Requests")
+    expect(hint.tag).toBe("RATE_LIMIT")
+  })
+
+  it("detects QUOTA_EXCEEDED from 'quota exceeded'", () => {
+    const { detectSpawnError } = require("./session-store")
+    const hint = detectSpawnError("Model quota exceeded for opus. Upgrade your plan.")
+    expect(hint.tag).toBe("QUOTA_EXCEEDED")
+    expect(hint.suggestedAction).toContain("fallback")
+  })
+
+  it("detects QUOTA_EXCEEDED from 'insufficient quota'", () => {
+    const { detectSpawnError } = require("./session-store")
+    const hint = detectSpawnError("insufficient quota")
+    expect(hint.tag).toBe("QUOTA_EXCEEDED")
+  })
+
+  it("detects CONTEXT_LIMIT from 'context length'", () => {
+    const { detectSpawnError } = require("./session-store")
+    const hint = detectSpawnError("This model's maximum context length is 8192 tokens.")
+    expect(hint.tag).toBe("CONTEXT_LIMIT")
+  })
+
+  it("detects CONTEXT_LIMIT from 'token limit'", () => {
+    const { detectSpawnError } = require("./session-store")
+    const hint = detectSpawnError("Token limit exceeded")
+    expect(hint.tag).toBe("CONTEXT_LIMIT")
+  })
+
+  it("returns UNKNOWN for unrecognized errors", () => {
+    const { detectSpawnError } = require("./session-store")
+    const hint = detectSpawnError("Something went wrong")
+    expect(hint.tag).toBe("UNKNOWN")
+    expect(hint.message).toContain("Something went wrong")
+  })
+
+  it("returns UNKNOWN for empty stderr", () => {
+    const { detectSpawnError } = require("./session-store")
+    const hint = detectSpawnError("")
+    expect(hint.tag).toBe("UNKNOWN")
+  })
+})
