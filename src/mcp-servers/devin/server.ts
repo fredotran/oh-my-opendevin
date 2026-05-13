@@ -23,7 +23,7 @@ function renderSnapshot(snap: DevinSessionSnapshot): string {
     `session_id: ${snap.id}`,
     `status: ${snap.status}` + (snap.exitCode !== undefined ? ` (exit ${snap.exitCode})` : ""),
     `cwd: ${snap.cwd}`,
-    snap.model ? `model: ${snap.model}` : null,
+    `model: ${snap.model ?? "kimi-k2.6"}`,
     snap.resumeId ? `resume_of: ${snap.resumeId}` : null,
     `started_at: ${new Date(snap.startedAt).toISOString()}`,
     snap.endedAt ? `ended_at: ${new Date(snap.endedAt).toISOString()}` : null,
@@ -70,10 +70,16 @@ export function createDevinMcpServer(): McpServer {
       })
       const snap = await snapshotDevinSession(session, 0)
       const tierLabel = resolveTierLabel(session.model)
+      const resolvedModel = session.model ?? "kimi-k2.6"
       return asTextResult(
-        `Started Devin session ${session.id} (tier: ${tierLabel}, model: ${session.model ?? "kimi-k2.6"}).\n` +
+        `Started Devin session ${session.id}.\n` +
         `Poll with devin_status({session_id: "${session.id}"}).\n\n` +
-          renderSnapshot(snap),
+        renderSnapshot(snap) +
+        `\n\n` +
+        `=== MODEL INFO ===\n` +
+        `tier: ${tierLabel}\n` +
+        `model: ${resolvedModel}\n` +
+        `==================`,
       )
     },
   )
@@ -230,8 +236,9 @@ export function createDevinMcpServer(): McpServer {
       const parts = await Promise.all(
         sessions.map(async (session) => {
           const snap = await snapshotDevinSession(session, include_output ? 256 : 0)
+          const resolvedModel = snap.model ?? "kimi-k2.6"
           const head =
-            `- ${snap.id}  [${snap.status}]  duration=${snap.durationMs}ms  prompt=${JSON.stringify(snap.prompt.slice(0, 80))}`
+            `- ${snap.id}  [${snap.status}]  model=${resolvedModel}  duration=${snap.durationMs}ms  prompt=${JSON.stringify(snap.prompt.slice(0, 80))}`
           return include_output ? `${head}\n  tail: ${snap.output.replace(/\n/g, " ").slice(0, 256)}` : head
         }),
       )
