@@ -50,12 +50,10 @@ Built-in commands ([`src/features/builtin-commands/templates/devin.ts`](../featu
 
 | Command | Purpose |
 |---------|---------|
-| `/devin "<task>" [--model=<name>] [--wait] [--cwd=<path>]` | Delegate a task; agent auto-selects model from complexity |
-| `/devin-models` | Show the available Devin models with use cases and selection heuristics |
 | `/devin-status [<id-prefix>] [--full]` | List running sessions (or render full output for a specific id) |
 | `/devin-cancel [<id-prefix>] [--all]` | Cancel one session (prefix match) or every running session |
 
-Disable any subset via `disabled_commands: ["devin", "devin-status", ...]` in oh-my-openagent config.
+`/devin` and `/devin-models` were removed in commit `24f3d51c` — delegation now goes through the agent skill layer (the `devin-cli` built-in skill is auto-loaded into the model context). Disable any remaining command via `disabled_commands: ["devin-status", ...]` in oh-my-openagent config.
 
 ### Smoke test
 
