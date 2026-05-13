@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `c323b6b1`
+**Last updated:** `575bddf9`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -382,6 +382,8 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+575bddf9 fix(toast): show correct default agent in startup toast
+f847db37 docs: auto-update DEVIN-FEATURES.md [skip ci]
 c323b6b1 docs: update DEVIN-FEATURES.md with README commit
 1fac2095 docs(readme): add Devin CLI Reliability section and update fork features
 e7493f1b docs: auto-update DEVIN-FEATURES.md [skip ci]
