@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `4ad54d11`
+**Last updated:** `a91e86ce`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -276,6 +276,8 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+a91e86ce feat(devin-mcp): make model/tier info prominent in all tool outputs
+1461bd5c docs: auto-update DEVIN-FEATURES.md [skip ci]
 4ad54d11 feat(devin-cli): stronger guidance for very long tasks — tell user once, then be silent
 c6fae0e1 docs: auto-update DEVIN-FEATURES.md [skip ci]
 3cf5ee7a feat(devin-cli): add dedicated guidance for very long tasks (Docker builds)
