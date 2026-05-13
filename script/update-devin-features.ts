@@ -11,6 +11,7 @@ async function getCommitLog(): Promise<string[]> {
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean)
+    .filter((line) => !/\[\s*skip ci\s*\]$/.test(line))
     .reverse()
 }
 
