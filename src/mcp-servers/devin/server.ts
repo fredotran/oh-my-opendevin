@@ -260,5 +260,14 @@ export async function runDevinMcpServer(): Promise<void> {
   }
   process.on("SIGINT", cleanup)
   process.on("SIGTERM", cleanup)
+
+  // If the parent process closes the stdio pipe (crash, kill, or EOF),
+  // detect it and cancel all sessions rather than leaving orphan processes.
+  process.stdin.on("end", () => {
+    console.error("[devin-mcp] Stdin EOF detected — parent process closed the pipe. Cancelling all sessions.")
+    cleanup()
+  })
+  process.stdin.resume()
+
   await server.connect(transport)
 }
