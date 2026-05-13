@@ -77,12 +77,13 @@ Each tool returns a human-readable text snapshot. \`session_id\` is a UUID — s
    - If the user asks "How is Devin doing?", give a concise one-line status + any blockers
 9. **Very long tasks (Docker builds, compilations, downloads).**
    - \`devin_wait\` always caps at **30 seconds per call** regardless of \`timeout_ms\` — MCP clients timeout tool calls. Do NOT pass huge \`timeout_ms\` values expecting it to block for minutes.
-   - A 20-minute Docker build means you will call \`devin_wait\` roughly 40 times if you loop every 30s. **This is wasteful.** Instead:
+   - A 20-minute Docker build means you will call \`devin_wait\` roughly 40 times if you loop every 30s. **This is wasteful and annoying.** Instead:
      - Call \`devin_wait\` once → it returns "still running" after 30s
-     - **Go do something else for 2–3 minutes** (work on another task, read docs, etc.)
-     - Call \`devin_status({ session_id, since_bytes: <last_output_bytes> })\` to check for new output
-     - If status is still \`running\` and there is no new output, **that is normal for Docker builds** (layer downloads, compilation). Wait another 2–3 minutes.
-     - Only when \`status\` changes to \`completed\`, \`error\`, \`cancelled\`, or \`stalled\` — report it.
+     - **Tell the user ONCE:** "Devin is working on the Docker build. This typically takes 15–30 minutes. I'll check back periodically and let you know when it's done."
+     - Then **be completely silent** about this session until there is actual news
+     - For tasks expected to take >10 minutes, check every **5 minutes** (not every 2–3 minutes)
+     - Call \`devin_status({ session_id, since_bytes: <last_output_bytes> })\` → if still \`running\` with no new output, that is completely normal. Wait another 5 minutes.
+     - **Only break silence when:** \`completed\`, \`error\`, \`cancelled\`, \`stalled\`, or the user explicitly asks for a status update
    - **Do NOT call \`devin_wait\` repeatedly in a tight loop.** It will never block longer than 30s. Space out your checks.
 10. **Report results.** When \`status\` is \`completed\`, summarize Devin's output for the user. If \`error\`, surface the error and either retry or fall back to handling it yourself.
 11. **Cancel if needed.** \`devin_cancel({ session_id })\` if the user changes their mind or Devin goes off-rails.
