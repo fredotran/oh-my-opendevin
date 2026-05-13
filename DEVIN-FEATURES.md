@@ -23,6 +23,10 @@ This document tracks all features, fixes, and architectural changes added in the
    - [Pre-flight Validation](#pre-flight-validation-in-devin_start)
    - [Auto-cleanup](#auto-cleanup-of-completed-sessions-ttl-reaper)
    - [Idle Detection](#idle-session-detection)
+   - [Max Duration Cap](#max-duration-cap-on-devin_start)
+   - [Log Size Caps](#log-file-size-caps)
+   - [Structured Error Hints](#structured-error-hints--model-fallback-chain)
+   - [Tool Error Wrapping](#tool-error-wrapping)
    - [CLI Reporter](#cli-session-reporter-devin-report-subcommand)
    - [devin_wait Timeout Fix](#devin_wait-mcp-timeout-fix--incremental-polling-guidance)
    - [Model Disclosure](#model-disclosure-to-user)
@@ -228,6 +232,39 @@ This document tracks all features, fixes, and architectural changes added in the
 - **What:** Background interval (every 5 min) checks running sessions for log output growth. If a session's log hasn't grown in 30 minutes, status is set to `"stalled"`. The session is NOT auto-cancelled — agents or users decide. New `DevinSessionStatus` values: `"orphaned"` and `"stalled"`.
 - **Why:** Surfaces hung sessions that waste compute, without destructive auto-cancellation.
 
+### Max Duration Cap on devin_start
+- **Commit:** `a6892032`
+- **Files:** `src/mcp-servers/devin/session-store.ts`, `src/mcp-servers/devin/types.ts`
+- **What:** Added `maxDurationMs` option to `devin_start`. Running sessions exceeding this cap are auto-cancelled. Default: 2 hours (7200000ms), minimum: 1 minute (60000ms). A background check runs alongside idle detection every 5 minutes.
+- **Why:** Prevents runaway Devin sessions from burning subscription credits indefinitely when agents forget to cancel or the task loops.
+
+### Log File Size Caps
+- **Commit:** `a6892032`
+- **Files:** `src/mcp-servers/devin/session-store.ts`
+- **What:** Two-tier log size enforcement checked every 5 minutes:
+  - **Soft cap (100MB):** Logs a warning to stderr — session continues running
+  - **Hard cap (500MB):** Auto-cancels the session to prevent disk exhaustion
+- **Why:** Verbose Devin sessions (e.g., with debug logging, long compilation output) can grow logs to multiple GBs. The caps prevent the MCP server from filling the tmp partition.
+
+### Structured Error Hints & Model Fallback Chain
+- **Commit:** `283d1440`
+- **Files:** `src/mcp-servers/devin/session-store.ts`, `src/mcp-servers/devin/tiers.ts`, `src/mcp-servers/devin/types.ts`, `src/features/builtin-skills/skills/devin-cli.ts`
+- **What:** When `devin_start` fails due to API limits, the error is parsed and returned as a **structured tagged hint** instead of raw stderr:
+  - `RATE_LIMIT` — detected from "rate limit", "429", "too many requests". Includes `retryAfterMs` (parsed from "retry after N" or defaults to 30000ms)
+  - `QUOTA_EXCEEDED` — detected from "quota exceeded", "usage limit", "out of credits", "insufficient quota". Includes `suggestedFallback` model
+  - `CONTEXT_LIMIT` — detected from "context length", "token limit", "maximum context", "too many tokens". Suggests prompt truncation
+  - `UNKNOWN` — catch-all for unrecognized errors
+- **Fallback chain:** `opus` → `sonnet` → `kimi-k2.6` → `swe` (Deep → Balanced → Standard → Fast/Cheap). Exported as `FALLBACK_CHAIN` with `getFallbackModel(current)` utility.
+- **Auto-fallback:** New `autoFallback` option on `devin_start` (default: `false`). When `true`, the server automatically retries down the fallback chain on `QUOTA_EXCEEDED` until success or chain exhaustion.
+- **Skill guidance:** The `devin-cli` built-in skill now includes a "Limit & Error Recovery" section teaching agents the fallback chain, error tag actions, and a structured recovery workflow.
+- **Why:** Agents previously saw `status: error` and raw stderr with no guidance on whether to retry, fallback, or ask the user. Structured hints eliminate guesswork and reduce user interruptions.
+
+### Tool Error Wrapping
+- **Commit:** `a6892032`
+- **Files:** `src/mcp-servers/devin/server.ts`
+- **What:** All 6 MCP tool handlers (`devin_start`, `devin_status`, `devin_wait`, `devin_cancel`, `devin_cancel_batch`, `devin_list`) are wrapped with `safeToolHandler(toolName, handler)`. Unexpected errors are caught and returned as text results (`[{type: "text", text: "[toolName] ERROR: message"}]`) instead of propagating as unhandled exceptions that crash the MCP client connection.
+- **Why:** File I/O errors, stat failures, or race conditions in tool handlers could previously crash the MCP server process. The wrapper makes the server resilient to transient filesystem issues.
+
 ### CLI Session Reporter (devin-report subcommand)
 - **Files:** `src/cli/devin-report/`, `src/cli/cli-program.ts`
 - **What:** First-class CLI subcommand replacing the standalone Python script:
@@ -298,12 +335,13 @@ This document tracks all features, fixes, and architectural changes added in the
 
 | Suite | Tests | Status |
 |-------|-------|--------|
-| `src/mcp-servers/devin/session-store.test.ts` | 19 | Pass — cache, batch cancel, incremental reads, reattach, pre-flight validation, idle detection |
-| `src/mcp-servers/devin/tiers.test.ts` | 13 | Pass — tier resolution for keywords + fully-qualified IDs, custom fallback, shared map invariants |
+| `src/mcp-servers/devin/session-store.test.ts` | 35 | Pass — cache, batch cancel, incremental reads, reattach, pre-flight validation, idle detection, max duration cap, log size caps, spawn error detection |
+| `src/mcp-servers/devin/tiers.test.ts` | 19 | Pass — tier resolution, fallback chain, getFallbackModel for all positions |
+| `src/mcp-servers/devin/server.test.ts` | 8 | Pass — devin_wait schema validation (30000ms cap), safeToolHandler error catching |
 | `src/cli/devin-report/formatter.test.ts` | 6 | Pass — JSON output, text output, empty state, tier breakdown |
 | `src/features/background-agent/manager.test.ts` | 157 | Pass — priority queue integration |
 | `src/features/builtin-skills/skills.test.ts` | 17 | Pass — skill structure validation |
-| **Total** | **212** | **0 failures** |
+| **Total** | **242** | **0 failures** |
 
 ---
 
