@@ -22,9 +22,13 @@ Each subdirectory is a self-contained stdio server that can be spawned by any MC
 
 Wraps the `devin` CLI binary as a background-session MCP server. The OpenCode/oh-my-openagent agent can:
 
-1. `devin_start({prompt, model?, cwd?, permission_mode?, resume?})` → spawns `devin -p <prompt>` detached, returns `session_id`
-2. `devin_status({session_id, tail_bytes?})` → polls log file + process state
-3. `devin_wait({session_id, timeout_ms?})` → blocks until exit (or timeout)
+1. `devin_start({prompt, model?, cwd?, permission_mode?, resume?, maxDurationMs?, autoFallback?})` → spawns `devin -p <prompt>` detached, returns `session_id`
+   - `maxDurationMs` (default: 2h, min: 1m) — auto-cancels the session if it exceeds this duration
+   - `autoFallback` (default: false) — on `QUOTA_EXCEEDED`, automatically retries with the next model in the fallback chain
+2. `devin_status({session_id, tail_bytes?, since_bytes?})` → polls log file + process state
+   - `since_bytes` returns ONLY new output since the last poll (use after first call)
+3. `devin_wait({session_id, timeout_ms?, tail_bytes?})` → blocks until exit (or timeout)
+   - `timeout_ms` hard-capped at 30000ms per call to avoid MCP client timeouts
 4. `devin_cancel({session_id})` → SIGKILL the subprocess
 5. `devin_list({include_output?})` → enumerate all sessions managed by this server instance
 
@@ -33,11 +37,18 @@ Sessions live in memory (`session-store.ts` — `Map<id, DevinSession>`); logs a
 ### Resilience features
 
 - **Re-attachment:** On startup, `reattachOrphanedSessions()` scans `LOG_DIR` for `.meta.json` with `status: "running"` and registers them as `"orphaned"`.
-- **Pre-flight validation:** `devin_start` checks the `devin` binary is in PATH (cached), catches model typos via Levenshtein distance, and validates `cwd` is a directory.
+- **Pre-flight validation:** `devin_start` checks the `devin` binary is in PATH (cached), catches model typos via Levenshtein distance, validates `cwd` is a directory, and validates `maxDurationMs` (min 1m).
 - **TTL reaper:** Completed/errored/cancelled/orphaned sessions are removed from memory after 1 hour (logs remain on disk).
 - **Idle detection:** Running sessions with no output growth for 30 minutes are marked `"stalled"` (not auto-cancelled).
+- **Max duration enforcement:** Sessions exceeding `maxDurationMs` are auto-cancelled. Default: 2 hours, minimum: 1 minute.
+- **Log size caps:** Warns when a session log exceeds 100MB; auto-cancels at 500MB to prevent disk exhaustion.
+- **Disk cleanup:** On each spawn, old log files (> 24h) are deleted, with protection for files belonging to in-memory active sessions.
+- **Structured error hints:** When `devin_start` fails due to rate limits, quota exhaustion, or context window overflow, the response includes a tagged error (`RATE_LIMIT`, `QUOTA_EXCEEDED`, `CONTEXT_LIMIT`, `UNKNOWN`) with a suggested recovery action.
+- **Model fallback chain:** `opus` → `sonnet` → `kimi-k2.6` → `swe`. When a model quota is exceeded, agents can retry with the next tier. `autoFallback` can automate this.
+- **Tool error wrapping:** All MCP tool handlers are wrapped with `safeToolHandler()` so unexpected errors are caught and returned as text results instead of propagating as unhandled exceptions.
+- **Concurrent session limit:** Maximum 50 running sessions enforced at spawn time.
 - **Model disclosure:** `devin_start` response includes resolved tier and model. Agents are instructed to tell the user which model is running their task.
-- **Tier mapping single source of truth:** `tiers.ts` exports `MODEL_TIER_MAP`, `resolveTierLabel()`, `resolveTierInfo()`, and `KNOWN_DEVIN_MODELS`. Both the MCP server (`devin_start` response) and the CLI (`devin-report`) consume this module so tier labels stay consistent. Both tier keywords (`"swe"`, `"codex"`, `"sonnet"`, `"opus"`) and fully-qualified IDs (`"swe-1-6"`, etc.) resolve to the same tier.
+- **Tier mapping single source of truth:** `tiers.ts` exports `MODEL_TIER_MAP`, `resolveTierLabel()`, `resolveTierInfo()`, `FALLBACK_CHAIN`, `getFallbackModel()`, and `KNOWN_DEVIN_MODELS`. Both the MCP server (`devin_start` response) and the CLI (`devin-report`) consume this module so tier labels stay consistent. Both tier keywords (`"swe"`, `"codex"`, `"sonnet"`, `"opus"`) and fully-qualified IDs (`"swe-1-6"`, etc.) resolve to the same tier.
 - **Session statuses:** `running`, `completed`, `error`, `cancelled`, `orphaned`, `stalled`.
 
 ### Agent guidance
