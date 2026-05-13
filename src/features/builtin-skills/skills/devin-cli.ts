@@ -7,7 +7,7 @@ export const devinCliSkill: BuiltinSkill = {
   argumentHint: "<task description>",
   template: `# Devin CLI Delegation
 
-You can delegate self-contained engineering tasks to the \`devin\` CLI as a background subprocess via the \`devin\` MCP server. The MCP server is registered at the repo root in \`.mcp.json\` and exposes 6 tools.
+You can delegate self-contained engineering tasks to the \`devin\` CLI as a background subprocess via the \`devin\` MCP server. The MCP server is registered at the repo root in \`.mcp.json\` and exposes 8 tools.
 
 ---
 
@@ -33,12 +33,14 @@ DO NOT delegate when:
 
 | Tool | Purpose | Key arguments |
 |------|---------|---------------|
-| \`devin_start\` | Spawn \`devin -p <prompt>\` in the background | \`prompt\` (required), \`model?\`, \`cwd?\`, \`permission_mode?\` (\`auto\` \| \`dangerous\`, default: \`dangerous\`), \`resume?\` |
+| \`devin_start\` | Spawn \`devin -p <prompt>\` in the background | \`prompt\` (required), \`model?\`, \`cwd?\`, \`permission_mode?\` (\`auto\` \| \`dangerous\`, default: \`dangerous\`), \`resume?\`, \`max_duration_ms?\` (default 2h), \`auto_fallback?\` (default false) |
 | \`devin_status\` | Get current status + tail of stdout/stderr log | \`session_id\`, \`tail_bytes?\` (default 8192), \`since_bytes?\` (incremental read) |
-| \`devin_wait\` | Block until exit or timeout | \`session_id\`, \`timeout_ms?\` (default 60000), \`tail_bytes?\` |
+| \`devin_wait\` | Block until exit or timeout | \`session_id\`, \`timeout_ms?\` (default 30000), \`tail_bytes?\` |
 | \`devin_cancel\` | Kill the background subprocess | \`session_id\` |
 | \`devin_cancel_batch\` | Kill multiple background subprocesses in one call | \`session_ids\` (array, max 50) |
 | \`devin_list\` | Enumerate sessions in this MCP process | \`include_output?\` |
+| \`devin_health\` | Check MCP server health (binary, disk, slots, orphans) | (no args) |
+| \`devin_resumable\` | Discover completed/error sessions eligible for resume | \`limit?\` (default 20, max 50) |
 
 Each tool returns a human-readable text snapshot. \`session_id\` is a UUID — store it; you will need it for every subsequent call.
 
@@ -240,7 +242,7 @@ Completed, errored, cancelled, and orphaned sessions are automatically removed f
 Running sessions are periodically checked for output growth. If a session produces no new output for 30 minutes, it is marked as **stalled**. Stalled sessions are NOT auto-cancelled — you decide whether to cancel or wait longer. Check \`devin_status\` and look for \`status: "stalled"\`.
 
 ### CLI reporting
-Run \`bunx oh-my-opencode devin-report\` to see a full session report with model tiers, durations, and outcomes. Use \`--json\` for CI or \`--tier Deep\` to filter.
+Run \`bunx oh-my-opencode devin-report\` to see a full session report with model tiers, durations, estimated costs, and outcomes. Use \`--json\` for CI or \`--tier Deep\` to filter.
 
 ---
 

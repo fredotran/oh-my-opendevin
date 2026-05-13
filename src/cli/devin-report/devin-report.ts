@@ -2,7 +2,7 @@ import { readdir, stat } from "node:fs/promises"
 import { existsSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { resolveTierInfo } from "../../mcp-servers/devin/tiers"
+import { resolveTierInfo, TIER_COST_MAP, type DevinTier } from "../../mcp-servers/devin/tiers"
 import type { SessionMetaFile } from "../../mcp-servers/devin/types"
 import { formatJsonOutput, formatTextOutput } from "./formatter"
 import type { DevinReportOptions, DevinReportResult, DevinReportSession, DevinReportSummary } from "./types"
@@ -52,6 +52,9 @@ async function getMcpSessions(): Promise<DevinReportSession[]> {
       if (meta.startedAt && meta.endedAt) {
         durationSeconds = Math.round((meta.endedAt - meta.startedAt) / 1000 * 10) / 10
       }
+      const estimatedCostUSD = durationSeconds != null
+        ? Math.round(durationSeconds * (TIER_COST_MAP[tier as DevinTier] ?? TIER_COST_MAP.Custom) * 100) / 100
+        : null
 
       const promptTruncated = (meta.prompt ?? "").length > 120
         ? (meta.prompt ?? "").slice(0, 120) + "..."
@@ -72,6 +75,7 @@ async function getMcpSessions(): Promise<DevinReportSession[]> {
         tier,
         keyword,
         durationSeconds,
+        estimatedCostUSD,
       })
     } catch {
       // Skip unparseable meta files
@@ -101,6 +105,7 @@ async function getMcpSessions(): Promise<DevinReportSession[]> {
         tier: "Unknown",
         keyword: "unknown",
         durationSeconds: Math.round((st.mtimeMs - st.ctimeMs) / 1000 * 10) / 10,
+        estimatedCostUSD: null,
       })
     } catch {
       // Skip unreadable log files
@@ -113,21 +118,26 @@ async function getMcpSessions(): Promise<DevinReportSession[]> {
 function buildSummary(sessions: DevinReportSession[]): DevinReportSummary {
   const bySource: Record<string, number> = {}
   const byStatus: Record<string, number> = {}
-  const byTier: Record<string, { count: number; models: Set<string>; totalDuration: number }> = {}
+  const byTier: Record<string, { count: number; models: Set<string>; totalDuration: number; totalCost: number }> = {}
   let totalDuration = 0
+  let totalCost = 0
 
   for (const s of sessions) {
     bySource[s.source] = (bySource[s.source] ?? 0) + 1
     byStatus[s.status] = (byStatus[s.status] ?? 0) + 1
 
     if (!byTier[s.tier]) {
-      byTier[s.tier] = { count: 0, models: new Set(), totalDuration: 0 }
+      byTier[s.tier] = { count: 0, models: new Set(), totalDuration: 0, totalCost: 0 }
     }
     byTier[s.tier].count++
     byTier[s.tier].models.add(s.model)
     if (s.durationSeconds) {
       byTier[s.tier].totalDuration += s.durationSeconds
       totalDuration += s.durationSeconds
+    }
+    if (s.estimatedCostUSD != null) {
+      byTier[s.tier].totalCost += s.estimatedCostUSD
+      totalCost += s.estimatedCostUSD
     }
   }
 
@@ -138,6 +148,7 @@ function buildSummary(sessions: DevinReportSession[]): DevinReportSummary {
       models: [...info.models].sort(),
       totalDurationSeconds: Math.round(info.totalDuration * 10) / 10,
       avgDurationSeconds: info.count > 0 ? Math.round((info.totalDuration / info.count) * 10) / 10 : 0,
+      estimatedCostUSD: Math.round(info.totalCost * 100) / 100,
     }
   }
 
@@ -147,6 +158,7 @@ function buildSummary(sessions: DevinReportSession[]): DevinReportSummary {
     byStatus,
     byTier: byTierResult,
     totalDurationSeconds: Math.round(totalDuration * 10) / 10,
+    totalEstimatedCostUSD: Math.round(totalCost * 100) / 100,
   }
 }
 

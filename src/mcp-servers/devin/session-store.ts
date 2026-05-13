@@ -893,6 +893,114 @@ export async function shutdownAllSessions(): Promise<void> {
   await Promise.all(pending)
 }
 
+export type DevinHealthInfo = {
+  devinBinaryFound: boolean
+  devinBinaryVersion: string | null
+  logDir: string
+  logDirTotalBytes: number
+  slotsUsed: number
+  slotsMax: number
+  modelSlotUsage: Array<{ model: string; running: number; limit: number; queued: number }>
+  orphanedCount: number
+  totalSessionsInMemory: number
+}
+
+async function getDevinBinaryVersion(): Promise<string | null> {
+  try {
+    const proc = Bun.spawn(["devin", "--version"], { stdout: "pipe", stderr: "ignore" })
+    const output = await new Response(proc.stdout).text()
+    const exitCode = await proc.exited
+    if (exitCode !== 0) return null
+    return output.trim().slice(0, 64) || null
+  } catch {
+    return null
+  }
+}
+
+async function getLogDirTotalBytes(): Promise<number> {
+  let total = 0
+  try {
+    const entries = await readdir(LOG_DIR)
+    for (const entry of entries) {
+      if (!entry.endsWith(".log") && !entry.endsWith(".meta.json")) continue
+      try {
+        const st = await stat(join(LOG_DIR, entry))
+        total += st.size
+      } catch { /* ignore */ }
+    }
+  } catch { /* ignore */ }
+  return total
+}
+
+export async function getDevinHealth(): Promise<DevinHealthInfo> {
+  const [version, logDirTotalBytes] = await Promise.all([
+    getDevinBinaryVersion(),
+    getLogDirTotalBytes(),
+  ])
+  const runningCount = [...sessions.values()].filter((s) => s.status === "running").length
+  const orphanedCount = [...sessions.values()].filter((s) => s.status === "orphaned").length
+
+  const modelSlotUsage: DevinHealthInfo["modelSlotUsage"] = []
+  const seenModels = new Set<string>([...modelRunningCounts.keys(), ...modelPendingQueues.keys()])
+  for (const key of seenModels) {
+    const model = key === "__default" ? "(default)" : key
+    const running = modelRunningCounts.get(key) ?? 0
+    const limit = getModelConcurrencyLimit(key === "__default" ? undefined : key)
+    const queued = modelPendingQueues.get(key)?.length ?? 0
+    modelSlotUsage.push({ model, running, limit, queued })
+  }
+
+  return {
+    devinBinaryFound: devinBinaryAvailable,
+    devinBinaryVersion: version,
+    logDir: LOG_DIR,
+    logDirTotalBytes,
+    slotsUsed: runningCount,
+    slotsMax: MAX_CONCURRENT_SESSIONS,
+    modelSlotUsage,
+    orphanedCount,
+    totalSessionsInMemory: sessions.size,
+  }
+}
+
+export type ResumableSessionInfo = {
+  id: string
+  model?: string
+  prompt: string
+  cwd: string
+  status: string
+  endedAt?: number
+  exitCode?: number
+}
+
+export async function getResumableSessions(): Promise<ResumableSessionInfo[]> {
+  const resumable: ResumableSessionInfo[] = []
+  try {
+    await mkdir(LOG_DIR, { recursive: true })
+    const entries = await readdir(LOG_DIR)
+    const inMemoryIds = new Set<string>(sessions.keys())
+    for (const entry of entries) {
+      if (!entry.endsWith(".meta.json")) continue
+      try {
+        const raw = await Bun.file(join(LOG_DIR, entry)).text()
+        const meta = JSON.parse(raw) as SessionMetaFile
+        if (meta.status !== "completed" && meta.status !== "error") continue
+        if (inMemoryIds.has(meta.id)) continue
+        resumable.push({
+          id: meta.id,
+          model: meta.model,
+          prompt: meta.prompt,
+          cwd: meta.cwd,
+          status: meta.status,
+          endedAt: meta.endedAt,
+          exitCode: meta.exitCode,
+        })
+      } catch { /* skip unparseable */ }
+    }
+  } catch { /* LOG_DIR may not exist */ }
+  return resumable.sort((a, b) => (b.endedAt ?? 0) - (a.endedAt ?? 0))
+}
+
 // @allow — test-only helper to inject mock sessions without spawning processes
 export function registerTestSession(session: DevinSession): void {
   sessions.set(session.id, session)

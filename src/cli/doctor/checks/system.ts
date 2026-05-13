@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs"
 import { MIN_OPENCODE_VERSION, CHECK_IDS, CHECK_NAMES } from "../constants"
 import type { CheckResult, DoctorIssue, SystemInfo } from "../types"
 import { findOpenCodeBinary, getOpenCodeVersion, compareVersions } from "./system-binary"
+import { findDevinBinary } from "./system-devin-binary"
 import { getPluginInfo } from "./system-plugin"
 import { getLatestPluginVersion, getLoadedPluginVersion, getSuggestedInstallTag } from "./system-loaded-version"
 import { parseJsonc } from "../../../shared"
@@ -12,6 +13,7 @@ interface SystemCheckDeps {
   findOpenCodeBinary: typeof findOpenCodeBinary
   getOpenCodeVersion: typeof getOpenCodeVersion
   compareVersions: typeof compareVersions
+  findDevinBinary: typeof findDevinBinary
   getPluginInfo: typeof getPluginInfo
   getLoadedPluginVersion: typeof getLoadedPluginVersion
   getLatestPluginVersion: typeof getLatestPluginVersion
@@ -22,6 +24,7 @@ const defaultDeps: SystemCheckDeps = {
   findOpenCodeBinary,
   getOpenCodeVersion,
   compareVersions,
+  findDevinBinary,
   getPluginInfo,
   getLoadedPluginVersion,
   getLatestPluginVersion,
@@ -157,6 +160,18 @@ export async function checkSystem(deps: SystemCheckDeps = defaultDeps): Promise<
     })
   }
 
+  // Devin CLI binary check
+  const devinInfo = await deps.findDevinBinary()
+  if (!devinInfo.found) {
+    issues.push({
+      title: "Devin CLI binary not found",
+      description: "The devin CLI is required for background session delegation via the devin MCP server.",
+      fix: "Install from https://cli.devin.ai/docs",
+      severity: "warning",
+      affects: ["devin delegation"],
+    })
+  }
+
   const status = getResultStatus(issues)
   return {
     name: CHECK_NAMES[CHECK_IDS.SYSTEM],
@@ -167,6 +182,7 @@ export async function checkSystem(deps: SystemCheckDeps = defaultDeps): Promise<
       `Plugin expected: ${systemInfo.pluginVersion ?? "unknown"}`,
       `Plugin loaded: ${systemInfo.loadedVersion ?? "unknown"}`,
       `Bun: ${systemInfo.bunVersion ?? "unknown"}`,
+      devinInfo.found ? `Devin CLI: ${devinInfo.version ?? "unknown version"}` : "Devin CLI: not detected",
     ],
     issues,
   }
