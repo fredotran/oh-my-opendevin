@@ -66,9 +66,17 @@ Each tool returns a human-readable text snapshot. \`session_id\` is a UUID — s
      This returns ONLY new output since your last poll. Using \`tail_bytes\` repeatedly re-fetches the same output and wastes context window.
    - If \`since_bytes\` returns "(no new output)", wait 15–30 seconds before polling again.
    - Use \`tail_bytes\` ONLY when the user explicitly asks for "full output" or you're checking a session for the first time.
-7. **Wait if you have nothing else to do.** Call \`devin_wait({ session_id, timeout_ms })\` instead of busy-polling. **Important:** \`devin_wait\` caps blocking at 30 seconds per call to avoid MCP client timeouts. If the session is still running after 30s, the response tells you \`output_bytes\` and recommends using \`devin_status({ since_bytes: ... })\`. You can call \`devin_wait\` again or switch to incremental polling.
-8. **Report results.** When \`status\` is \`completed\`, summarize Devin's output for the user. If \`error\`, surface the error and either retry or fall back to handling it yourself.
-9. **Cancel if needed.** \`devin_cancel({ session_id })\` if the user changes their mind or Devin goes off-rails.
+7. **Do productive work while waiting — don't just poll.** The point of delegating to Devin is to parallelize. While Devin runs:
+   - Work on a different subtask yourself
+   - Address other user requests or todo items
+   - Only check Devin status periodically (every 1–2 minutes is fine for long tasks)
+   - **Do NOT sit in a tight loop repeatedly calling \`devin_wait\` or \`devin_status\`** — this wastes your own context window and adds no value
+8. **Report cleanly — avoid log spam.** When updating the user on Devin's progress:
+   - **Say something once, then be quiet.** Do NOT repeat "Let me wait more..." or "Still running..." every few seconds
+   - Only speak up when there is meaningful news: new output, a status change (completed/error/cancelled/stalled), or a reasonable milestone (e.g., every 2–3 minutes for very long tasks)
+   - If the user asks "How is Devin doing?", give a concise one-line status + any blockers
+9. **Report results.** When \`status\` is \`completed\`, summarize Devin's output for the user. If \`error\`, surface the error and either retry or fall back to handling it yourself.
+10. **Cancel if needed.** \`devin_cancel({ session_id })\` if the user changes their mind or Devin goes off-rails.
 
 ---
 
@@ -140,10 +148,34 @@ Refactor src/auth/session.ts to use the new TokenStore interface from src/auth/t
 - **Don't spawn duplicate sessions for the same task.** Check \`devin_list\` first if unsure.
 - **Don't pass conversation transcripts as the prompt.** Distill to a clear, self-contained brief.
 - **DON'T use \`tail_bytes\` for repeated polling — always use \`since_bytes\` after the first status call.** Using \`tail_bytes\` repeatedly re-fetches the same output, wastes context window, and causes the MCP client to time out on large outputs. Track \`output_bytes\` from each response and pass it as \`since_bytes\` on the next poll.
-- **Don't poll in a tight loop.** Wait 15–30 seconds between \`devin_status\` calls. Use \`devin_wait\` if you have nothing else to do.
-- **Don't expect \`devin_wait\` to block for minutes.** It caps at 30 seconds per call to avoid MCP client timeout errors (-32001). If the session is still running, the response gives you \`output_bytes\` — use it with \`devin_status({ since_bytes })\` for incremental polling, or call \`devin_wait\` again.
+- **Don't poll in a tight loop.** Wait 15–30 seconds between \`devin_status\` calls. More importantly: **do OTHER work while waiting**, don't just sit there calling \`devin_wait\` repeatedly. That wastes your own context window and annoys the user.
+- **Don't spam the user with repetitive "waiting" messages.** Say it once when you start waiting, then be silent until there is meaningful news (new output, status change, or a 2–3 minute milestone). The user does not need to hear "Let me wait more..." 20 times.
+- **Don't expect \`devin_wait\` to block for minutes.** It caps at 30 seconds per call to avoid MCP client timeout errors (-32001). If the session is still running, the response gives you \`output_bytes\` — use it with \`devin_status({ since_bytes })\` for incremental polling, or go do something else and come back later.
 - **Default is \`dangerous\`** — all Devin CLI sessions bypass permission prompts automatically. Use \`permission_mode: "auto"\` only if the user explicitly wants Devin to ask for dangerous operations.
 - **Don't forget to cancel.** Stale background sessions waste subscription budget. Use \`devin_cancel_batch\` when cancelling multiple sessions at once.
+
+---
+
+## Ultrawork loop integration (safeguard)
+
+When you are running inside an **ultrawork loop** (\`/ulw-loop\` or \`ultrawork\` keyword detected), the loop requires **Oracle verification** before declaring completion. Devin runs as an isolated background subprocess and **cannot participate in Oracle verification**. This creates a critical orchestration requirement:
+
+**DO NOT emit \`<promise>DONE</promise>\` until:**
+1. Devin's session has fully completed (status is \`completed\`, \`error\`, or \`cancelled\`)
+2. You have read and fully integrated all of Devin's output into your own work
+3. The combined result (your work + Devin's output) represents the complete deliverable
+
+**If you emit \`<promise>DONE</promise>\` while Devin is still running**, the Oracle will review an incomplete result and likely reject it, causing the loop to restart with a "Verification failed" prompt.
+
+**Practical workflow in ultrawork mode:**
+- Delegate a self-contained subtask to Devin via \`devin_start\`
+- Continue working on your own portion of the task in parallel
+- Poll Devin incrementally with \`devin_status({ since_bytes: ... })\`
+- When Devin reports \`completed\`, read the final output and apply/integrate it
+- Only after everything is integrated and verified by you, emit \`<promise>DONE</promise>\`
+- The loop will then trigger Oracle verification of the combined result
+
+If Devin's output is incomplete or errored, fix the issues yourself or restart Devin with a clearer prompt before claiming completion.
 
 ---
 
