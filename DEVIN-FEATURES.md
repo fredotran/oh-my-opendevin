@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `48e451af`
+**Last updated:** `54ffa8e2`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -372,6 +372,7 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+54ffa8e2 docs(readme): add Devin CLI Reliability section and update fork features
 48e451af docs: add model selection rationale and spawned CLI command to DEVIN-FEATURES.md
 d77c75d9 docs: auto-update DEVIN-FEATURES.md [skip ci]
 79e50cbb docs: update DEVIN-FEATURES.md with reliability pack and limit recovery features
