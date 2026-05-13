@@ -3,8 +3,8 @@ import { existsSync, openSync, statSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { randomUUID } from "node:crypto"
-import { KNOWN_DEVIN_MODELS } from "./tiers"
-import type { DevinSession, DevinSessionSnapshot, SessionMetaFile } from "./types"
+import { KNOWN_DEVIN_MODELS, getFallbackModel } from "./tiers"
+import type { DevinSession, DevinSessionSnapshot, SessionMetaFile, SpawnErrorHint } from "./types"
 
 const LOG_DIR = join(tmpdir(), "oh-my-opencode-devin-mcp")
 const TAIL_BYTES_DEFAULT = 8192
@@ -311,6 +311,8 @@ export type StartOptions = {
   extraArgs?: string[]
   /** Maximum allowed duration in ms before auto-cancellation. Default: 2h. Min: 1m. */
   maxDurationMs?: number
+  /** If true and devin_start fails with QUOTA_EXCEEDED, automatically retry with the next model in the fallback chain. Default: false. */
+  autoFallback?: boolean
 }
 
 // Allowed Devin CLI arguments to prevent arbitrary flag injection
@@ -430,6 +432,67 @@ function levenshteinDistance(a: string, b: string): number {
   return dp[m][n]
 }
 
+// ─── Spawn Error Detection ────────────────────────────────────────────────────
+// Inspects stderr/log output from a failed devin spawn and returns a structured
+// error hint so the agent knows how to recover (rate limit, quota, context).
+
+export function detectSpawnError(stderr: string): SpawnErrorHint {
+  const text = stderr.toLowerCase()
+
+  // Rate limit detection
+  if (
+    text.includes("rate limit") ||
+    text.includes("too many requests") ||
+    text.includes("429") ||
+    text.includes("retry after")
+  ) {
+    const retryMatch = stderr.match(/retry after[:\s]*(\d+)/i)
+    const retryAfterMs = retryMatch ? parseInt(retryMatch[1], 10) * 1000 : 30000
+    return {
+      tag: "RATE_LIMIT",
+      message: "Devin API rate limit exceeded. Wait and retry.",
+      retryAfterMs,
+      suggestedAction: `Wait ${retryAfterMs}ms then retry with same model.`,
+    }
+  }
+
+  // Quota / usage cap detection
+  if (
+    text.includes("quota exceeded") ||
+    text.includes("usage limit") ||
+    text.includes("out of credits") ||
+    text.includes("billing limit") ||
+    text.includes("insufficient quota")
+  ) {
+    return {
+      tag: "QUOTA_EXCEEDED",
+      message: "Model quota or usage limit exceeded.",
+      suggestedAction: "Retry with a fallback model.",
+    }
+  }
+
+  // Context window detection
+  if (
+    text.includes("context length") ||
+    text.includes("token limit") ||
+    text.includes("maximum context") ||
+    text.includes("too many tokens") ||
+    text.includes("context window")
+  ) {
+    return {
+      tag: "CONTEXT_LIMIT",
+      message: "Prompt exceeds the model's context window.",
+      suggestedAction: "Shorten prompt or use a model with a larger context window.",
+    }
+  }
+
+  return {
+    tag: "UNKNOWN",
+    message: stderr.slice(0, 500) || "Devin spawn failed with unknown error.",
+    suggestedAction: "Review the full log and diagnose, or ask the user for direction.",
+  }
+}
+
 async function cleanupOldLogs(): Promise<void> {
   try {
     // Protect files belonging to in-memory sessions (a long-running session
@@ -482,30 +545,18 @@ function enforceSessionLimit(): void {
   }
 }
 
-export async function startDevinSession(options: StartOptions): Promise<DevinSession> {
-  enforceSessionLimit()
-
-  // Resolve model: explicit > default
-  const resolvedModel = options.model ?? DEFAULT_DEVIN_MODEL
-
-  // Validate all user inputs before spawning
-  validateModel(resolvedModel)
-  validateModelName(resolvedModel)
-  validateResumeId(options.resume)
-  const validatedExtraArgs = validateExtraArgs(options.extraArgs)
-  const resolvedCwd = validateCwd(options.cwd)
-
-  const maxDurationMs = options.maxDurationMs ?? DEFAULT_MAX_DURATION_MS
-  if (maxDurationMs < MIN_MAX_DURATION_MS) {
-    throw new Error(
-      `maxDurationMs must be at least ${MIN_MAX_DURATION_MS}ms (1 minute), got ${maxDurationMs}`,
-    )
-  }
-
-  // Pre-flight: ensure devin binary is available (cached after first check)
+/** Internal: spawns a single devin session. Returns session on success.
+ *  On immediate spawn failure, reads the log, detects the error type,
+ *  and throws a structured error so the caller can decide retry/fallback.
+ */
+async function tryStartDevinSession(
+  options: StartOptions,
+  resolvedModel: string,
+  validatedExtraArgs: string[],
+  resolvedCwd: string,
+  maxDurationMs: number,
+): Promise<DevinSession> {
   await validateDevinBinary()
-
-  // Wait for a per-model concurrency slot (mirrors BackgroundManager)
   await acquireModelSlot(resolvedModel)
 
   await mkdir(LOG_DIR, { recursive: true })
@@ -525,9 +576,6 @@ export async function startDevinSession(options: StartOptions): Promise<DevinSes
   args.push("--model", resolvedModel)
   if (validatedExtraArgs.length) args.push(...validatedExtraArgs)
 
-  // Write session metadata so external tools (e.g. test reporter) can
-  // inspect the resolved model, spawn command, and lifecycle timestamps
-  // without querying the in-memory session store.
   const meta = {
     id,
     model: resolvedModel,
@@ -539,12 +587,44 @@ export async function startDevinSession(options: StartOptions): Promise<DevinSes
   }
   Bun.write(metaPath, JSON.stringify(meta, null, 2))
 
-  const proc = Bun.spawn(["devin", ...args], {
-    cwd: resolvedCwd,
-    stdout: fd,
-    stderr: fd,
-    stdin: "ignore",
-  })
+  let proc: DevinSession["proc"]
+  try {
+    proc = Bun.spawn(["devin", ...args], {
+      cwd: resolvedCwd,
+      stdout: fd,
+      stderr: fd,
+      stdin: "ignore",
+    })
+  } catch (spawnErr) {
+    const stderr = spawnErr instanceof Error ? spawnErr.message : String(spawnErr)
+    const hint = detectSpawnError(stderr)
+    releaseModelSlot(resolvedModel)
+    throw new Error(formatSpawnError(hint, resolvedModel))
+  }
+
+  // Give the process a brief moment to crash on startup (bad args, auth failure, etc.)
+  const settleTimeout = new Promise<"settled">((resolve) => setTimeout(() => resolve("settled"), 2000))
+  const quickExit = proc.exited.then((code) => `exit:${code}` as const)
+  const raceResult = await Promise.race([quickExit, settleTimeout])
+
+  if (raceResult.startsWith("exit:")) {
+    const exitCode = parseInt(raceResult.split(":")[1], 10)
+    if (exitCode !== 0) {
+      // Read whatever was written to the log for error analysis
+      let logTail = ""
+      try {
+        const st = statSync(logPath)
+        const tailSize = Math.min(st.size, 4096)
+        if (tailSize > 0) {
+          const file = Bun.file(logPath)
+          logTail = await file.slice(st.size - tailSize, st.size).text()
+        }
+      } catch { /* ignore read errors */ }
+      const hint = detectSpawnError(logTail)
+      releaseModelSlot(resolvedModel)
+      throw new Error(formatSpawnError(hint, resolvedModel))
+    }
+  }
 
   const now = Date.now()
   const session: DevinSession = {
@@ -581,6 +661,69 @@ export async function startDevinSession(options: StartOptions): Promise<DevinSes
     })
 
   return session
+}
+
+function formatSpawnError(hint: SpawnErrorHint, model: string): string {
+  const fallback = hint.tag === "QUOTA_EXCEEDED" ? getFallbackModel(model) : undefined
+  const parts = [
+    `[devin_start] FAILED — ${hint.tag}`,
+    "",
+    hint.message,
+  ]
+  if (hint.retryAfterMs) {
+    parts.push(`", "Wait ${hint.retryAfterMs}ms then retry with same model.`)
+  }
+  if (fallback) {
+    parts.push(`Suggested fallback model: "${fallback}".`)
+  }
+  if (hint.suggestedAction) {
+    parts.push(hint.suggestedAction)
+  }
+  return parts.join("\n")
+}
+
+export async function startDevinSession(options: StartOptions): Promise<DevinSession> {
+  enforceSessionLimit()
+
+  const resolvedModel = options.model ?? DEFAULT_DEVIN_MODEL
+  validateModel(resolvedModel)
+  validateModelName(resolvedModel)
+  validateResumeId(options.resume)
+  const validatedExtraArgs = validateExtraArgs(options.extraArgs)
+  const resolvedCwd = validateCwd(options.cwd)
+
+  const maxDurationMs = options.maxDurationMs ?? DEFAULT_MAX_DURATION_MS
+  if (maxDurationMs < MIN_MAX_DURATION_MS) {
+    throw new Error(
+      `maxDurationMs must be at least ${MIN_MAX_DURATION_MS}ms (1 minute), got ${maxDurationMs}`,
+    )
+  }
+
+  // Attempt to start. On QUOTA_EXCEEDED with autoFallback, walk the chain.
+  let currentModel = resolvedModel
+  let attempts = 0
+  const maxAttempts = 4 // covers the full fallback chain
+
+  while (attempts < maxAttempts) {
+    attempts++
+    try {
+      return await tryStartDevinSession(options, currentModel, validatedExtraArgs, resolvedCwd, maxDurationMs)
+    } catch (err) {
+      if (!(err instanceof Error)) throw err
+      const isQuota = err.message.includes("QUOTA_EXCEEDED")
+      if (isQuota && options.autoFallback) {
+        const next = getFallbackModel(currentModel)
+        if (next) {
+          console.error(`[devin-mcp] Model ${currentModel} quota exceeded — auto-falling back to ${next}`)
+          currentModel = next
+          continue
+        }
+      }
+      throw err
+    }
+  }
+
+  throw new Error("All fallback models exhausted. Please try again later or ask the user for direction.")
 }
 
 export function getDevinSession(id: string): DevinSession | undefined {

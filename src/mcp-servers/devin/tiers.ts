@@ -48,3 +48,15 @@ export function resolveTierInfo(model: string | undefined): TierEntry {
   if (!model) return { tier: "Standard", keyword: "omit model" }
   return MODEL_TIER_MAP[model] ?? { tier: "Custom", keyword: model }
 }
+
+/** Fallback chain when a model hits quota or is unavailable.
+ *  Ordered from most to least capable: Deep → Balanced → Standard → Fast/Cheap.
+ */
+export const FALLBACK_CHAIN = ["opus", "sonnet", "kimi-k2.6", "swe"]
+
+/** Returns the next model in the fallback chain, or undefined if at the end. */
+export function getFallbackModel(current: string | undefined): string | undefined {
+  const idx = FALLBACK_CHAIN.indexOf(current ?? "")
+  if (idx === -1) return FALLBACK_CHAIN[0]
+  return FALLBACK_CHAIN[idx + 1]
+}

@@ -2,6 +2,16 @@ import type { Subprocess } from "bun"
 
 export type DevinSessionStatus = "running" | "completed" | "error" | "cancelled" | "orphaned" | "stalled"
 
+export type SpawnErrorTag = "RATE_LIMIT" | "QUOTA_EXCEEDED" | "CONTEXT_LIMIT" | "UNKNOWN"
+
+export type SpawnErrorHint = {
+  tag: SpawnErrorTag
+  message: string
+  retryAfterMs?: number
+  suggestedFallback?: string
+  suggestedAction?: string
+}
+
 export type DevinSession = {
   id: string
   proc: Subprocess

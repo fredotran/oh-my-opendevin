@@ -131,6 +131,37 @@ The Devin agent (you) runs on free models. When delegating to the Devin CLI sand
 
 ---
 
+## Limit & Error Recovery
+
+When \`devin_start\` fails, the response includes a **structured error tag**. Read it and take the matching action — do NOT guess.
+
+### Fallback chain
+
+If a model is unavailable due to quota or usage limits, fall back in this order:
+
+\`opus\` → \`sonnet\` → \`kimi-k2.6\` → \`swe\`
+
+(Deep → Balanced → Standard → Fast/Cheap)
+
+### Error tag actions
+
+| Tag | What happened | Agent action |
+|-----|---------------|--------------|
+| \`RATE_LIMIT\` | Too many requests | Wait \`retryAfterMs\`, then **retry with same model** |
+| \`QUOTA_EXCEEDED\` | Model quota exhausted | **Retry with \`suggestedFallback\`** (next in chain). If chain exhausted, tell the user |
+| \`CONTEXT_LIMIT\` | Prompt too long | **Summarize the prompt** (remove files, shorten instructions) or pick a model with larger context |
+| \`UNKNOWN\` | Unclear error | Read the full log, diagnose, ask the user if stuck |
+
+### Recovery workflow
+
+1. If \`RATE_LIMIT\` → wait the specified duration, call \`devin_start\` again with **same model**
+2. If \`QUOTA_EXCEEDED\` → call \`devin_start\` with \`model: suggestedFallback\`
+3. If \`CONTEXT_LIMIT\` → shorten the prompt, retry with same model (or omit model for default)
+4. If the fallback chain is exhausted or the error persists → tell the user and ask for direction
+5. **Do NOT silently skip the error or switch models without telling the user** — model selection affects cost and capability
+
+---
+
 ## Prompt-writing rules for Devin
 
 - Start with a one-line goal.
