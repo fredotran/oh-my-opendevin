@@ -75,8 +75,17 @@ Each tool returns a human-readable text snapshot. \`session_id\` is a UUID — s
    - **Say something once, then be quiet.** Do NOT repeat "Let me wait more..." or "Still running..." every few seconds
    - Only speak up when there is meaningful news: new output, a status change (completed/error/cancelled/stalled), or a reasonable milestone (e.g., every 2–3 minutes for very long tasks)
    - If the user asks "How is Devin doing?", give a concise one-line status + any blockers
-9. **Report results.** When \`status\` is \`completed\`, summarize Devin's output for the user. If \`error\`, surface the error and either retry or fall back to handling it yourself.
-10. **Cancel if needed.** \`devin_cancel({ session_id })\` if the user changes their mind or Devin goes off-rails.
+9. **Very long tasks (Docker builds, compilations, downloads).**
+   - \`devin_wait\` always caps at **30 seconds per call** regardless of \`timeout_ms\` — MCP clients timeout tool calls. Do NOT pass huge \`timeout_ms\` values expecting it to block for minutes.
+   - A 20-minute Docker build means you will call \`devin_wait\` roughly 40 times if you loop every 30s. **This is wasteful.** Instead:
+     - Call \`devin_wait\` once → it returns "still running" after 30s
+     - **Go do something else for 2–3 minutes** (work on another task, read docs, etc.)
+     - Call \`devin_status({ session_id, since_bytes: <last_output_bytes> })\` to check for new output
+     - If status is still \`running\` and there is no new output, **that is normal for Docker builds** (layer downloads, compilation). Wait another 2–3 minutes.
+     - Only when \`status\` changes to \`completed\`, \`error\`, \`cancelled\`, or \`stalled\` — report it.
+   - **Do NOT call \`devin_wait\` repeatedly in a tight loop.** It will never block longer than 30s. Space out your checks.
+10. **Report results.** When \`status\` is \`completed\`, summarize Devin's output for the user. If \`error\`, surface the error and either retry or fall back to handling it yourself.
+11. **Cancel if needed.** \`devin_cancel({ session_id })\` if the user changes their mind or Devin goes off-rails.
 
 ---
 
