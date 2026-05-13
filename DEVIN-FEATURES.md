@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `f6cf6532`
+**Last updated:** `6dd71484`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -310,6 +310,8 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+6dd71484 docs(devin-mcp): update AGENTS.md with all reliability features
+9b78f0b6 docs: auto-update DEVIN-FEATURES.md [skip ci]
 f6cf6532 docs: update DEVIN-FEATURES.md — model disclosure now on first line
 82de09e3 docs: auto-update DEVIN-FEATURES.md [skip ci]
 8a120f41 feat(devin-mcp): put model info on first line of devin_start response
