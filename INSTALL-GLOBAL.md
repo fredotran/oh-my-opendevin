@@ -210,7 +210,7 @@ This means:
 This fork adds:
 - Devin CLI MCP server integration
 - Built-in Devin CLI skill with model selection guidance
-- Devin CLI slash commands (`/devin`, `/devin-models`, `/devin-status`, `/devin-cancel`)
+- Devin CLI slash commands (`/devin-status`, `/devin-cancel`) — `/devin` and `/devin-models` removed in favor of the auto-loaded `devin-cli` agent skill
 - Session alias system for friendly session ID references
 
 All core features from the original oh-my-openagent are preserved.
