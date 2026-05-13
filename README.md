@@ -82,6 +82,22 @@ When the Devin agent delegates to the Devin CLI sandbox, it uses **explicit keyw
 - Use **Deep** (`"opus"`) sparingly — reserve for architectural refactors or critical correctness
 - Use **Balanced** (`"sonnet"`) when you need more than `swe` but don't want `opus` cost
 
+#### Devin CLI Reliability
+
+The MCP server includes multiple safeguards for production use:
+
+| Feature | What it does |
+|---------|-------------|
+| **Max duration cap** | `maxDurationMs` option (default 2h, min 1m) auto-cancels runaway sessions |
+| **Log size caps** | Warns at 100MB; auto-cancels at 500MB to prevent disk exhaustion |
+| **Structured error hints** | Spawn failures return tagged errors: `RATE_LIMIT`, `QUOTA_EXCEEDED`, `CONTEXT_LIMIT`, `UNKNOWN` with recovery guidance |
+| **Model fallback chain** | `opus` → `sonnet` → `kimi-k2.6` → `swe` — agents can retry with the next tier when quota is hit |
+| **Auto-fallback** | `autoFallback: true` on `devin_start` automatically retries down the chain on `QUOTA_EXCEEDED` |
+| **Tool error wrapping** | All tool handlers catch unexpected errors and return text results instead of crashing |
+| **Concurrent limit** | Maximum 50 running sessions enforced at spawn time |
+| **Idle detection** | Sessions with no output growth for 30 minutes are marked `stalled` |
+| **Stdin EOF handler** | Detects parent process crash and cancels all sessions to avoid burning credits |
+
 **Override the Devin agent model** in `~/.config/opencode/oh-my-openagent.jsonc`:
 
 ```jsonc
@@ -98,6 +114,8 @@ When the Devin agent delegates to the Devin CLI sandbox, it uses **explicit keyw
 Restart OpenCode after changing. The agent model is separate from the CLI sandbox tier — the agent's model config does not affect CLI session routing.
 
 **Agent assembly order:** `Devin → Sisyphus → Hephaestus → Prometheus → Atlas`
+
+Canonical order is enforced by `installAgentSortShim()` so Devin always appears first when both Devin and Sisyphus are registered. Devin is the default primary agent; Sisyphus is available when you need specialist orchestration.
 
 #### Architecture Diagram
 
@@ -693,7 +711,7 @@ See full [Features Documentation](docs/reference/features.md).
 
 **Fork-Specific Features:**
 - **Devin x Sisyphus Dual-Primary Architecture**: Devin (default) handles local execution + Devin CLI sandbox delegation. Sisyphus handles full specialist agent orchestration (Oracle, Librarian, Explore, Hephaestus, Atlas, Metis, Momus). Pick the right agent for the job.
-- **Devin CLI Integration**: MCP server for background Devin sessions with explicit keyword-based tiered model routing (Standard/Fast/Code Gen/Balanced/Deep) + built-in skill + slash commands (`/devin-status`, `/devin-cancel`)
+- **Devin CLI Integration**: MCP server for background Devin sessions with explicit keyword-based tiered model routing (Standard/Fast/Code Gen/Balanced/Deep), structured error hints for limit recovery, model fallback chain, max duration caps, log size caps, and tool error wrapping. Built-in skill + slash commands (`/devin-status`, `/devin-cancel`)
 
 ## Configuration
 
