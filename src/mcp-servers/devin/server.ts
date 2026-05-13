@@ -18,6 +18,19 @@ import type { DevinSessionSnapshot } from "./types"
 const SERVER_NAME = "devin"
 const SERVER_VERSION = "0.1.0"
 
+/** Exported for testing — Zod schema for devin_wait tool input */
+export const devinWaitInputSchema = {
+  session_id: z.string().describe("Session id returned by devin_start."),
+  timeout_ms: z
+    .number()
+    .int()
+    .min(1000)
+    .max(30000)
+    .optional()
+    .describe("Target max wait in ms (default 30000, hard max 30000). The tool returns after this timeout if the session is still running, to avoid MCP-level timeouts. You can call devin_wait again or switch to devin_status with since_bytes."),
+  tail_bytes: z.number().int().min(0).max(262144).optional(),
+}
+
 function renderSnapshot(snap: DevinSessionSnapshot): string {
   const lines = [
     `session_id: ${snap.id}`,
@@ -41,6 +54,23 @@ function asTextResult(text: string) {
   return { content: [{ type: "text" as const, text }] }
 }
 
+/** Wraps an MCP tool handler so that unexpected errors are caught and returned
+ *  as a text result rather than propagating as unhandled exceptions. */
+export function safeToolHandler<T extends Record<string, unknown>>(
+  toolName: string,
+  handler: (args: T) => Promise<ReturnType<typeof asTextResult>>,
+): (args: T) => Promise<ReturnType<typeof asTextResult>> {
+  return async (args) => {
+    try {
+      return await handler(args)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.error(`[devin-mcp] Tool ${toolName} error:`, err)
+      return asTextResult(`[${toolName}] ERROR: ${message}`)
+    }
+  }
+}
+
 export function createDevinMcpServer(): McpServer {
   const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION })
 
@@ -60,7 +90,7 @@ export function createDevinMcpServer(): McpServer {
         resume: z.string().optional().describe("Resume an existing Devin session by id (passes -r)."),
       },
     },
-    async ({ prompt, cwd, model, permission_mode, resume }) => {
+    safeToolHandler("devin_start", async ({ prompt, cwd, model, permission_mode, resume }) => {
       const session = await startDevinSession({
         prompt,
         cwd,
@@ -81,7 +111,7 @@ export function createDevinMcpServer(): McpServer {
         `model: ${resolvedModel}\n` +
         `==================`,
       )
-    },
+    }),
   )
 
   server.registerTool(
@@ -106,7 +136,7 @@ export function createDevinMcpServer(): McpServer {
           .describe("Return ONLY new output written after this byte offset. Use the `output_bytes` field from the PREVIOUS devin_status or devin_wait response. This avoids redundant data transfer and context bloat."),
       },
     },
-    async ({ session_id, tail_bytes, since_bytes }) => {
+    safeToolHandler("devin_status", async ({ session_id, tail_bytes, since_bytes }) => {
       const session = getDevinSession(session_id)
       if (!session) return asTextResult(`unknown session_id: ${session_id}`)
       if (since_bytes !== undefined) {
@@ -123,7 +153,7 @@ export function createDevinMcpServer(): McpServer {
       }
       const snap = await snapshotDevinSession(session, tail_bytes ?? 8192)
       return asTextResult(renderSnapshot(snap))
-    },
+    }),
   )
 
   server.registerTool(
@@ -131,24 +161,13 @@ export function createDevinMcpServer(): McpServer {
     {
       description:
         "Block until a background Devin session finishes. Returns the final snapshot if the session exits, or a 'still running' status with polling guidance if it does not. The actual wait is capped at 30 seconds per call to avoid MCP client timeouts — if the session is still running after 30s, call devin_status with since_bytes for incremental polling, or call devin_wait again.",
-      inputSchema: {
-        session_id: z.string().describe("Session id returned by devin_start."),
-        timeout_ms: z
-          .number()
-          .int()
-          .min(1000)
-          .max(600000)
-          .optional()
-          .describe("Target max wait in ms (default 60000, max 600000). The tool returns after 30s if the session is still running, to avoid MCP-level timeouts. You can call devin_wait again or switch to devin_status with since_bytes."),
-        tail_bytes: z.number().int().min(0).max(262144).optional(),
-      },
+      inputSchema: devinWaitInputSchema,
     },
-    async ({ session_id, timeout_ms, tail_bytes }) => {
+    safeToolHandler("devin_wait", async ({ session_id, timeout_ms, tail_bytes }) => {
       const session = getDevinSession(session_id)
       if (!session) return asTextResult(`unknown session_id: ${session_id}`)
-      const requestedLimit = timeout_ms ?? 60000
-      // Cap actual blocking to 30s to avoid MCP client timeout (-32001).
-      // The agent can call devin_wait again or switch to devin_status.
+      const requestedLimit = timeout_ms ?? 30000
+      // Defense-in-depth: cap to 30s even if schema validation were bypassed
       const actualLimit = Math.min(requestedLimit, 30000)
       const startWait = Date.now()
       const timer = new Promise<"timeout">((resolve) => setTimeout(() => resolve("timeout"), actualLimit))
@@ -169,7 +188,7 @@ export function createDevinMcpServer(): McpServer {
       }
 
       return asTextResult(`Session ${session_id} exited.\n\n` + renderSnapshot(snap))
-    },
+    }),
   )
 
   server.registerTool(
@@ -180,12 +199,12 @@ export function createDevinMcpServer(): McpServer {
         session_id: z.string().describe("Session id returned by devin_start."),
       },
     },
-    async ({ session_id }) => {
+    safeToolHandler("devin_cancel", async ({ session_id }) => {
       const session = await cancelDevinSession(session_id)
       if (!session) return asTextResult(`unknown session_id: ${session_id}`)
       const snap = await snapshotDevinSession(session, 0)
       return asTextResult(`Cancelled.\n\n` + renderSnapshot(snap))
-    },
+    }),
   )
 
   server.registerTool(
@@ -201,7 +220,7 @@ export function createDevinMcpServer(): McpServer {
           .describe("Array of session ids to cancel (max 50)."),
       },
     },
-    async ({ session_ids }) => {
+    safeToolHandler("devin_cancel_batch", async ({ session_ids }) => {
       const result = await cancelDevinSessions(session_ids)
       const lines: string[] = []
       if (result.cancelled.length > 0) {
@@ -216,7 +235,7 @@ export function createDevinMcpServer(): McpServer {
         )
       }
       return asTextResult(lines.join("\n") || "No sessions to cancel.")
-    },
+    }),
   )
 
   server.registerTool(
@@ -230,7 +249,7 @@ export function createDevinMcpServer(): McpServer {
           .describe("If true, include the last 256 bytes of each session's output."),
       },
     },
-    async ({ include_output }) => {
+    safeToolHandler("devin_list", async ({ include_output }) => {
       const sessions = listDevinSessions()
       if (sessions.length === 0) return asTextResult("(no sessions)")
       const parts = await Promise.all(
@@ -243,7 +262,7 @@ export function createDevinMcpServer(): McpServer {
         }),
       )
       return asTextResult(parts.join("\n"))
-    },
+    }),
   )
 
   return server

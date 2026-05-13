@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach } from "bun:test"
 import { mkdtemp, writeFile, mkdir, unlink, rmdir } from "node:fs/promises"
+import { truncateSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { snapshotDevinSession, cancelDevinSession, cancelDevinSessions, readSessionLogSince, shutdownAllSessions, registerTestSession, clearTestSessions, reattachOrphanedSessions, setDevinBinaryAvailable } from "./session-store"
@@ -383,5 +384,203 @@ describe("idle session detection", () => {
 
     // then
     expect(session.status).toBe("orphaned")
+  })
+})
+
+describe("max duration cap", () => {
+  let cleanupDirs: string[] = []
+
+  afterEach(async () => {
+    clearTestSessions()
+    for (const dir of cleanupDirs) {
+      try { await rmdir(dir, { recursive: true }) } catch { /* ignore */ }
+    }
+    cleanupDirs = []
+  })
+
+  it("rejects maxDurationMs below 1 minute", async () => {
+    // given
+    setDevinBinaryAvailable(true)
+
+    // when / then
+    const { startDevinSession } = await import("./session-store")
+    await expect(
+      startDevinSession({ prompt: "test", maxDurationMs: 30_000 }),
+    ).rejects.toThrow(/maxDurationMs must be at least 60000ms/)
+  })
+
+  it("rejects negative maxDurationMs", async () => {
+    // given
+    setDevinBinaryAvailable(true)
+
+    // when / then
+    const { startDevinSession } = await import("./session-store")
+    await expect(
+      startDevinSession({ prompt: "test", maxDurationMs: -1 }),
+    ).rejects.toThrow(/maxDurationMs must be at least 60000ms/)
+  })
+
+  it("cancels session that exceeds maxDurationMs", async () => {
+    // given — a mock session that started 3 minutes ago with 2 minute max
+    const tmpDir = await mkdtemp(join(tmpdir(), "devin-maxdur-test-"))
+    cleanupDirs.push(tmpDir)
+    const logPath = join(tmpDir, "test.log")
+    await writeFile(logPath, "some output")
+
+    const now = Date.now()
+    const session: DevinSession = {
+      id: "test-maxdur-1",
+      proc: mockSubprocess,
+      logPath,
+      startedAt: now - 180_000, // 3 minutes ago
+      cwd: tmpDir,
+      prompt: "test prompt",
+      status: "running",
+      maxDurationMs: 120_000, // 2 minute cap
+    }
+    registerTestSession(session)
+
+    // when
+    const { checkMaxDurationSessions } = await import("./session-store")
+    checkMaxDurationSessions()
+
+    // then
+    expect(session.status).toBe("cancelled")
+  })
+
+  it("does not cancel session within maxDurationMs", async () => {
+    // given — a mock session that started 1 minute ago with 2 minute max
+    const tmpDir = await mkdtemp(join(tmpdir(), "devin-maxdur-test-"))
+    cleanupDirs.push(tmpDir)
+    const logPath = join(tmpDir, "test.log")
+    await writeFile(logPath, "some output")
+
+    const now = Date.now()
+    const session: DevinSession = {
+      id: "test-maxdur-2",
+      proc: mockSubprocess,
+      logPath,
+      startedAt: now - 60_000, // 1 minute ago
+      cwd: tmpDir,
+      prompt: "test prompt",
+      status: "running",
+      maxDurationMs: 120_000, // 2 minute cap
+    }
+    registerTestSession(session)
+
+    // when
+    const { checkMaxDurationSessions } = await import("./session-store")
+    checkMaxDurationSessions()
+
+    // then
+    expect(session.status).toBe("running")
+  })
+
+  it("applies default maxDurationMs when not specified", async () => {
+    // given
+    setDevinBinaryAvailable(true)
+
+    // when / then — default should be 2 hours (7200000ms)
+    const { startDevinSession } = await import("./session-store")
+    try {
+      await startDevinSession({ prompt: "test" })
+    } catch (err) {
+      // May fail at spawn, but NOT at maxDuration validation
+      expect((err as Error).message).not.toContain("maxDurationMs")
+    }
+  })
+})
+
+describe("log size caps", () => {
+  let cleanupDirs: string[] = []
+
+  afterEach(async () => {
+    clearTestSessions()
+    for (const dir of cleanupDirs) {
+      try { await rmdir(dir, { recursive: true }) } catch { /* ignore */ }
+    }
+    cleanupDirs = []
+  })
+
+  it("warns when log exceeds soft cap", async () => {
+    // given — a mock session with a sparse log file larger than soft cap (100MB)
+    const tmpDir = await mkdtemp(join(tmpdir(), "devin-logcap-test-"))
+    cleanupDirs.push(tmpDir)
+    const logPath = join(tmpDir, "test.log")
+    const softCap = 100 * 1024 * 1024
+    await writeFile(logPath, "")
+    truncateSync(logPath, softCap + 1024)
+
+    const session: DevinSession = {
+      id: "test-logcap-1",
+      proc: mockSubprocess,
+      logPath,
+      startedAt: Date.now(),
+      cwd: tmpDir,
+      prompt: "test prompt",
+      status: "running",
+    }
+    registerTestSession(session)
+
+    // when
+    const { checkLogSizeCaps } = await import("./session-store")
+    checkLogSizeCaps()
+
+    // then — session should still be running but warned
+    expect(session.status).toBe("running")
+  })
+
+  it("cancels session when log exceeds hard cap", async () => {
+    // given — a mock session with a sparse log file larger than hard cap (500MB)
+    const tmpDir = await mkdtemp(join(tmpdir(), "devin-logcap-test-"))
+    cleanupDirs.push(tmpDir)
+    const logPath = join(tmpDir, "test.log")
+    const hardCap = 500 * 1024 * 1024
+    await writeFile(logPath, "")
+    truncateSync(logPath, hardCap + 1024)
+
+    const session: DevinSession = {
+      id: "test-logcap-2",
+      proc: mockSubprocess,
+      logPath,
+      startedAt: Date.now(),
+      cwd: tmpDir,
+      prompt: "test prompt",
+      status: "running",
+    }
+    registerTestSession(session)
+
+    // when
+    const { checkLogSizeCaps } = await import("./session-store")
+    checkLogSizeCaps()
+
+    // then
+    expect(session.status).toBe("cancelled")
+  })
+
+  it("ignores sessions below soft cap", async () => {
+    // given — a mock session with a small log file
+    const tmpDir = await mkdtemp(join(tmpdir(), "devin-logcap-test-"))
+    cleanupDirs.push(tmpDir)
+    const logPath = join(tmpDir, "test.log")
+    await writeFile(logPath, "small log")
+
+    const session: DevinSession = {
+      id: "test-logcap-3",
+      proc: mockSubprocess,
+      logPath,
+      startedAt: Date.now(),
+      cwd: tmpDir,
+      prompt: "test prompt",
+      status: "running",
+    }
+    registerTestSession(session)
+
+    // when
+    const { checkLogSizeCaps } = await import("./session-store")
+    checkLogSizeCaps()
+
+    // then
+    expect(session.status).toBe("running")
   })
 })

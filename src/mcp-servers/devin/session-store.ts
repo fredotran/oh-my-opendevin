@@ -17,6 +17,10 @@ const DEFAULT_DEVIN_MODEL = "kimi-k2.6"
 const COMPLETED_SESSION_TTL_MS = 60 * 60 * 1000 // 1 hour
 const IDLE_CHECK_INTERVAL_MS = 5 * 60 * 1000 // 5 minutes
 const IDLE_STALL_THRESHOLD_MS = 30 * 60 * 1000 // 30 minutes with no output → stalled
+const DEFAULT_MAX_DURATION_MS = 2 * 60 * 60 * 1000 // 2 hours
+const MIN_MAX_DURATION_MS = 60 * 1000 // 1 minute
+const LOG_SOFT_CAP_BYTES = 100 * 1024 * 1024 // 100 MB — warn
+const LOG_HARD_CAP_BYTES = 500 * 1024 * 1024 // 500 MB — auto-cancel
 
 // Capture the working directory at module load time so that
 // session fork / session roaming does not drift the default cwd.
@@ -225,9 +229,59 @@ function checkIdleSessions(): void {
   }
 }
 
+// ─── Max Duration Enforcement ────────────────────────────────────────────────
+// Running sessions that exceed their maxDurationMs are auto-cancelled.
+
+export function checkMaxDurationSessions(): void {
+  const now = Date.now()
+  for (const session of sessions.values()) {
+    if (session.status !== "running") continue
+    const cap = session.maxDurationMs ?? DEFAULT_MAX_DURATION_MS
+    if (now - session.startedAt > cap) {
+      session.status = "cancelled"
+      console.error(
+        `[devin-mcp] Session ${session.id} cancelled: exceeded max duration ${cap}ms`,
+      )
+      // Fire-and-forget kill; the exited handler will update meta / release slot
+      killWithGracefulFallback(session.proc, session.id).catch(() => {})
+    }
+  }
+}
+
+// ─── Log Size Cap Enforcement ────────────────────────────────────────────────
+// Warns on soft cap, auto-cancels on hard cap to prevent disk exhaustion.
+
+export function checkLogSizeCaps(): void {
+  for (const session of sessions.values()) {
+    if (session.status !== "running") continue
+    try {
+      if (!existsSync(session.logPath)) continue
+      const st = statSync(session.logPath)
+      const size = st.size
+      if (size > LOG_HARD_CAP_BYTES) {
+        console.error(
+          `[devin-mcp] Session ${session.id} cancelled: log size ${size} bytes exceeds hard cap ${LOG_HARD_CAP_BYTES} bytes`,
+        )
+        session.status = "cancelled"
+        killWithGracefulFallback(session.proc, session.id).catch(() => {})
+      } else if (size > LOG_SOFT_CAP_BYTES) {
+        console.error(
+          `[devin-mcp] Session ${session.id} WARNING: log size ${size} bytes exceeds soft cap ${LOG_SOFT_CAP_BYTES} bytes`,
+        )
+      }
+    } catch {
+      // Ignore per-session stat errors
+    }
+  }
+}
+
 function startIdleDetector(): void {
   if (idleTimer) return
-  idleTimer = setInterval(checkIdleSessions, IDLE_CHECK_INTERVAL_MS)
+  idleTimer = setInterval(() => {
+    checkIdleSessions()
+    checkMaxDurationSessions()
+    checkLogSizeCaps()
+  }, IDLE_CHECK_INTERVAL_MS)
   if (typeof idleTimer === "object" && "unref" in idleTimer) {
     idleTimer.unref()
   }
@@ -255,6 +309,8 @@ export type StartOptions = {
   resume?: string
   permissionMode?: "auto" | "dangerous"
   extraArgs?: string[]
+  /** Maximum allowed duration in ms before auto-cancellation. Default: 2h. Min: 1m. */
+  maxDurationMs?: number
 }
 
 // Allowed Devin CLI arguments to prevent arbitrary flag injection
@@ -376,10 +432,16 @@ function levenshteinDistance(a: string, b: string): number {
 
 async function cleanupOldLogs(): Promise<void> {
   try {
+    // Protect files belonging to in-memory sessions (a long-running session
+    // may not have been modified recently but is still active).
+    const protectedIds = new Set<string>([...sessions.keys()])
     const entries = await readdir(LOG_DIR)
     const now = Date.now()
     for (const entry of entries) {
       if (!entry.endsWith(".log") && !entry.endsWith(".meta.json")) continue
+      // Extract session id from filename: {id}.log or {id}.meta.json
+      const id = entry.replace(/\.(log|meta\.json)$/, "")
+      if (protectedIds.has(id)) continue
       const filePath = join(LOG_DIR, entry)
       try {
         const st = await stat(filePath)
@@ -432,6 +494,13 @@ export async function startDevinSession(options: StartOptions): Promise<DevinSes
   validateResumeId(options.resume)
   const validatedExtraArgs = validateExtraArgs(options.extraArgs)
   const resolvedCwd = validateCwd(options.cwd)
+
+  const maxDurationMs = options.maxDurationMs ?? DEFAULT_MAX_DURATION_MS
+  if (maxDurationMs < MIN_MAX_DURATION_MS) {
+    throw new Error(
+      `maxDurationMs must be at least ${MIN_MAX_DURATION_MS}ms (1 minute), got ${maxDurationMs}`,
+    )
+  }
 
   // Pre-flight: ensure devin binary is available (cached after first check)
   await validateDevinBinary()
@@ -490,6 +559,7 @@ export async function startDevinSession(options: StartOptions): Promise<DevinSes
     resumeId: options.resume,
     lastOutputBytes: 0,
     lastOutputAt: now,
+    maxDurationMs,
   }
 
   sessions.set(id, session)
