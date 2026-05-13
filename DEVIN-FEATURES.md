@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `2fd4b76b`
+**Last updated:** `a6892032`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -309,6 +309,10 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+a6892032 feat(devin-mcp): reliability pack — max duration, log caps, error handling, schema fix
+2492b81a docs(devin-mcp): remove stale references to deleted /devin and /devin-models slash commands
+b7797d43 docs(superpowers): add devin-mcp-reliability-pack design
+3f184411 docs: auto-update DEVIN-FEATURES.md [skip ci]
 2fd4b76b docs: update DEVIN-FEATURES.md with latest fork features
 f514b4d6 docs: auto-update DEVIN-FEATURES.md [skip ci]
 1db2ce97 feat(devin-mcp): add stdin EOF handler for parent process crash detection
