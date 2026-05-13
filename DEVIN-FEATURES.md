@@ -83,6 +83,30 @@ This document tracks all features, fixes, and architectural changes added in the
 - **Session store** (`src/mcp-servers/devin/session-store.ts`): `DEFAULT_DEVIN_MODEL = "kimi-k2.6"`; `options.model ?? DEFAULT_DEVIN_MODEL` resolves before spawning.
 - **Note:** The original auto-classification (`classifyDevinModel`) was removed in favor of this explicit keyword system — agents choose the tier directly, which is more predictable and debuggable.
 
+### How Model Selection Works in Practice
+- **The agent decides, not the system.** There is no automatic task-to-model mapping. The agent running in your OpenCode session reads your request, assesses complexity, and picks a tier. Examples from the skill:
+  - "Fix typo on line 42" → Standard (omit `model`) or Fast (`"swe"`)
+  - "Refactor auth module across 15 files" → Deep (`"opus"`)
+  - "Generate unit tests for all service methods" → Code Gen (`"codex"`)
+  - "Update README with deployment steps" → Standard or Balanced (`"sonnet"`)
+- If the agent does NOT specify a `model` parameter in `devin_start`, the MCP server defaults to `kimi-k2.6` (Standard tier).
+
+### Actual Command Line Spawned
+- **Files:** `src/mcp-servers/devin/session-store.ts`
+- The MCP server spawns the `devin` binary directly via `Bun.spawn(["devin", ...args])`:
+  ```bash
+  devin \
+    -p "<prompt text>" \
+    --permission-mode dangerous \
+    --model <resolvedModel> \
+    [ -r <resume_id> ]    # only if resuming an existing session
+  ```
+- **Requirements:**
+  - The `devin` CLI binary must be in your PATH
+  - `--permission-mode dangerous` is the default (bypasses all Devin permission prompts)
+  - `--model` accepts both keywords (`"opus"`, `"sonnet"`, `"swe"`, `"codex"`) and fully-qualified IDs (`"swe-1-6"`)
+  - Working directory (`cwd`) defaults to the MCP server's startup directory if not passed explicitly
+
 ---
 
 ## Devin Agent
