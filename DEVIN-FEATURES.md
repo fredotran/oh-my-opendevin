@@ -169,6 +169,15 @@ This document tracks all features, fixes, and architectural changes added in the
 - **Commit:** `5869eee6` (added), `65c56f7f` (removed), `1cfcf683` (doctor fix)
 - **What:** Temporary local dev install script (later removed in favor of global installer).
 
+### Local Symlink Fix (Plugin Loading)
+- **Commit:** `72347a36`
+- **Files:** `install-global.sh`
+- **What:** Fixed the local-install symlink path in `install-global.sh`. The script was symlinking `$(pwd)/dist` instead of `$(pwd)`, which broke Node.js module resolution (`package.json` was missing from the package directory). This caused the plugin to fail silently on load, hiding all fork-specific agents (including the **devin** agent) from OpenCode.
+- **Also fixed:**
+  - Added `devin` to `AGENT_DISPLAY_NAMES` so the agent is properly remapped to its display name.
+  - Added `devin-cli` to `BuiltinSkillNameSchema` so `disabled_skills: ["devin-cli"]` validates correctly.
+  - Added sibling-package detection (`src/shared/external-plugin-detector.ts`) that warns when both `oh-my-opencode` and `oh-my-opendevin` are loaded, preventing agent shadowing.
+
 ---
 
 ## Developer Experience
