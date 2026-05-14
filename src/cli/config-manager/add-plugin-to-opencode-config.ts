@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs"
 import type { ConfigMergeResult } from "../types"
-import { PLUGIN_NAME, LEGACY_PLUGIN_NAME } from "../../shared"
+import { PLUGIN_NAME, LEGACY_PLUGIN_NAME, PUBLISHED_PACKAGE_NAME } from "../../shared"
 import { backupConfigFile } from "./backup-config"
 import { getConfigDir } from "./config-context"
 import { ensureConfigDirectoryExists } from "./ensure-config-directory-exists"
@@ -22,7 +22,7 @@ export async function addPluginToOpenCodeConfig(currentVersion: string): Promise
   }
 
   const { format, path } = detectConfigFormat()
-  const pluginEntry = await getPluginNameWithVersion(currentVersion, PLUGIN_NAME)
+  const pluginEntry = await getPluginNameWithVersion(currentVersion, PUBLISHED_PACKAGE_NAME)
 
   try {
     if (format === "none") {
@@ -43,6 +43,9 @@ export async function addPluginToOpenCodeConfig(currentVersion: string): Promise
     const config = parseResult.config
     const plugins = config.plugin ?? []
 
+    const publishedEntries = plugins.filter(
+      (plugin) => plugin === PUBLISHED_PACKAGE_NAME || plugin.startsWith(`${PUBLISHED_PACKAGE_NAME}@`)
+    )
     const canonicalEntries = plugins.filter(
       (plugin) => plugin === PLUGIN_NAME || plugin.startsWith(`${PLUGIN_NAME}@`)
     )
@@ -50,11 +53,12 @@ export async function addPluginToOpenCodeConfig(currentVersion: string): Promise
       (plugin) => plugin === LEGACY_PLUGIN_NAME || plugin.startsWith(`${LEGACY_PLUGIN_NAME}@`)
     )
     const otherPlugins = plugins.filter(
-      (plugin) => !(plugin === PLUGIN_NAME || plugin.startsWith(`${PLUGIN_NAME}@`))
+      (plugin) => !(plugin === PUBLISHED_PACKAGE_NAME || plugin.startsWith(`${PUBLISHED_PACKAGE_NAME}@`))
+        && !(plugin === PLUGIN_NAME || plugin.startsWith(`${PLUGIN_NAME}@`))
         && !(plugin === LEGACY_PLUGIN_NAME || plugin.startsWith(`${LEGACY_PLUGIN_NAME}@`))
     )
 
-    const existingEntry = canonicalEntries[0] ?? legacyEntries[0]
+    const existingEntry = publishedEntries[0] ?? canonicalEntries[0] ?? legacyEntries[0]
     if (existingEntry) {
       const installedVersion = extractVersionFromPluginEntry(existingEntry)
       const compatibility = checkVersionCompatibility(installedVersion, currentVersion)
