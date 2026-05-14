@@ -28,6 +28,19 @@ const KNOWN_SKILL_PLUGINS = [
   "@opencode/skills",
 ]
 
+/**
+ * Known sibling packages that shadow oh-my-opencode's agents.
+ * These packages share the same codebase (rename transition) and load the
+ * same config hook. When both are listed in opencode.json plugin array,
+ * the later entry overwrites the earlier one's agent registration,
+ * causing fork-specific agents (e.g. devin) to disappear.
+ */
+const KNOWN_SIBLING_PACKAGES = [
+  "oh-my-opencode",
+  "oh-my-openagent",
+  "oh-my-opendevin",
+]
+
 function matchesKnownPlugin(entry: string, knownPlugins: readonly string[]): string | null {
   const normalized = entry.toLowerCase()
   for (const known of knownPlugins) {
@@ -103,6 +116,42 @@ export function detectExternalSkillPlugin(directory: string): ExternalSkillPlugi
   return {
     detected: false,
     pluginName: null,
+    allPlugins: plugins,
+  }
+}
+
+export interface SiblingPackageResult {
+  detected: boolean
+  siblingName: string | null
+  allPlugins: string[]
+}
+
+/**
+ * Detect if a sibling package (same codebase, different npm name) is also
+ * configured in opencode.json. Loading two copies of the same plugin causes
+ * the later one to overwrite the earlier one's agent/tool/MCP registration.
+ */
+export function detectSiblingPackage(directory: string, ownPackageName: string): SiblingPackageResult {
+  const plugins = loadOpencodePlugins(directory)
+
+  for (const plugin of plugins) {
+    const normalized = plugin.toLowerCase().replace(/^npm:/, "")
+    for (const known of KNOWN_SIBLING_PACKAGES) {
+      if (known === ownPackageName) continue
+      if (normalized === known || normalized.startsWith(`${known}@`)) {
+        log(`Detected sibling package shadowing ${ownPackageName}: ${plugin}`)
+        return {
+          detected: true,
+          siblingName: plugin,
+          allPlugins: plugins,
+        }
+      }
+    }
+  }
+
+  return {
+    detected: false,
+    siblingName: null,
     allPlugins: plugins,
   }
 }

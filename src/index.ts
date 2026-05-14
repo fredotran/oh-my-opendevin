@@ -22,7 +22,12 @@ import { log } from "./shared/logger"
 import { logLegacyPluginStartupWarning } from "./shared/log-legacy-plugin-startup-warning"
 import { injectServerAuthIntoClient } from "./shared/opencode-server-auth"
 import { installAgentSortShim, setAgentSortOrder } from "./shared/agent-sort-shim"
-import { detectExternalSkillPlugin, getSkillPluginConflictWarning } from "./shared/external-plugin-detector"
+import {
+  detectExternalSkillPlugin,
+  getSkillPluginConflictWarning,
+  detectSiblingPackage,
+} from "./shared/external-plugin-detector"
+import { PUBLISHED_PACKAGE_NAME } from "./shared/plugin-identity"
 import { startBackgroundCheck as startTmuxCheck } from "./tools/interactive-bash"
 
 type HooksWithCompactionAutocontinue = Hooks & {
@@ -37,6 +42,7 @@ type PluginModuleDeps = {
   logLegacyPluginStartupWarning: typeof logLegacyPluginStartupWarning
   detectExternalSkillPlugin: typeof detectExternalSkillPlugin
   getSkillPluginConflictWarning: typeof getSkillPluginConflictWarning
+  detectSiblingPackage: typeof detectSiblingPackage
   injectServerAuthIntoClient: typeof injectServerAuthIntoClient
   loadPluginConfig: typeof loadPluginConfig
   initializeOpenClaw: typeof initializeOpenClaw
@@ -59,6 +65,7 @@ const defaultPluginModuleDeps: PluginModuleDeps = {
   logLegacyPluginStartupWarning,
   detectExternalSkillPlugin,
   getSkillPluginConflictWarning,
+  detectSiblingPackage,
   injectServerAuthIntoClient,
   loadPluginConfig,
   initializeOpenClaw,
@@ -82,6 +89,17 @@ export function createPluginModule(overrides: Partial<PluginModuleDeps> = {}): P
       directory: input.directory,
     })
     deps.logLegacyPluginStartupWarning()
+
+    const siblingCheck = deps.detectSiblingPackage(input.directory, PUBLISHED_PACKAGE_NAME)
+    if (siblingCheck.detected && siblingCheck.siblingName) {
+      console.warn(
+        `[${PUBLISHED_PACKAGE_NAME}] Sibling package detected: ${siblingCheck.siblingName}\n\n` +
+          `Both ${PUBLISHED_PACKAGE_NAME} and ${siblingCheck.siblingName} share the same codebase. ` +
+          `Loading both causes the later plugin to overwrite the earlier one's agents, ` +
+          `which can hide fork-specific agents (e.g. devin).\n\n` +
+          `Fix: remove "${siblingCheck.siblingName}" from your opencode.json plugin array.`
+      )
+    }
 
     const skillPluginCheck = deps.detectExternalSkillPlugin(input.directory)
     if (skillPluginCheck.detected && skillPluginCheck.pluginName) {

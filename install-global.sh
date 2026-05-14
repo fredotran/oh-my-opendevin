@@ -478,8 +478,9 @@ else
     mkdir -p "$GLOBAL_MODULE_DIR"
     mkdir -p "$GLOBAL_BIN_DIR"
 
-    # Create symlink to the dist directory
-    ln -sf "$(pwd)/dist" "$GLOBAL_MODULE_DIR/oh-my-opendevin"
+    # Create symlink to the repo root (not dist/) so require("oh-my-opendevin")
+    # resolves package.json and dist/ correctly.
+    ln -sf "$(pwd)" "$GLOBAL_MODULE_DIR/oh-my-opendevin"
 
     # Create symlink for the binary
     ln -sf "$(pwd)/bin/oh-my-opencode.js" "$GLOBAL_BIN_DIR/oh-my-opendevin"
