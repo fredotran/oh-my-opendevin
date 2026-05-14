@@ -25,10 +25,10 @@ describe("getPluginNameWithVersion", () => {
     const result = await getPluginNameWithVersion("3.13.1")
 
     //#then
-    expect(result).toBe("oh-my-openagent@latest")
+    expect(result).toBe("oh-my-opendevin@latest")
   })
 
-  test("preserves the canonical prerelease channel when fetch fails", async () => {
+  test("preserves the published prerelease channel when fetch fails", async () => {
     //#given
     globalThis.fetch = unsafeTestValue<typeof fetch>(mock(() => Promise.reject(new Error("Network error"))))
 
@@ -36,10 +36,10 @@ describe("getPluginNameWithVersion", () => {
     const result = await getPluginNameWithVersion("3.14.0-beta.1")
 
     //#then
-    expect(result).toBe("oh-my-openagent@beta")
+    expect(result).toBe("oh-my-opendevin@beta")
   })
 
-  test("returns the canonical bare package name for stable fallback", async () => {
+  test("returns the published bare package name for stable fallback", async () => {
     //#given
     globalThis.fetch = unsafeTestValue<typeof fetch>(mock(() =>
       Promise.resolve({
@@ -52,6 +52,6 @@ describe("getPluginNameWithVersion", () => {
     const result = await getPluginNameWithVersion("3.13.1")
 
     //#then
-    expect(result).toBe("oh-my-openagent")
+    expect(result).toBe("oh-my-opendevin")
   })
 })

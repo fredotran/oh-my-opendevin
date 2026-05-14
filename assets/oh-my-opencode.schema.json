@@ -54,6 +54,7 @@
           "git-master",
           "review-work",
           "ai-slop-remover",
+          "devin-cli",
           "team-mode"
         ]
       }
