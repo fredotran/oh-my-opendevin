@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Global installer for oh-my-opendevin
-# This script installs the oh-my-opendevin fork globally on any system
+# Local installer for oh-my-opendevin
+# This script installs the oh-my-opendevin fork locally via symlink.
+# No npm publish required - runs directly from the repository.
 
 set -euo pipefail
 
@@ -57,23 +58,23 @@ detect_shell_rc() {
 # Install Bun if not present
 install_bun() {
   log_info "Installing Bun..."
-  
+
   # Check if curl is available
   if ! command -v curl &> /dev/null; then
     log_error "curl is required to install Bun but is not installed"
     return 1
   fi
-  
+
   # Install Bun using the official installer
   # The installer automatically handles PATH setup
   if curl -fsSL https://bun.sh/install | bash; then
     # The bun installer adds itself to PATH in shell config files
     # We need to use the direct path for this session
     BUN_INSTALL_DIR="$HOME/.bun/bin"
-    
+
     if [[ -d "$BUN_INSTALL_DIR" ]]; then
       export PATH="$BUN_INSTALL_DIR:$PATH"
-      
+
       if command -v bun &> /dev/null; then
         log_success "Bun installed successfully: $(bun --version)"
         return 0
@@ -110,7 +111,7 @@ done
 
 if [[ "$DO_HELP" == true ]]; then
   echo "Usage: $0 [--uninstall] [--no-verify] [--fix-mcp] [--restore] [--help]"
-  echo "  --uninstall   Remove global installation and backup configs"
+  echo "  --uninstall   Remove local installation and backup configs"
   echo "  --no-verify   Skip verification step"
   echo "  --fix-mcp     Fix MCP configuration without reinstalling"
   echo "  --restore     Restore configs from last backup"
@@ -203,42 +204,31 @@ if [[ "${DO_UNINSTALL:-false}" == true ]]; then
 
   echo ""
 
-  # Try npm uninstall first
-  if command -v npm &> /dev/null; then
-    if npm uninstall -g oh-my-opendevin 2>/dev/null; then
-      log_success "Uninstalled from npm"
-    else
-      log_warn "Package not in npm, trying symlink removal..."
+  # Remove symlinks
+  GLOBAL_MODULE_DIR="$HOME/.npm-global/lib/node_modules"
+  GLOBAL_BIN_DIR="$HOME/.npm-global/bin"
 
-      # Remove symlinks
-      GLOBAL_MODULE_DIR="$HOME/.npm-global/lib/node_modules"
-      GLOBAL_BIN_DIR="$HOME/.npm-global/bin"
-      
-      if [[ -L "$GLOBAL_MODULE_DIR/oh-my-opendevin" ]]; then
-        rm "$GLOBAL_MODULE_DIR/oh-my-opendevin"
-        log_success "Removed module symlink"
-      fi
-      
-      if [[ -L "$GLOBAL_BIN_DIR/oh-my-opendevin" ]]; then
-        rm "$GLOBAL_BIN_DIR/oh-my-opendevin"
-        log_success "Removed binary symlink"
-      fi
-      
-      if [[ -L "$GLOBAL_BIN_DIR/oh-my-opencode" ]]; then
-        rm "$GLOBAL_BIN_DIR/oh-my-opencode"
-        log_success "Removed oh-my-opencode binary symlink"
-      fi
-
-      OPENCODE_MODULE_DIR="$HOME/.config/opencode/node_modules"
-      if [[ -L "$OPENCODE_MODULE_DIR/oh-my-opendevin" ]]; then
-        rm "$OPENCODE_MODULE_DIR/oh-my-opendevin"
-        log_success "Removed OpenCode node_modules symlink"
-      fi
-    fi
-  else
-    log_warn "npm not found, skipping uninstall"
+  if [[ -L "$GLOBAL_MODULE_DIR/oh-my-opendevin" ]]; then
+    rm "$GLOBAL_MODULE_DIR/oh-my-opendevin"
+    log_success "Removed module symlink"
   fi
-  
+
+  if [[ -L "$GLOBAL_BIN_DIR/oh-my-opendevin" ]]; then
+    rm "$GLOBAL_BIN_DIR/oh-my-opendevin"
+    log_success "Removed binary symlink"
+  fi
+
+  if [[ -L "$GLOBAL_BIN_DIR/oh-my-opencode" ]]; then
+    rm "$GLOBAL_BIN_DIR/oh-my-opencode"
+    log_success "Removed oh-my-opencode binary symlink"
+  fi
+
+  OPENCODE_MODULE_DIR="$HOME/.config/opencode/node_modules"
+  if [[ -L "$OPENCODE_MODULE_DIR/oh-my-opendevin" ]]; then
+    rm "$OPENCODE_MODULE_DIR/oh-my-opendevin"
+    log_success "Removed OpenCode node_modules symlink"
+  fi
+
   # Remove user-level MCP configuration and launcher
   if [[ -f "$USER_MCP_CONFIG" ]]; then
     if command -v jq &> /dev/null; then
@@ -277,7 +267,7 @@ if [[ "${DO_UNINSTALL:-false}" == true ]]; then
       log_warn "jq not found. Please manually remove oh-my-opendevin from $OPENCODE_CONFIG"
     fi
   fi
-  
+
   echo ""
   log_success "Uninstall complete!"
   log_info "Configs backed up to: $CURRENT_BACKUP"
@@ -304,28 +294,21 @@ if [[ "$DO_FIX_MCP" == true ]]; then
   fi
   log_success "Bun available: $(bun --version)"
 
-  # Find the launcher in the installation
+  # Find the launcher in the local repository
   LAUNCHER_SOURCE=""
-  if npm list -g oh-my-opendevin &> /dev/null; then
-    LAUNCHER_SOURCE="$(npm root -g)/oh-my-opendevin/bin/devin-mcp-launcher.sh"
-  fi
-
-  # Check local dirs
-  if [[ -z "$LAUNCHER_SOURCE" ]]; then
+  if [[ -f "bin/devin-mcp-launcher.sh" ]]; then
+    LAUNCHER_SOURCE="$(pwd)/bin/devin-mcp-launcher.sh"
+  else
+    # Try to find from the existing global symlink
     GLOBAL_MODULE_DIR="$HOME/.npm-global/lib/node_modules"
-    if [[ -f "$GLOBAL_MODULE_DIR/oh-my-opendevin/bin/devin-mcp-launcher.sh" ]]; then
-      LAUNCHER_SOURCE="$GLOBAL_MODULE_DIR/oh-my-opendevin/bin/devin-mcp-launcher.sh"
+    if [[ -L "$GLOBAL_MODULE_DIR/oh-my-opendevin" ]]; then
+      LAUNCHER_SOURCE="$(readlink -f "$GLOBAL_MODULE_DIR/oh-my-opendevin")/bin/devin-mcp-launcher.sh"
     fi
   fi
 
-  # Check current directory
-  if [[ -z "$LAUNCHER_SOURCE" ]] && [[ -f "bin/devin-mcp-launcher.sh" ]]; then
-    LAUNCHER_SOURCE="$(pwd)/bin/devin-mcp-launcher.sh"
-  fi
-
   if [[ -z "$LAUNCHER_SOURCE" ]] || [[ ! -f "$LAUNCHER_SOURCE" ]]; then
-    log_error "MCP launcher not found in any installation."
-    log_info "Please run the full installer first: ./install-global.sh"
+    log_error "MCP launcher not found."
+    log_info "Please run this script from the repository root or ensure the module symlink exists."
     exit 1
   fi
 
@@ -422,107 +405,84 @@ fi
 # Step 1: Check prerequisites
 log_info "Step 1: Checking prerequisites..."
 
-# Check for npm
-if ! command -v npm &> /dev/null; then
-  log_error "npm is not installed. Please install Node.js and npm first."
-  log_info "Visit: https://nodejs.org/"
-  exit 1
-fi
-log_success "npm found: $(npm --version)"
-
-# Check for bun (required for MCP integration)
+# Check for bun (required for build and MCP integration)
 if command -v bun &> /dev/null; then
   log_success "bun found: $(bun --version)"
 else
-  log_warn "bun not found (required for MCP integration)"
+  log_warn "bun not found (required for build and MCP integration)"
   log_info "Installing Bun automatically..."
   if ! install_bun; then
-    log_error "Failed to install Bun. MCP integration will not work without Bun."
+    log_error "Failed to install Bun. Cannot proceed without Bun."
     log_info "You can install Bun manually from https://bun.sh/"
-    log_info "After installing Bun, re-run this script or configure MCP manually."
-    SHOULD_SKIP_MCP=true
+    exit 1
   fi
 fi
 
-# Step 2: Install package globally
-log_info "Step 2: Installing oh-my-opendevin globally..."
+# Step 2: Install locally via symlink
+log_info "Step 2: Installing oh-my-opendevin locally..."
 
-# Try npm install first
-if npm install -g oh-my-opendevin 2>/dev/null; then
-  log_success "Package installed globally from npm"
-else
-  log_warn "Package not found on npm, trying local installation..."
-  
-  # Check if we're in the repository
-  if [[ -f "package.json" ]] && [[ -f "src/index.ts" ]]; then
-    log_info "Installing from local repository..."
-    
-    # Build the project
-    if ! command -v bun &> /dev/null; then
-      log_error "bun is required for local installation"
-      log_error "Install bun from https://bun.sh/"
-      exit 1
-    fi
-    
-    log_info "Building project..."
-    if bun run build > /dev/null 2>&1; then
-      log_success "Build successful"
-    else
-      log_error "Build failed"
-      bun run build
-      exit 1
-    fi
-    
-    # Create global symlink
-    log_info "Creating global symlink..."
+# Check if we're in the repository
+if [[ -f "package.json" ]] && [[ -f "src/index.ts" ]]; then
+  log_info "Installing from local repository..."
 
-    # Use user-local directories to avoid permission issues
-    GLOBAL_MODULE_DIR="$HOME/.npm-global/lib/node_modules"
-    GLOBAL_BIN_DIR="$HOME/.npm-global/bin"
-
-    # Create directories
-    mkdir -p "$GLOBAL_MODULE_DIR"
-    mkdir -p "$GLOBAL_BIN_DIR"
-
-    # Create symlink to the repo root (not dist/) so require("oh-my-opendevin")
-    # resolves package.json and dist/ correctly.
-    ln -sf "$(pwd)" "$GLOBAL_MODULE_DIR/oh-my-opendevin"
-
-    # Also symlink into OpenCode's node_modules so the Electron runtime can find it
-    OPENCODE_MODULE_DIR="$HOME/.config/opencode/node_modules"
-    mkdir -p "$OPENCODE_MODULE_DIR"
-    ln -sf "$(pwd)" "$OPENCODE_MODULE_DIR/oh-my-opendevin"
-
-    # Create symlink for the binary
-    ln -sf "$(pwd)/bin/oh-my-opencode.js" "$GLOBAL_BIN_DIR/oh-my-opendevin"
-    ln -sf "$(pwd)/bin/oh-my-opencode.js" "$GLOBAL_BIN_DIR/oh-my-opencode"
-
-    # Add to PATH if not already there
-    if [[ ":$PATH:" != *":$GLOBAL_BIN_DIR:"* ]]; then
-      log_warn "Adding $GLOBAL_BIN_DIR to PATH"
-      SHELL_RC=$(detect_shell_rc)
-      echo "export PATH=\"$GLOBAL_BIN_DIR:\$PATH\"" >> "$SHELL_RC"
-      export PATH="$GLOBAL_BIN_DIR:$PATH"
-      log_info "Updated PATH in $SHELL_RC"
-      # Source the rc file so the current shell picks up the change immediately,
-      # but only if it's compatible with the running shell interpreter
-      if [[ -f "$SHELL_RC" ]]; then
-        if [[ -n "${BASH_VERSION:-}" && "$SHELL_RC" == *bash* ]]; then
-          # shellcheck source=/dev/null
-          source "$SHELL_RC" 2>/dev/null || true
-        elif [[ -n "${ZSH_VERSION:-}" && "$SHELL_RC" == *zsh* ]]; then
-          # shellcheck source=/dev/null
-          source "$SHELL_RC" 2>/dev/null || true
-        fi
-      fi
-    fi
-    
-    log_success "Local installation complete via symlink"
+  # Build the project
+  log_info "Building project..."
+  if bun run build > /dev/null 2>&1; then
+    log_success "Build successful"
   else
-    log_error "Not in repository directory and package not found on npm"
-    log_error "Please run this script from the repository root or publish the package to npm first"
+    log_error "Build failed"
+    bun run build
     exit 1
   fi
+
+  # Create global symlinks
+  log_info "Creating global symlinks..."
+
+  GLOBAL_MODULE_DIR="$HOME/.npm-global/lib/node_modules"
+  GLOBAL_BIN_DIR="$HOME/.npm-global/bin"
+
+  # Create directories
+  mkdir -p "$GLOBAL_MODULE_DIR"
+  mkdir -p "$GLOBAL_BIN_DIR"
+
+  # Create symlink to the repo root (not dist/) so require("oh-my-opendevin")
+  # resolves package.json and dist/ correctly.
+  ln -sf "$(pwd)" "$GLOBAL_MODULE_DIR/oh-my-opendevin"
+
+  # Also symlink into OpenCode's node_modules so the Electron runtime can find it
+  OPENCODE_MODULE_DIR="$HOME/.config/opencode/node_modules"
+  mkdir -p "$OPENCODE_MODULE_DIR"
+  ln -sf "$(pwd)" "$OPENCODE_MODULE_DIR/oh-my-opendevin"
+
+  # Create symlink for the binary
+  ln -sf "$(pwd)/bin/oh-my-opencode.js" "$GLOBAL_BIN_DIR/oh-my-opendevin"
+  ln -sf "$(pwd)/bin/oh-my-opencode.js" "$GLOBAL_BIN_DIR/oh-my-opencode"
+
+  # Add to PATH if not already there
+  if [[ ":$PATH:" != *":$GLOBAL_BIN_DIR:"* ]]; then
+    log_warn "Adding $GLOBAL_BIN_DIR to PATH"
+    SHELL_RC=$(detect_shell_rc)
+    echo "export PATH=\"$GLOBAL_BIN_DIR:\$PATH\"" >> "$SHELL_RC"
+    export PATH="$GLOBAL_BIN_DIR:$PATH"
+    log_info "Updated PATH in $SHELL_RC"
+    # Source the rc file so the current shell picks up the change immediately,
+    # but only if it's compatible with the running shell interpreter
+    if [[ -f "$SHELL_RC" ]]; then
+      if [[ -n "${BASH_VERSION:-}" && "$SHELL_RC" == *bash* ]]; then
+        # shellcheck source=/dev/null
+        source "$SHELL_RC" 2>/dev/null || true
+      elif [[ -n "${ZSH_VERSION:-}" && "$SHELL_RC" == *zsh* ]]; then
+        # shellcheck source=/dev/null
+        source "$SHELL_RC" 2>/dev/null || true
+      fi
+    fi
+  fi
+
+  log_success "Local installation complete via symlink"
+else
+  log_error "Not in repository directory"
+  log_error "Please run this script from the repository root"
+  exit 1
 fi
 
 # Step 3: Verify installation
@@ -536,41 +496,24 @@ else
   log_warn "CLI command not found in PATH (may need to restart shell)"
 fi
 
-# Check if package is in npm global list or symlink exists
-if npm list -g oh-my-opendevin &> /dev/null; then
-  log_success "Package verified in npm global packages"
+# Check if symlink exists
+GLOBAL_MODULE_DIR="$HOME/.npm-global/lib/node_modules"
+if [[ -L "$GLOBAL_MODULE_DIR/oh-my-opendevin" ]]; then
+  log_success "Package verified as local symlink"
 else
-  GLOBAL_MODULE_DIR="$HOME/.npm-global/lib/node_modules"
-
-  if [[ -L "$GLOBAL_MODULE_DIR/oh-my-opendevin" ]]; then
-    log_success "Package verified as local symlink"
-  else
-    log_error "Package not found in npm global packages or as symlink"
-    exit 1
-  fi
+  log_error "Symlink not found at $GLOBAL_MODULE_DIR/oh-my-opendevin"
+  exit 1
 fi
 
 # Step 4: Configure MCP servers
 log_info "Step 4: Configuring MCP servers..."
 
-if [[ "${SHOULD_SKIP_MCP:-false}" == true ]]; then
-  log_warn "Skipping MCP configuration due to missing Bun"
-  log_info "MCP integration requires Bun. Install Bun from https://bun.sh/ and re-run this script."
-else
-
 # Install the MCP launcher to a stable location
 log_info "Installing MCP launcher..."
 
-# Find the launcher in the installation
+# Find the launcher in the local repository
 LAUNCHER_SOURCE=""
-if npm list -g oh-my-opendevin &> /dev/null; then
-  LAUNCHER_SOURCE="$(npm root -g)/oh-my-opendevin/bin/devin-mcp-launcher.sh"
-elif [[ -f "$GLOBAL_MODULE_DIR/oh-my-opendevin/bin/devin-mcp-launcher.sh" ]]; then
-  LAUNCHER_SOURCE="$GLOBAL_MODULE_DIR/oh-my-opendevin/bin/devin-mcp-launcher.sh"
-fi
-
-# Also check current directory (for local installation)
-if [[ -z "$LAUNCHER_SOURCE" ]] && [[ -f "bin/devin-mcp-launcher.sh" ]]; then
+if [[ -f "bin/devin-mcp-launcher.sh" ]]; then
   LAUNCHER_SOURCE="$(pwd)/bin/devin-mcp-launcher.sh"
 fi
 
@@ -633,7 +576,7 @@ EOF
     fi
   fi
 else
-  log_warn "MCP launcher not found in installation. MCP configuration may not work correctly."
+  log_warn "MCP launcher not found in repository. MCP configuration may not work correctly."
   log_info "If MCP tools don't appear, run: ./install-global.sh --fix-mcp"
 fi
 
@@ -655,7 +598,6 @@ if [[ -f "$MCP_LAUNCHER" ]] && [[ -x "$MCP_LAUNCHER" ]]; then
     log_info "Devin tools may not appear in OpenCode. Try: ./install-global.sh --fix-mcp"
   fi
 fi
-fi  # End of SHOULD_SKIP_MCP check
 
 # Step 5: Configure OpenCode
 log_info "Step 5: Configuring OpenCode..."
@@ -677,12 +619,12 @@ else
     jq 'del(.plugin[] | select(. == "oh-my-openagent" or . == "oh-my-opencode"))' \
       "$OPENCODE_CONFIG" > /tmp/opencode.json.tmp && \
       mv /tmp/opencode.json.tmp "$OPENCODE_CONFIG"
-    
+
     # Add oh-my-opendevin
     jq '.plugin |= if any(.[]; . == "oh-my-opendevin") then . else ["oh-my-opendevin"] + . end' \
       "$OPENCODE_CONFIG" > /tmp/opencode.json.tmp && \
       mv /tmp/opencode.json.tmp "$OPENCODE_CONFIG"
-    
+
     log_success "Updated OpenCode config"
   else
     log_warn "jq not found. Please manually edit $OPENCODE_CONFIG"
@@ -694,7 +636,7 @@ fi
 # Step 6: Verification (optional)
 if [[ "$DO_VERIFY" == true ]]; then
   log_info "Step 6: Running verification..."
-  
+
   if command -v oh-my-opendevin &> /dev/null; then
     if oh-my-opendevin doctor &> /tmp/omo-doctor.log 2>&1; then
       log_success "Doctor check passed"
@@ -730,10 +672,6 @@ echo "  - ./check-installation.sh          # Quick diagnostic"
 echo "  - ./install-global.sh --fix-mcp    # Fix MCP if tools don't appear"
 echo ""
 log_info "To uninstall:"
-echo "  curl -fsSL https://raw.githubusercontent.com/fredotran/oh-my-opendevin/dev/install-global.sh | bash -s --uninstall"
-echo ""
-log_info "Or download and run:"
-echo "  curl -fsSL https://raw.githubusercontent.com/fredotran/oh-my-opendevin/dev/install-global.sh -o install-global.sh"
 echo "  ./install-global.sh --uninstall"
 echo ""
 log_info "Documentation:"
