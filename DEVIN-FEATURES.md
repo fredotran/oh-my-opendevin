@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `72347a36`
+**Last updated:** `74e343f9`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -391,6 +391,7 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+74e343f9 docs: update DEVIN-FEATURES.md with symlink fix and agent recognition fixes
 72347a36 fix: devin agent not recognized by OpenCode
 44c1a442 feat(devin-mcp): add health/resumable tools, cost estimates, doctor check, and schema fixes
 8e2d732f ci: filter [skip ci] commits from DEVIN-FEATURES.md auto-updater
