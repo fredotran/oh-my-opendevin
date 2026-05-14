@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `1c9570a8`
+**Last updated:** `58eb1b85`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -391,6 +391,7 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+58eb1b85 fix(cli): use PUBLISHED_PACKAGE_NAME for plugin config detection and registration
 1c9570a8 Merge branch 'fredotran/dev' of github.com:fredotran/oh-my-opendevin into fredotran/dev
 1a3fd3a4 refactor(installer): remove npm dependency, keep only local symlink installation
 c160b52a fix(install-global): symlink into OpenCode node_modules for Electron runtime
