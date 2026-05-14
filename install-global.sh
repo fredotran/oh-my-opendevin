@@ -228,6 +228,12 @@ if [[ "${DO_UNINSTALL:-false}" == true ]]; then
         rm "$GLOBAL_BIN_DIR/oh-my-opencode"
         log_success "Removed oh-my-opencode binary symlink"
       fi
+
+      OPENCODE_MODULE_DIR="$HOME/.config/opencode/node_modules"
+      if [[ -L "$OPENCODE_MODULE_DIR/oh-my-opendevin" ]]; then
+        rm "$OPENCODE_MODULE_DIR/oh-my-opendevin"
+        log_success "Removed OpenCode node_modules symlink"
+      fi
     fi
   else
     log_warn "npm not found, skipping uninstall"
@@ -481,6 +487,11 @@ else
     # Create symlink to the repo root (not dist/) so require("oh-my-opendevin")
     # resolves package.json and dist/ correctly.
     ln -sf "$(pwd)" "$GLOBAL_MODULE_DIR/oh-my-opendevin"
+
+    # Also symlink into OpenCode's node_modules so the Electron runtime can find it
+    OPENCODE_MODULE_DIR="$HOME/.config/opencode/node_modules"
+    mkdir -p "$OPENCODE_MODULE_DIR"
+    ln -sf "$(pwd)" "$OPENCODE_MODULE_DIR/oh-my-opendevin"
 
     # Create symlink for the binary
     ln -sf "$(pwd)/bin/oh-my-opencode.js" "$GLOBAL_BIN_DIR/oh-my-opendevin"
