@@ -111,12 +111,33 @@ function main() {
     .filter((entry) => entry !== null);
 
   if (resolvedBinaries.length === 0) {
-    console.error(`\noh-my-opencode: Platform binary not installed.`);
-    console.error(`\nYour platform: ${platform}-${arch}${libcFamily === "musl" ? "-musl" : ""}`);
-    console.error(`Expected packages (in order): ${packageCandidates.join(", ")}`);
-    console.error(`\nTo fix, run:`);
-    console.error(`  npm install ${packageCandidates[0]}\n`);
-    process.exit(1);
+    // Fallback: run via bun directly from the source repo
+    const { dirname } = require("node:path");
+    const { fileURLToPath } = require("node:url");
+    const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
+    const cliEntry = require("node:path").join(repoRoot, "dist", "cli", "index.js");
+
+    const bunResult = spawnSync("bun", [cliEntry, ...process.argv.slice(2)], {
+      stdio: "inherit",
+      cwd: repoRoot,
+    });
+
+    if (bunResult.error) {
+      console.error(`\noh-my-opencode: Platform binary not installed and bun fallback failed.`);
+      console.error(`\nYour platform: ${platform}-${arch}${libcFamily === "musl" ? "-musl" : ""}`);
+      console.error(`Expected packages (in order): ${packageCandidates.join(", ")}`);
+      console.error(`\nTo fix, run one of:`);
+      console.error(`  npm install ${packageCandidates[0]}`);
+      console.error(`  bun install`);
+      console.error(`\nOr ensure bun is in your PATH.\n`);
+      process.exit(1);
+    }
+
+    if (bunResult.signal) {
+      process.exit(getSignalExitCode(bunResult.signal));
+    }
+
+    process.exit(bunResult.status ?? 1);
   }
 
   for (let index = 0; index < resolvedBinaries.length; index += 1) {

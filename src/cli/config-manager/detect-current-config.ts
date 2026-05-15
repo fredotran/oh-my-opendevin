@@ -64,7 +64,12 @@ function detectProvidersFromOmoConfig(): {
 function isOurPlugin(plugin: string): boolean {
   return plugin === PUBLISHED_PACKAGE_NAME || plugin.startsWith(`${PUBLISHED_PACKAGE_NAME}@`) ||
          plugin === PLUGIN_NAME || plugin.startsWith(`${PLUGIN_NAME}@`) ||
-         plugin === LEGACY_PLUGIN_NAME || plugin.startsWith(`${LEGACY_PLUGIN_NAME}@`)
+         plugin === LEGACY_PLUGIN_NAME || plugin.startsWith(`${LEGACY_PLUGIN_NAME}@`) ||
+         (plugin.startsWith("file://") && (
+           plugin.includes(PUBLISHED_PACKAGE_NAME) ||
+           plugin.includes(PLUGIN_NAME) ||
+           plugin.includes(LEGACY_PLUGIN_NAME)
+         ))
 }
 
 function findOurPluginEntry(plugins: string[]): string | null {

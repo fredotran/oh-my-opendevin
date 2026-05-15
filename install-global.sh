@@ -259,12 +259,25 @@ if [[ "${DO_UNINSTALL:-false}" == true ]]; then
   # Remove from OpenCode config
   if [[ -f "$OPENCODE_CONFIG" ]]; then
     if command -v jq &> /dev/null; then
-      jq 'del(.plugin[] | select(. == "oh-my-opendevin"))' \
+      REPO_PATH="$(pwd)"
+      jq 'del(.plugin[] | select(. == "oh-my-opendevin" or . == "oh-my-openagent" or . == "oh-my-opencode" or startswith("file://")))' \
         "$OPENCODE_CONFIG" > /tmp/opencode.json.tmp && \
         mv /tmp/opencode.json.tmp "$OPENCODE_CONFIG"
       log_success "Removed from OpenCode config"
     else
       log_warn "jq not found. Please manually remove oh-my-opendevin from $OPENCODE_CONFIG"
+    fi
+  fi
+
+  # Remove from OpenCode package.json
+  OPENCODE_PKG_JSON="$HOME/.config/opencode/package.json"
+  if [[ -f "$OPENCODE_PKG_JSON" ]]; then
+    if command -v jq &> /dev/null; then
+      jq 'del(.dependencies["oh-my-opendevin"])' "$OPENCODE_PKG_JSON" > /tmp/opencode-pkg.json.tmp && \
+        mv /tmp/opencode-pkg.json.tmp "$OPENCODE_PKG_JSON"
+      log_success "Removed from OpenCode package.json"
+    else
+      log_warn "jq not found. Please manually remove oh-my-opendevin from $OPENCODE_PKG_JSON"
     fi
   fi
 
@@ -425,6 +438,18 @@ log_info "Step 2: Installing oh-my-opendevin locally..."
 if [[ -f "package.json" ]] && [[ -f "src/index.ts" ]]; then
   log_info "Installing from local repository..."
 
+  # Install dependencies if missing
+  if [[ ! -d "node_modules" ]]; then
+    log_info "node_modules not found. Installing dependencies..."
+    if bun install > /dev/null 2>&1; then
+      log_success "Dependencies installed"
+    else
+      log_error "Failed to install dependencies"
+      bun install
+      exit 1
+    fi
+  fi
+
   # Build the project
   log_info "Building project..."
   if bun run build > /dev/null 2>&1; then
@@ -457,6 +482,33 @@ if [[ -f "package.json" ]] && [[ -f "src/index.ts" ]]; then
   # Create symlink for the binary
   ln -sf "$(pwd)/bin/oh-my-opencode.js" "$GLOBAL_BIN_DIR/oh-my-opendevin"
   ln -sf "$(pwd)/bin/oh-my-opencode.js" "$GLOBAL_BIN_DIR/oh-my-opencode"
+
+  # Register in OpenCode's package.json so its package manager resolves the plugin
+  OPENCODE_PKG_JSON="$HOME/.config/opencode/package.json"
+  if [[ -f "$OPENCODE_PKG_JSON" ]]; then
+    if command -v jq &> /dev/null; then
+      if ! jq -e '.dependencies["oh-my-opendevin"]' "$OPENCODE_PKG_JSON" &>/dev/null; then
+        jq '.dependencies["oh-my-opendevin"] = "file://'"$(pwd)"'"' "$OPENCODE_PKG_JSON" > /tmp/opencode-pkg.json.tmp && \
+          mv /tmp/opencode-pkg.json.tmp "$OPENCODE_PKG_JSON"
+        log_success "Added oh-my-opendevin to OpenCode package.json"
+      else
+        log_info "oh-my-opendevin already in OpenCode package.json"
+      fi
+    else
+      log_warn "jq not found. Please manually add oh-my-opendevin to $OPENCODE_PKG_JSON"
+    fi
+  else
+    mkdir -p "$HOME/.config/opencode"
+    cat > "$OPENCODE_PKG_JSON" <<EOF
+{
+  "dependencies": {
+    "@opencode-ai/plugin": "1.14.51",
+    "oh-my-opendevin": "file://$(pwd)"
+  }
+}
+EOF
+    log_success "Created OpenCode package.json with oh-my-opendevin"
+  fi
 
   # Add to PATH if not already there
   if [[ ":$PATH:" != *":$GLOBAL_BIN_DIR:"* ]]; then
@@ -607,29 +659,30 @@ if [[ ! -f "$OPENCODE_CONFIG" ]]; then
   OPENCODE_CONFIG="$HOME/.config/opencode/opencode.jsonc"
 fi
 
+REPO_PATH="$(pwd)"
+FILE_PLUGIN_ENTRY="file://${REPO_PATH}"
+
 if [[ ! -f "$OPENCODE_CONFIG" ]]; then
   log_warn "OpenCode config not found at ~/.config/opencode/opencode.json or opencode.jsonc"
   log_info "Creating new config file..."
   mkdir -p "$HOME/.config/opencode"
-  echo '{"plugin": ["oh-my-opendevin"]}' > "$OPENCODE_CONFIG"
+  echo "{\"plugin\": [\"${FILE_PLUGIN_ENTRY}\"]}" > "$OPENCODE_CONFIG"
   log_success "Created new OpenCode config"
 else
   if command -v jq &> /dev/null; then
-    # Remove existing oh-my-opencode/oh-my-openagent entries to avoid conflicts
-    jq 'del(.plugin[] | select(. == "oh-my-openagent" or . == "oh-my-opencode"))' \
-      "$OPENCODE_CONFIG" > /tmp/opencode.json.tmp && \
-      mv /tmp/opencode.json.tmp "$OPENCODE_CONFIG"
-
-    # Add oh-my-opendevin
-    jq '.plugin |= if any(.[]; . == "oh-my-opendevin") then . else ["oh-my-opendevin"] + . end' \
+    # Ensure .plugin is an array, remove old bare-name and file:// entries,
+    # then add the current file:// entry — all in one jq pass.
+    jq --arg entry "$FILE_PLUGIN_ENTRY" '.plugin //= []
+      | .plugin |= map(select(. != "oh-my-openagent" and . != "oh-my-opencode" and . != "oh-my-opendevin" and (. | startswith("file://") | not)))
+      | .plugin |= if any(.[]; . == $entry) then . else [$entry] + . end' \
       "$OPENCODE_CONFIG" > /tmp/opencode.json.tmp && \
       mv /tmp/opencode.json.tmp "$OPENCODE_CONFIG"
 
     log_success "Updated OpenCode config"
   else
     log_warn "jq not found. Please manually edit $OPENCODE_CONFIG"
-    log_warn 'Add "oh-my-opendevin" to the plugin array'
-    log_warn 'Remove any existing "oh-my-openagent" or "oh-my-opencode" entries to avoid conflicts'
+    log_warn "Add \"${FILE_PLUGIN_ENTRY}\" to the plugin array"
+    log_warn 'Remove any existing "oh-my-openagent", "oh-my-opencode", or old file:// entries to avoid conflicts'
   fi
 fi
 
