@@ -230,10 +230,10 @@ check_opencode_plugin() {
 
   local config_file=""
 
-  if [[ -f "$opencode_config_jsonc" ]]; then
-    config_file="$opencode_config_jsonc"
-  elif [[ -f "$opencode_config" ]]; then
+  if [[ -f "$opencode_config" ]]; then
     config_file="$opencode_config"
+  elif [[ -f "$opencode_config_jsonc" ]]; then
+    config_file="$opencode_config_jsonc"
   else
     fail "OpenCode config not found"
     log_info "Expected at: ~/.config/opencode/opencode.json"
@@ -245,6 +245,28 @@ check_opencode_plugin() {
   else
     fail "Plugin not found in OpenCode config"
     log_info "Add to ${config_file}: {\"plugin\": [\"oh-my-opendevin\"]}"
+  fi
+}
+
+# =============================================================================
+# CHECK 6b: OpenCode Package.json Dependency
+# =============================================================================
+check_opencode_package_json() {
+  log_info "Checking OpenCode package.json dependency..."
+
+  local pkg_json="$HOME/.config/opencode/package.json"
+
+  if [[ ! -f "$pkg_json" ]]; then
+    warn "OpenCode package.json not found"
+    log_info "Expected at: $pkg_json"
+    return
+  fi
+
+  if grep -q '"oh-my-opendevin"' "$pkg_json" 2>/dev/null; then
+    pass "oh-my-opendevin declared in OpenCode package.json"
+  else
+    fail "oh-my-opendevin not in OpenCode package.json"
+    log_info "Add to ${pkg_json} dependencies: \"oh-my-opendevin\": \"file:///path/to/repo\""
   fi
 }
 
@@ -341,6 +363,7 @@ main() {
   check_mcp_launcher
   check_mcp_config
   check_opencode_plugin
+  check_opencode_package_json
   check_mcp_server_smoke
   check_doctor
 

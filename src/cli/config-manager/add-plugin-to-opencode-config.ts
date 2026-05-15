@@ -43,22 +43,31 @@ export async function addPluginToOpenCodeConfig(currentVersion: string): Promise
     const config = parseResult.config
     const plugins = config.plugin ?? []
 
-    const publishedEntries = plugins.filter(
-      (plugin) => plugin === PUBLISHED_PACKAGE_NAME || plugin.startsWith(`${PUBLISHED_PACKAGE_NAME}@`)
-    )
-    const canonicalEntries = plugins.filter(
-      (plugin) => plugin === PLUGIN_NAME || plugin.startsWith(`${PLUGIN_NAME}@`)
-    )
-    const legacyEntries = plugins.filter(
-      (plugin) => plugin === LEGACY_PLUGIN_NAME || plugin.startsWith(`${LEGACY_PLUGIN_NAME}@`)
-    )
+    const isOurBarePlugin = (plugin: string): boolean =>
+      plugin === PUBLISHED_PACKAGE_NAME || plugin.startsWith(`${PUBLISHED_PACKAGE_NAME}@`) ||
+      plugin === PLUGIN_NAME || plugin.startsWith(`${PLUGIN_NAME}@`) ||
+      plugin === LEGACY_PLUGIN_NAME || plugin.startsWith(`${LEGACY_PLUGIN_NAME}@`)
+
+    const isOurFilePlugin = (plugin: string): boolean =>
+      plugin.startsWith("file://") && (
+        plugin.includes(PUBLISHED_PACKAGE_NAME) ||
+        plugin.includes(PLUGIN_NAME) ||
+        plugin.includes(LEGACY_PLUGIN_NAME)
+      )
+
+    const publishedEntries = plugins.filter(isOurBarePlugin)
+    const fileEntries = plugins.filter(isOurFilePlugin)
     const otherPlugins = plugins.filter(
-      (plugin) => !(plugin === PUBLISHED_PACKAGE_NAME || plugin.startsWith(`${PUBLISHED_PACKAGE_NAME}@`))
-        && !(plugin === PLUGIN_NAME || plugin.startsWith(`${PLUGIN_NAME}@`))
-        && !(plugin === LEGACY_PLUGIN_NAME || plugin.startsWith(`${LEGACY_PLUGIN_NAME}@`))
+      (plugin) => !isOurBarePlugin(plugin) && !isOurFilePlugin(plugin)
     )
 
-    const existingEntry = publishedEntries[0] ?? canonicalEntries[0] ?? legacyEntries[0]
+    // If a file:// entry exists, preserve it (local dev install takes precedence)
+    const existingFileEntry = fileEntries[0]
+    if (existingFileEntry) {
+      return { success: true, configPath: path }
+    }
+
+    const existingEntry = publishedEntries[0]
     if (existingEntry) {
       const installedVersion = extractVersionFromPluginEntry(existingEntry)
       const compatibility = checkVersionCompatibility(installedVersion, currentVersion)

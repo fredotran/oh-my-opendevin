@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs"
 
-import { LEGACY_PLUGIN_NAME, PLUGIN_NAME, getOpenCodeConfigPaths, parseJsonc } from "../../../shared"
+import { LEGACY_PLUGIN_NAME, PLUGIN_NAME, PUBLISHED_PACKAGE_NAME, getOpenCodeConfigPaths, parseJsonc } from "../../../shared"
 
 export interface PluginInfo {
   registered: boolean
@@ -17,12 +17,17 @@ interface OpenCodeConfigShape {
 
 function detectConfigPath(): string | null {
   const paths = getOpenCodeConfigPaths({ binary: "opencode", version: null })
-  if (existsSync(paths.configJsonc)) return paths.configJsonc
   if (existsSync(paths.configJson)) return paths.configJson
+  if (existsSync(paths.configJsonc)) return paths.configJsonc
   return null
 }
 
 function parsePluginVersion(entry: string): string | null {
+  if (entry.startsWith(`${PUBLISHED_PACKAGE_NAME}@`)) {
+    const value = entry.slice(PUBLISHED_PACKAGE_NAME.length + 1)
+    if (!value || value === "latest") return null
+    return value
+  }
   if (entry.startsWith(`${PLUGIN_NAME}@`)) {
     const value = entry.slice(PLUGIN_NAME.length + 1)
     if (!value || value === "latest") return null
@@ -38,13 +43,16 @@ function parsePluginVersion(entry: string): string | null {
 
 function findPluginEntry(entries: string[]): { entry: string; isLocalDev: boolean } | null {
   for (const entry of entries) {
+    if (entry === PUBLISHED_PACKAGE_NAME || entry.startsWith(`${PUBLISHED_PACKAGE_NAME}@`)) {
+      return { entry, isLocalDev: false }
+    }
     if (entry === PLUGIN_NAME || entry.startsWith(`${PLUGIN_NAME}@`)) {
       return { entry, isLocalDev: false }
     }
     if (entry === LEGACY_PLUGIN_NAME || entry.startsWith(`${LEGACY_PLUGIN_NAME}@`)) {
       return { entry, isLocalDev: false }
     }
-    if (entry.startsWith("file://") && (entry.includes(PLUGIN_NAME) || entry.includes(LEGACY_PLUGIN_NAME))) {
+    if (entry.startsWith("file://") && (entry.includes(PUBLISHED_PACKAGE_NAME) || entry.includes(PLUGIN_NAME) || entry.includes(LEGACY_PLUGIN_NAME))) {
       return { entry, isLocalDev: true }
     }
   }
