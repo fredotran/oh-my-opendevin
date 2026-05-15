@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `00fe2539`
+**Last updated:** `e928eeb7`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -391,6 +391,7 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+e928eeb7 fix(agents): add first-run fallback for Atlas agent registration
 00fe2539 fix(installer): ensure plugin is recognized by OpenCode
 58eb1b85 fix(cli): use PUBLISHED_PACKAGE_NAME for plugin config detection and registration
 1c9570a8 Merge branch 'fredotran/dev' of github.com:fredotran/oh-my-opendevin into fredotran/dev
