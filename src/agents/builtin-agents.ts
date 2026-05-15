@@ -178,6 +178,7 @@ export async function createBuiltinAgents(
     mergedCategories,
     directory,
     userCategories: categories,
+    isFirstRunNoCache,
   })
   if (atlasConfig) {
     result["atlas"] = atlasConfig
