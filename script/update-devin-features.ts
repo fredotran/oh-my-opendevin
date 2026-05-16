@@ -12,6 +12,7 @@ async function getCommitLog(): Promise<string[]> {
     .map((line) => line.trim())
     .filter(Boolean)
     .filter((line) => !/\[\s*skip ci\s*\]$/.test(line))
+    .filter((line) => !line.includes("auto-update DEVIN-FEATURES.md"))
     .reverse()
 }
 
