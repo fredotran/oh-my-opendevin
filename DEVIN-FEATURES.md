@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `6576cb12`
+**Last updated:** `64f5dc43`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -391,6 +391,7 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+64f5dc43 feat(devin-mcp): add safety-net fallback to default model on quota exhaustion
 6576cb12 refactor(agents): rename devin display name to Devin - CLI Executor
 e68a0707 fix(test): update install test to check for oh-my-opendevin plugin name
 5ba1fe44 fix(agents): add first-run fallback for Atlas agent registration
