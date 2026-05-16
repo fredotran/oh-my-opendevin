@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `64f5dc43`
+**Last updated:** `496e00b7`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -391,6 +391,7 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+496e00b7 refactor(devin-mcp): rename fully-qualified model from swe-1-6 to swe-1.6
 64f5dc43 feat(devin-mcp): add safety-net fallback to default model on quota exhaustion
 6576cb12 refactor(agents): rename devin display name to Devin - CLI Executor
 e68a0707 fix(test): update install test to check for oh-my-opendevin plugin name
@@ -492,7 +493,7 @@ d4c77153 feat(install): use fixed project path for global installation
 d3308804 Fix doctor check warning for local development installation
 ddb848f4 Add local development installation script
 8848b82d feat: add /devin slash commands for easier delegation in OpenCode
-5ad2d38a fix: update model names to use specific versions (swe-1.6, claude-sonnet-4-6)
+5ad2d38a fix: update model names to use specific versions (swe-1-6, claude-sonnet-4-6)
 d1c3346a feat: add intelligent model selection guidance to devin-cli skill
 b919cd83 feat: add devin-cli built-in skill for MCP delegation guidance
 587c97a2 feat: add Devin CLI MCP server for background session delegation
