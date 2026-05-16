@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `496e00b7`
+**Last updated:** `2057de4f`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -391,6 +391,7 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+2057de4f refactor(devin-mcp): swap default model from kimi-k2.6 to swe-1.6
 496e00b7 refactor(devin-mcp): rename fully-qualified model from swe-1-6 to swe-1.6
 64f5dc43 feat(devin-mcp): add safety-net fallback to default model on quota exhaustion
 6576cb12 refactor(agents): rename devin display name to Devin - CLI Executor
