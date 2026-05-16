@@ -52,7 +52,7 @@ export function resolveTierInfo(model: string | undefined): TierEntry {
 /** Fallback chain when a model hits quota or is unavailable.
  *  Ordered from most to least capable: Deep → Balanced → Standard → Fast/Cheap.
  */
-export const FALLBACK_CHAIN = ["opus", "sonnet", "kimi-k2.6", "swe"]
+export const FALLBACK_CHAIN = ["opus", "sonnet", "kimi-k2.6", "swe-1-6"]
 
 /** Rough per-second cost estimates (USD) for Devin CLI models.
  *  Used by devin-report for directional spend estimation only.
@@ -66,9 +66,18 @@ export const TIER_COST_MAP: Record<DevinTier, number> = {
   Custom: 0.003,
 }
 
-/** Returns the next model in the fallback chain, or undefined if at the end. */
+/** Default model used when no model is explicitly specified. */
+export const DEFAULT_DEVIN_MODEL = "kimi-k2.6"
+
+/** Returns the next model in the fallback chain.
+ *  When the chain is exhausted, falls back to the default model instead of
+ *  giving up, so quota errors always have a safety-net retry.
+ */
 export function getFallbackModel(current: string | undefined): string | undefined {
   const idx = FALLBACK_CHAIN.indexOf(current ?? "")
   if (idx === -1) return FALLBACK_CHAIN[0]
-  return FALLBACK_CHAIN[idx + 1]
+  const next = FALLBACK_CHAIN[idx + 1]
+  if (next) return next
+  // End of chain — loop back to the default model as a last resort
+  return DEFAULT_DEVIN_MODEL
 }

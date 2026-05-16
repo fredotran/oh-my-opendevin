@@ -288,7 +288,7 @@ This document tracks all features, fixes, and architectural changes added in the
   - `QUOTA_EXCEEDED` — detected from "quota exceeded", "usage limit", "out of credits", "insufficient quota". Includes `suggestedFallback` model
   - `CONTEXT_LIMIT` — detected from "context length", "token limit", "maximum context", "too many tokens". Suggests prompt truncation
   - `UNKNOWN` — catch-all for unrecognized errors
-- **Fallback chain:** `opus` → `sonnet` → `kimi-k2.6` → `swe` (Deep → Balanced → Standard → Fast/Cheap). Exported as `FALLBACK_CHAIN` with `getFallbackModel(current)` utility.
+- **Fallback chain:** `opus` → `sonnet` → `kimi-k2.6` → `swe-1-6` (Deep → Balanced → Standard → Fast/Cheap). Exported as `FALLBACK_CHAIN` with `getFallbackModel(current)` utility. When the chain is exhausted, `getFallbackModel` loops back to the default model `kimi-k2.6` for a safety-net retry, then `swe-1-6` again before giving up.
 - **Auto-fallback:** New `autoFallback` option on `devin_start` (default: `false`). When `true`, the server automatically retries down the fallback chain on `QUOTA_EXCEEDED` until success or chain exhaustion.
 - **Skill guidance:** The `devin-cli` built-in skill now includes a "Limit & Error Recovery" section teaching agents the fallback chain, error tag actions, and a structured recovery workflow.
 - **Why:** Agents previously saw `status: error` and raw stderr with no guidance on whether to retry, fallback, or ask the user. Structured hints eliminate guesswork and reduce user interruptions.

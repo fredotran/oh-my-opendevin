@@ -47,7 +47,7 @@ Sessions live in memory (`session-store.ts` — `Map<id, DevinSession>`); logs a
 - **Log size caps:** Warns when a session log exceeds 100MB; auto-cancels at 500MB to prevent disk exhaustion.
 - **Disk cleanup:** On each spawn, old log files (> 24h) are deleted, with protection for files belonging to in-memory active sessions.
 - **Structured error hints:** When `devin_start` fails due to rate limits, quota exhaustion, or context window overflow, the response includes a tagged error (`RATE_LIMIT`, `QUOTA_EXCEEDED`, `CONTEXT_LIMIT`, `UNKNOWN`) with a suggested recovery action.
-- **Model fallback chain:** `opus` → `sonnet` → `kimi-k2.6` → `swe`. When a model quota is exceeded, agents can retry with the next tier. `autoFallback` can automate this.
+- **Model fallback chain:** `opus` → `sonnet` → `kimi-k2.6` → `swe-1-6`. When a model quota is exceeded, agents can retry with the next tier. When the chain is exhausted, `getFallbackModel` loops back to the default model `kimi-k2.6` for a safety-net retry, then `swe-1-6` again before giving up. `autoFallback` can automate this.
 - **Tool error wrapping:** All MCP tool handlers are wrapped with `safeToolHandler()` so unexpected errors are caught and returned as text results instead of propagating as unhandled exceptions.
 - **Concurrent session limit:** Maximum 50 running sessions enforced at spawn time.
 - **Model disclosure:** `devin_start` response includes resolved tier and model. Agents are instructed to tell the user which model is running their task.

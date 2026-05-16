@@ -3,7 +3,7 @@ import { existsSync, openSync, statSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { randomUUID } from "node:crypto"
-import { KNOWN_DEVIN_MODELS, getFallbackModel } from "./tiers"
+import { KNOWN_DEVIN_MODELS, getFallbackModel, DEFAULT_DEVIN_MODEL } from "./tiers"
 import type { DevinSession, DevinSessionSnapshot, SessionMetaFile, SpawnErrorHint } from "./types"
 
 const LOG_DIR = join(tmpdir(), "oh-my-opencode-devin-mcp")
@@ -13,7 +13,6 @@ const MAX_CONCURRENT_SESSIONS = 50
 const DEFAULT_MODEL_CONCURRENCY = 5
 const LOG_RETENTION_MS = 24 * 60 * 60 * 1000 // 24 hours
 const KILL_GRACE_PERIOD_MS = 5000
-const DEFAULT_DEVIN_MODEL = "kimi-k2.6"
 const COMPLETED_SESSION_TTL_MS = 60 * 60 * 1000 // 1 hour
 const IDLE_CHECK_INTERVAL_MS = 5 * 60 * 1000 // 5 minutes
 const IDLE_STALL_THRESHOLD_MS = 30 * 60 * 1000 // 30 minutes with no output → stalled
@@ -702,7 +701,7 @@ export async function startDevinSession(options: StartOptions): Promise<DevinSes
   // Attempt to start. On QUOTA_EXCEEDED with autoFallback, walk the chain.
   let currentModel = resolvedModel
   let attempts = 0
-  const maxAttempts = 4 // covers the full fallback chain
+  const maxAttempts = 6 // covers full fallback chain + safety-net retries: kimi-k2.6, then swe
 
   while (attempts < maxAttempts) {
     attempts++
