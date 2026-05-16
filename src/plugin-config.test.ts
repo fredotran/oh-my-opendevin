@@ -204,6 +204,49 @@ describe("mergeConfigs", () => {
       expect(result.disabled_tools).toContain("look_at");
       expect(result.disabled_tools?.length).toBe(3);
     });
+
+    it("should preserve agent_order when override does not set it", () => {
+      const base = createConfig({
+        agent_order: ["hephaestus", "sisyphus", "prometheus", "atlas"],
+      });
+
+      const override = createConfig({});
+
+      const result = mergeConfigs(base, override);
+
+      expect(result.agent_order).toEqual([
+        "hephaestus",
+        "sisyphus",
+        "prometheus",
+        "atlas",
+      ]);
+    });
+
+    it("should preserve default_run_agent when override does not set it", () => {
+      const base = createConfig({
+        default_run_agent: "sisyphus",
+      });
+
+      const override = createConfig({});
+
+      const result = mergeConfigs(base, override);
+
+      expect(result.default_run_agent).toBe("sisyphus");
+    });
+
+    it("should let override agent_order replace base agent_order", () => {
+      const base = createConfig({
+        agent_order: ["sisyphus", "hephaestus"],
+      });
+
+      const override = createConfig({
+        agent_order: ["atlas", "prometheus"],
+      });
+
+      const result = mergeConfigs(base, override);
+
+      expect(result.agent_order).toEqual(["atlas", "prometheus"]);
+    });
   });
 });
 

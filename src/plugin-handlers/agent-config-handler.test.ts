@@ -721,5 +721,30 @@ describe("applyAgentConfig builtin override protection", () => {
       expect(result["opencode-agent"]).toBeDefined()
       expect(result["opencode-agent"]?.prompt).toBe("from opencode.json")
     })
+
+    test("reorders agents according to agent_order config", async () => {
+      // given a custom agent_order that swaps atlas ahead of sisyphus
+      const pluginConfig = createPluginConfig()
+      pluginConfig.agent_order = ["atlas", "sisyphus", "oracle", "multimodal-looker"]
+
+      // when
+      const result = await applyAgentConfig({
+        config: createBaseConfig(),
+        pluginConfig,
+        ctx: { directory: "/tmp" },
+        pluginComponents: createPluginComponents(),
+      })
+
+      // then the keys follow the requested order, with non-listed agents appended alphabetically
+      const keys = Object.keys(result)
+      const atlasDisplay = getAgentListDisplayName("atlas")
+      const sisyphusDisplay = getAgentListDisplayName("sisyphus")
+      const oracleDisplay = getAgentListDisplayName("oracle")
+      const multimodalDisplay = getAgentListDisplayName("multimodal-looker")
+
+      expect(keys.indexOf(atlasDisplay)).toBeLessThan(keys.indexOf(sisyphusDisplay))
+      expect(keys.indexOf(sisyphusDisplay)).toBeLessThan(keys.indexOf(oracleDisplay))
+      expect(keys.indexOf(oracleDisplay)).toBeLessThan(keys.indexOf(multimodalDisplay))
+    })
   })
 })

@@ -7,13 +7,16 @@ describe("tiers", () => {
       expect(resolveTierLabel(undefined)).toBe("Standard")
     })
 
-    it("returns Standard for kimi-k2.6", () => {
-      expect(resolveTierLabel("kimi-k2.6")).toBe("Standard")
+    it("returns Fast/Cheap for kimi-k2.6", () => {
+      expect(resolveTierLabel("kimi-k2.6")).toBe("Fast/Cheap")
     })
 
-    it("returns Fast/Cheap for both 'swe' keyword and 'swe-1.6' fully-qualified", () => {
-      expect(resolveTierLabel("swe")).toBe("Fast/Cheap")
-      expect(resolveTierLabel("swe-1.6")).toBe("Fast/Cheap")
+    it("returns Standard for swe-1.6", () => {
+      expect(resolveTierLabel("swe-1.6")).toBe("Standard")
+    })
+
+    it("returns Custom for unknown 'swe' keyword", () => {
+      expect(resolveTierLabel("swe")).toBe("Custom")
     })
 
     it("returns Code Gen for codex", () => {
@@ -37,7 +40,8 @@ describe("tiers", () => {
   describe("#given resolveTierInfo", () => {
     it("returns full info for known models", () => {
       expect(resolveTierInfo("opus")).toEqual({ tier: "Deep", keyword: '"opus"' })
-      expect(resolveTierInfo("swe")).toEqual({ tier: "Fast/Cheap", keyword: '"swe"' })
+      expect(resolveTierInfo("swe-1.6")).toEqual({ tier: "Standard", keyword: "omit model" })
+      expect(resolveTierInfo("kimi-k2.6")).toEqual({ tier: "Fast/Cheap", keyword: '"kimi"' })
     })
 
     it("returns Custom info for unrecognized models with the model as keyword", () => {
@@ -50,8 +54,7 @@ describe("tiers", () => {
   })
 
   describe("#given KNOWN_DEVIN_MODELS", () => {
-    it("includes both 'swe' keyword and 'swe-1.6' fully-qualified", () => {
-      expect(KNOWN_DEVIN_MODELS).toContain("swe")
+    it("includes swe-1.6 as the default", () => {
       expect(KNOWN_DEVIN_MODELS).toContain("swe-1.6")
     })
 
@@ -91,7 +94,7 @@ describe("tiers", () => {
     })
 
     it("returns default model at end of chain", () => {
-      expect(getFallbackModel("swe-1.6")).toBe("kimi-k2.6")
+      expect(getFallbackModel("swe-1.6")).toBe("swe-1.6")
     })
 
     it("returns first model for unknown input", () => {
@@ -104,8 +107,8 @@ describe("tiers", () => {
   })
 
   describe("#given DEFAULT_DEVIN_MODEL", () => {
-    it("is kimi-k2.6", () => {
-      expect(DEFAULT_DEVIN_MODEL).toBe("kimi-k2.6")
+    it("is swe-1.6", () => {
+      expect(DEFAULT_DEVIN_MODEL).toBe("swe-1.6")
     })
   })
 

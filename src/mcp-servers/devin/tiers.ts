@@ -19,10 +19,9 @@ export type TierEntry = {
 /** Map of model identifier (keyword OR fully-qualified) to tier info. */
 export const MODEL_TIER_MAP: Record<string, TierEntry> = {
   // Standard tier
-  "kimi-k2.6": { tier: "Standard", keyword: "omit model" },
+  "swe-1.6": { tier: "Standard", keyword: "omit model" },
   // Fast/Cheap tier — both the keyword and the fully-qualified model ID
-  "swe": { tier: "Fast/Cheap", keyword: '"swe"' },
-  "swe-1.6": { tier: "Fast/Cheap", keyword: '"swe"' },
+  "kimi-k2.6": { tier: "Fast/Cheap", keyword: '"kimi"' },
   // Code Gen tier
   "codex": { tier: "Code Gen", keyword: '"codex"' },
   // Balanced tier
@@ -67,7 +66,7 @@ export const TIER_COST_MAP: Record<DevinTier, number> = {
 }
 
 /** Default model used when no model is explicitly specified. */
-export const DEFAULT_DEVIN_MODEL = "kimi-k2.6"
+export const DEFAULT_DEVIN_MODEL = "swe-1.6"
 
 /** Returns the next model in the fallback chain.
  *  When the chain is exhausted, falls back to the default model instead of

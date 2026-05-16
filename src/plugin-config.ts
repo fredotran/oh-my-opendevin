@@ -268,6 +268,8 @@ export function mergeConfigs(
       ]),
     ],
     claude_code: deepMerge(base.claude_code, override.claude_code),
+    agent_order: override.agent_order ?? base.agent_order,
+    default_run_agent: override.default_run_agent ?? base.default_run_agent,
   };
 }
 

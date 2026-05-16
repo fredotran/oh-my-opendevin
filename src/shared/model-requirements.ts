@@ -189,6 +189,7 @@ export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
   },
   devin: {
     fallbackChain: [
+      { providers: ["github-copilot"], model: "gpt-4.1" },
       { providers: ["opencode", "opencode-go", "vercel"], model: "minimax-m2.5-free" },
       { providers: ["opencode", "github-copilot"], model: "big-pickle" },
       { providers: ["opencode", "opencode-go", "vercel"], model: "nemotron-3-super-120b-a12b:free" },
