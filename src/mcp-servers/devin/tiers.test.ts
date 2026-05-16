@@ -11,9 +11,9 @@ describe("tiers", () => {
       expect(resolveTierLabel("kimi-k2.6")).toBe("Standard")
     })
 
-    it("returns Fast/Cheap for both 'swe' keyword and 'swe-1-6' fully-qualified", () => {
+    it("returns Fast/Cheap for both 'swe' keyword and 'swe-1.6' fully-qualified", () => {
       expect(resolveTierLabel("swe")).toBe("Fast/Cheap")
-      expect(resolveTierLabel("swe-1-6")).toBe("Fast/Cheap")
+      expect(resolveTierLabel("swe-1.6")).toBe("Fast/Cheap")
     })
 
     it("returns Code Gen for codex", () => {
@@ -50,9 +50,9 @@ describe("tiers", () => {
   })
 
   describe("#given KNOWN_DEVIN_MODELS", () => {
-    it("includes both 'swe' keyword and 'swe-1-6' fully-qualified", () => {
+    it("includes both 'swe' keyword and 'swe-1.6' fully-qualified", () => {
       expect(KNOWN_DEVIN_MODELS).toContain("swe")
-      expect(KNOWN_DEVIN_MODELS).toContain("swe-1-6")
+      expect(KNOWN_DEVIN_MODELS).toContain("swe-1.6")
     })
 
     it("includes all five tier models", () => {
@@ -73,7 +73,7 @@ describe("tiers", () => {
 
   describe("#given FALLBACK_CHAIN", () => {
     it("orders models from most to least capable", () => {
-      expect(FALLBACK_CHAIN).toEqual(["opus", "sonnet", "kimi-k2.6", "swe-1-6"])
+      expect(FALLBACK_CHAIN).toEqual(["opus", "sonnet", "kimi-k2.6", "swe-1.6"])
     })
   })
 
@@ -86,12 +86,12 @@ describe("tiers", () => {
       expect(getFallbackModel("sonnet")).toBe("kimi-k2.6")
     })
 
-    it("returns swe-1-6 from kimi-k2.6", () => {
-      expect(getFallbackModel("kimi-k2.6")).toBe("swe-1-6")
+    it("returns swe-1.6 from kimi-k2.6", () => {
+      expect(getFallbackModel("kimi-k2.6")).toBe("swe-1.6")
     })
 
     it("returns default model at end of chain", () => {
-      expect(getFallbackModel("swe-1-6")).toBe("kimi-k2.6")
+      expect(getFallbackModel("swe-1.6")).toBe("kimi-k2.6")
     })
 
     it("returns first model for unknown input", () => {

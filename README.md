@@ -70,7 +70,7 @@ When the Devin agent delegates to the Devin CLI sandbox, it uses **explicit keyw
 | Tier | How to invoke | Resolved model | Use for |
 |------|---------------|----------------|---------|
 | **Standard** | Omit `model` | `kimi-k2.6` | Most tasks — good balance of capability and cost (default) |
-| **Fast/Cheap** | `model: "swe"` | `swe-1-6` | Simple edits, typos, single-file fixes |
+| **Fast/Cheap** | `model: "swe"` | `swe-1.6` | Simple edits, typos, single-file fixes |
 | **Code Gen** | `model: "codex"` | `codex` | Boilerplate, CRUD, test scaffolding |
 | **Balanced** | `model: "sonnet"` | `sonnet` | Moderate complexity, general purpose |
 | **Deep** | `model: "opus"` | `opus` | Architecture refactors, multi-file, complex debugging |

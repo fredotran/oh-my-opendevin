@@ -3,7 +3,7 @@
  *
  * Agents use keywords (e.g. "swe", "opus") which are passed directly to the
  * devin CLI as --model. The CLI itself accepts these keywords and the
- * fully-qualified model IDs (e.g. "swe-1-6"). Both representations should
+ * fully-qualified model IDs (e.g. "swe-1.6"). Both representations should
  * resolve to the same tier label in user-facing output (devin_start response,
  * devin-report CLI, etc.).
  */
@@ -22,7 +22,7 @@ export const MODEL_TIER_MAP: Record<string, TierEntry> = {
   "kimi-k2.6": { tier: "Standard", keyword: "omit model" },
   // Fast/Cheap tier — both the keyword and the fully-qualified model ID
   "swe": { tier: "Fast/Cheap", keyword: '"swe"' },
-  "swe-1-6": { tier: "Fast/Cheap", keyword: '"swe"' },
+  "swe-1.6": { tier: "Fast/Cheap", keyword: '"swe"' },
   // Code Gen tier
   "codex": { tier: "Code Gen", keyword: '"codex"' },
   // Balanced tier
@@ -52,7 +52,7 @@ export function resolveTierInfo(model: string | undefined): TierEntry {
 /** Fallback chain when a model hits quota or is unavailable.
  *  Ordered from most to least capable: Deep → Balanced → Standard → Fast/Cheap.
  */
-export const FALLBACK_CHAIN = ["opus", "sonnet", "kimi-k2.6", "swe-1-6"]
+export const FALLBACK_CHAIN = ["opus", "sonnet", "kimi-k2.6", "swe-1.6"]
 
 /** Rough per-second cost estimates (USD) for Devin CLI models.
  *  Used by devin-report for directional spend estimation only.

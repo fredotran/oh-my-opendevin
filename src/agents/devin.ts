@@ -105,7 +105,7 @@ For long-running background tasks, use the MCP \`devin_*\` tools. The \`devin-cl
 | Tier | How to invoke | Model | Use for |
 |------|---------------|-------|---------|
 | **Standard** | Omit \`model\` | \`kimi-k2.6\` | Most tasks — good balance of capability and cost |
-| **Fast/Cheap** | \`model: "swe"\` | \`swe-1-6\` | Simple edits, typos, single-file fixes |
+| **Fast/Cheap** | \`model: "swe"\` | \`swe-1.6\` | Simple edits, typos, single-file fixes |
 | **Code Gen** | \`model: "codex"\` | \`codex\` | Boilerplate, CRUD, test scaffolding |
 | **Deep** | \`model: "opus"\` | \`opus\` | Architecture refactors, multi-file, complex debugging |
 | **Balanced** | \`model: "sonnet"\` | \`sonnet\` | Moderate complexity, general purpose |

@@ -73,7 +73,7 @@ This document tracks all features, fixes, and architectural changes added in the
 | Tier | Keyword | Resolved Model | Use Case |
 |------|---------|---------------|----------|
 | **Standard** | omit `model` | `kimi-k2.6` | Most tasks — good balance of capability and cost |
-| **Fast/Cheap** | `"swe"` | `swe-1-6` | Simple edits, typos, single-file fixes |
+| **Fast/Cheap** | `"swe"` | `swe-1.6` | Simple edits, typos, single-file fixes |
 | **Code Gen** | `"codex"` | `codex` | Boilerplate, CRUD, test scaffolding |
 | **Balanced** | `"sonnet"` | `sonnet` | Moderate complexity, general purpose |
 | **Deep** | `"opus"` | `opus` | Architecture refactors, multi-file, complex debugging |
@@ -105,7 +105,7 @@ This document tracks all features, fixes, and architectural changes added in the
 - **Requirements:**
   - The `devin` CLI binary must be in your PATH
   - `--permission-mode dangerous` is the default (bypasses all Devin permission prompts)
-  - `--model` accepts both keywords (`"opus"`, `"sonnet"`, `"swe"`, `"codex"`) and fully-qualified IDs (`"swe-1-6"`)
+  - `--model` accepts both keywords (`"opus"`, `"sonnet"`, `"swe"`, `"codex"`) and fully-qualified IDs (`"swe-1.6"`)
   - Working directory (`cwd`) defaults to the MCP server's startup directory if not passed explicitly
 
 ---
@@ -145,7 +145,7 @@ This document tracks all features, fixes, and architectural changes added in the
 
 ### Default Devin CLI Model
 - **Commit:** `e5bdb26a`
-- **What:** Default Devin CLI model changed from `swe-1-6` to `kimi-k2.6` for better capability/cost balance.
+- **What:** Default Devin CLI model changed from `swe-1.6` to `kimi-k2.6` for better capability/cost balance.
 
 ---
 
@@ -288,7 +288,7 @@ This document tracks all features, fixes, and architectural changes added in the
   - `QUOTA_EXCEEDED` — detected from "quota exceeded", "usage limit", "out of credits", "insufficient quota". Includes `suggestedFallback` model
   - `CONTEXT_LIMIT` — detected from "context length", "token limit", "maximum context", "too many tokens". Suggests prompt truncation
   - `UNKNOWN` — catch-all for unrecognized errors
-- **Fallback chain:** `opus` → `sonnet` → `kimi-k2.6` → `swe-1-6` (Deep → Balanced → Standard → Fast/Cheap). Exported as `FALLBACK_CHAIN` with `getFallbackModel(current)` utility. When the chain is exhausted, `getFallbackModel` loops back to the default model `kimi-k2.6` for a safety-net retry, then `swe-1-6` again before giving up.
+- **Fallback chain:** `opus` → `sonnet` → `kimi-k2.6` → `swe-1.6` (Deep → Balanced → Standard → Fast/Cheap). Exported as `FALLBACK_CHAIN` with `getFallbackModel(current)` utility. When the chain is exhausted, `getFallbackModel` loops back to the default model `kimi-k2.6` for a safety-net retry, then `swe-1.6` again before giving up.
 - **Auto-fallback:** New `autoFallback` option on `devin_start` (default: `false`). When `true`, the server automatically retries down the fallback chain on `QUOTA_EXCEEDED` until success or chain exhaustion.
 - **Skill guidance:** The `devin-cli` built-in skill now includes a "Limit & Error Recovery" section teaching agents the fallback chain, error tag actions, and a structured recovery workflow.
 - **Why:** Agents previously saw `status: error` and raw stderr with no guidance on whether to retry, fallback, or ask the user. Structured hints eliminate guesswork and reduce user interruptions.
@@ -329,7 +329,7 @@ This document tracks all features, fixes, and architectural changes added in the
   2. Built-in skill marks model disclosure as **MANDATORY** (not just recommended) and adds explicit CLI-mode instruction: read the first line of the `devin_start` result and repeat it to the user verbatim.
   3. Example interactions updated to show tier + model in the user-facing message.
   4. New shared module `src/mcp-servers/devin/tiers.ts` with `resolveTierLabel()`, `resolveTierInfo()`, and `MODEL_TIER_MAP` — single source of truth for tier mapping consumed by both the MCP server and the `devin-report` CLI.
-  5. Both tier keywords (`"swe"`, `"codex"`, `"sonnet"`, `"opus"`) and fully-qualified model IDs (`"swe-1-6"`, etc.) are recognized — sessions started with either form display the correct tier.
+  5. Both tier keywords (`"swe"`, `"codex"`, `"sonnet"`, `"opus"`) and fully-qualified model IDs (`"swe-1.6"`, etc.) are recognized — sessions started with either form display the correct tier.
 - **Why:** Users need visibility into which Devin CLI model is running their task — for cost awareness, capability confirmation, and debugging. In CLI mode the tool output scrolls by inline; putting the model on the first line ensures it cannot be missed regardless of scrollback length.
 - **Tests:** 13 new tests in `src/mcp-servers/devin/tiers.test.ts` covering all tier resolution paths.
 
@@ -492,7 +492,7 @@ d4c77153 feat(install): use fixed project path for global installation
 d3308804 Fix doctor check warning for local development installation
 ddb848f4 Add local development installation script
 8848b82d feat: add /devin slash commands for easier delegation in OpenCode
-5ad2d38a fix: update model names to use specific versions (swe-1-6, claude-sonnet-4-6)
+5ad2d38a fix: update model names to use specific versions (swe-1.6, claude-sonnet-4-6)
 d1c3346a feat: add intelligent model selection guidance to devin-cli skill
 b919cd83 feat: add devin-cli built-in skill for MCP delegation guidance
 587c97a2 feat: add Devin CLI MCP server for background session delegation

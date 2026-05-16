@@ -102,7 +102,7 @@ The Devin agent (you) runs on free models. When delegating to the Devin CLI sand
 | Tier | How to invoke | Resolved model | Use for |
 |------|---------------|----------------|---------|
 | **Standard** | Omit \`model\` | \`kimi-k2.6\` | Most tasks — good balance of capability and cost |
-| **Fast/Cheap** | \`model: "swe"\` | \`swe-1-6\` | Simple edits, typos, single-file fixes, cost-sensitive batches |
+| **Fast/Cheap** | \`model: "swe"\` | \`swe-1.6\` | Simple edits, typos, single-file fixes, cost-sensitive batches |
 | **Code Gen** | \`model: "codex"\` | \`codex\` | Boilerplate, CRUD, test scaffolding, repetitive patterns |
 | **Balanced** | \`model: "sonnet"\` | \`sonnet\` | Moderate complexity, general purpose, documentation |
 | **Deep** | \`model: "opus"\` | \`opus\` | Architecture refactors, multi-file, complex debugging, critical correctness |
@@ -142,7 +142,7 @@ When \`devin_start\` fails, the response includes a **structured error tag**. Re
 
 If a model is unavailable due to quota or usage limits, fall back in this order:
 
-\`opus\` → \`sonnet\` → \`kimi-k2.6\` → \`swe-1-6\`
+\`opus\` → \`sonnet\` → \`kimi-k2.6\` → \`swe-1.6\`
 
 (Deep → Balanced → Standard → Fast/Cheap)
 
@@ -151,7 +151,7 @@ If a model is unavailable due to quota or usage limits, fall back in this order:
 | Tag | What happened | Agent action |
 |-----|---------------|--------------|
 | \`RATE_LIMIT\` | Too many requests | Wait \`retryAfterMs\`, then **retry with same model** |
-| \`QUOTA_EXCEEDED\` | Model quota exhausted | **Retry with \`suggestedFallback\`** (next in chain). After the chain is exhausted, safety-net retries are \`kimi-k2.6\` first, then \`swe-1-6\`. Do NOT do the work locally — keep retrying with fallback models |
+| \`QUOTA_EXCEEDED\` | Model quota exhausted | **Retry with \`suggestedFallback\`** (next in chain). After the chain is exhausted, safety-net retries are \`kimi-k2.6\` first, then \`swe-1.6\`. Do NOT do the work locally — keep retrying with fallback models |
 | \`CONTEXT_LIMIT\` | Prompt too long | **Summarize the prompt** (remove files, shorten instructions) or pick a model with larger context |
 | \`UNKNOWN\` | Unclear error | Read the full log, diagnose, ask the user if stuck |
 
@@ -160,9 +160,9 @@ If a model is unavailable due to quota or usage limits, fall back in this order:
 1. If \`RATE_LIMIT\` → wait the specified duration, call \`devin_start\` again with **same model**
 2. If \`QUOTA_EXCEEDED\` → call \`devin_start\` with \`model: suggestedFallback\`
 3. If \`CONTEXT_LIMIT\` → shorten the prompt, retry with same model (or omit model for default)
-4. If the fallback chain is exhausted → first retry with \`model: "kimi-k2.6"\` (default), then if that also fails retry with \`model: "swe-1-6"\` (cheap). Only tell the user after all safety-net fallbacks fail
+4. If the fallback chain is exhausted → first retry with \`model: "kimi-k2.6"\` (default), then if that also fails retry with \`model: "swe-1.6"\` (cheap). Only tell the user after all safety-net fallbacks fail
 5. **Do NOT silently skip the error or switch models without telling the user** — model selection affects cost and capability
-6. **Do NOT do the work locally when Devin CLI hits a quota error** — always retry with fallback models \`kimi-k2.6\` then \`swe-1-6\` first
+6. **Do NOT do the work locally when Devin CLI hits a quota error** — always retry with fallback models \`kimi-k2.6\` then \`swe-1.6\` first
 
 ---
 

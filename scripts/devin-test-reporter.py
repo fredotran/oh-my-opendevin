@@ -46,7 +46,7 @@ from typing import Any
 MCP_LOG_DIR = Path("/tmp/oh-my-opencode-devin-mcp")
 TIER_MAP = {
     "kimi-k2.6": ("Standard", "omit model"),
-    "swe-1-6": ("Fast/Cheap", '"swe"'),
+    "swe-1.6": ("Fast/Cheap", '"swe"'),
     "codex": ("Code Gen", '"codex"'),
     "sonnet": ("Balanced", '"sonnet"'),
     "opus": ("Deep", '"opus"'),
