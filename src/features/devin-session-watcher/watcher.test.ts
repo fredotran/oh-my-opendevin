@@ -3,6 +3,8 @@ import { mkdtempSync, writeFileSync, rmSync } from "fs"
 import { join } from "path"
 import { tmpdir } from "os"
 import { readMetaFile } from "./meta-reader"
+import { createDevinNotifier } from "./notifier"
+import type { WatchedSession } from "./types"
 
 describe("devin-session-watcher types", () => {
   test("WatchedSession type exists at runtime via object shape", () => {
@@ -53,5 +55,62 @@ describe("readMetaFile", () => {
     expect(result).toBeNull()
 
     rmSync(dir, { recursive: true, force: true })
+  })
+})
+
+describe("createDevinNotifier", () => {
+  test("calls both callbacks when session completes", () => {
+    const systemReminders: string[] = []
+    const osNotifications: string[] = []
+
+    const notifier = createDevinNotifier({
+      sendSystemReminder: (text) => systemReminders.push(text),
+      sendOsNotification: (text) => osNotifications.push(text),
+    })
+
+    const session: WatchedSession = {
+      id: "abc-123",
+      status: "completed",
+      exitCode: 0,
+      endedAt: Date.now(),
+      prompt: "fix bug",
+      model: "claude-sonnet-4-6",
+      cwd: "/tmp",
+      notified: false,
+    }
+
+    notifier.notify(session)
+
+    expect(systemReminders.length).toBe(1)
+    expect(systemReminders[0]).toContain("abc-123")
+    expect(systemReminders[0]).toContain("completed")
+    expect(osNotifications.length).toBe(1)
+    expect(osNotifications[0]).toContain("abc-123")
+    expect(session.notified).toBe(true)
+  })
+
+  test("skips disabled notification channels", () => {
+    const systemReminders: string[] = []
+
+    const notifier = createDevinNotifier({
+      sendSystemReminder: (text) => systemReminders.push(text),
+      sendOsNotification: undefined,
+    })
+
+    const session: WatchedSession = {
+      id: "def-456",
+      status: "error",
+      exitCode: 1,
+      endedAt: Date.now(),
+      prompt: "build fails",
+      model: "gpt-5.5",
+      cwd: "/tmp",
+      notified: false,
+    }
+
+    notifier.notify(session)
+
+    expect(systemReminders.length).toBe(1)
+    expect(session.notified).toBe(true)
   })
 })
