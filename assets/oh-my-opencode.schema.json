@@ -6464,6 +6464,26 @@
       ],
       "additionalProperties": false
     },
+    "devin": {
+      "type": "object",
+      "properties": {
+        "watcher_enabled": {
+          "type": "boolean"
+        },
+        "watcher_poll_interval_ms": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 9007199254740991
+        },
+        "watcher_os_notifications": {
+          "type": "boolean"
+        },
+        "watcher_system_reminders": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
     "websearch": {
       "type": "object",
       "properties": {
