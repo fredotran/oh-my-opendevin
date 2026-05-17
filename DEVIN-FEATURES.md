@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `257ff0e2`
+**Last updated:** `8c770db8`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -391,6 +391,7 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+8c770db8 refactor(devin): keep devin as primary so it remains in TUI agent list
 257ff0e2 refactor(devin): make devin a subagent instead of primary
 89c5be3f ci: let auto-updater run through CI instead of skipping it
 2057de4f refactor(devin-mcp): swap default model from kimi-k2.6 to swe-1.6
