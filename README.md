@@ -1,6 +1,6 @@
-# Oh My OpenAgent (Custom Fork)
+# Oh My OpenDevin
 
-**This is a customized fork of [oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent) with additional features and integrations.**
+**This is a customized fork of [oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent) with Devin CLI integration, live session completion notifications, and dual-primary agent architecture.**
 
 ## What's Different
 
