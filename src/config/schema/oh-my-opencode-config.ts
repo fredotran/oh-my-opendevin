@@ -6,6 +6,7 @@ import { AgentOverridesSchema } from "./agent-overrides"
 import { BabysittingConfigSchema } from "./babysitting"
 import { BackgroundTaskConfigSchema } from "./background-task"
 import { BrowserAutomationConfigSchema } from "./browser-automation"
+import { DevinConfigSchema } from "./devin-config"
 import { CategoriesConfigSchema } from "./categories"
 import { ClaudeCodeConfigSchema } from "./claude-code"
 import { CommentCheckerConfigSchema } from "./comment-checker"
@@ -77,6 +78,7 @@ export const OhMyOpenCodeConfigSchema = z.object({
     git_env_prefix: "GIT_MASTER=1",
   }),
   browser_automation_engine: BrowserAutomationConfigSchema.optional(),
+  devin: DevinConfigSchema.optional(),
   websearch: WebsearchConfigSchema.optional(),
   tmux: TmuxConfigSchema.optional(),
   sisyphus: SisyphusConfigSchema.optional(),
