@@ -199,17 +199,13 @@ export async function applyAgentConfig(params: {
       (params.config as { default_agent?: string }).default_agent =
         getAgentDisplayName(runtimeConfigKey);
     } else {
-      const defaultAgentKey = builtinAgents.devin ? "devin" : "sisyphus";
+      const defaultAgentKey = "sisyphus";
       (params.config as { default_agent?: string }).default_agent =
         getAgentDisplayName(defaultAgentKey);
     }
 
-    // Assembly order: Devin -> Sisyphus -> Hephaestus -> Prometheus -> Atlas
+    // Assembly order: Sisyphus -> Hephaestus -> Prometheus -> Atlas
     const agentConfig: Record<string, unknown> = {};
-
-    if (builtinAgents.devin) {
-      agentConfig["devin"] = builtinAgents.devin;
-    }
 
     agentConfig["sisyphus"] = builtinAgents.sisyphus;
 
