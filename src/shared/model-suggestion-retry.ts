@@ -5,7 +5,10 @@ import {
   PROMPT_TIMEOUT_MS,
   type PromptRetryOptions,
 } from "./prompt-timeout-context"
-import { promptAfterSessionIdle, promptAsyncAfterSessionIdle } from "./prompt-async-gate"
+import {
+  dispatchInternalPrompt,
+  releasePromptAsyncReservation,
+} from "./prompt-async-gate"
 
 type Client = ReturnType<typeof createOpencodeClient>
 
@@ -96,7 +99,8 @@ export async function promptWithModelSuggestionRetry(
   const timeoutContext = createPromptTimeoutContext(args, timeoutMs)
 
   try {
-    const promptResult = await promptAsyncAfterSessionIdle({
+    const promptResult = await dispatchInternalPrompt({
+      mode: "async",
       client,
       sessionID: args.path.id,
       input: {
@@ -119,6 +123,7 @@ export async function promptWithModelSuggestionRetry(
     if (timeoutContext.wasTimedOut()) {
       throw new Error(`promptAsync timed out after ${timeoutMs}ms`)
     }
+    releasePromptAsyncReservation(args.path.id, "model-suggestion-retry")
     throw error
   } finally {
     timeoutContext.cleanup()
@@ -135,7 +140,8 @@ export async function promptSyncWithModelSuggestionRetry(
   try {
     const timeoutContext = createPromptTimeoutContext(args, timeoutMs)
     try {
-      const promptResult = await promptAfterSessionIdle({
+      const promptResult = await dispatchInternalPrompt({
+        mode: "sync",
         client,
         sessionID: args.path.id,
         input: {
@@ -169,6 +175,11 @@ export async function promptSyncWithModelSuggestionRetry(
       throw error
     }
 
+    // The first attempt failed synchronously with ProviderModelNotFoundError, which means the
+    // prompt did not reach the server. Release the post-dispatch reservation hold so the
+    // immediate retry can dispatch without waiting for the hold window to expire.
+    releasePromptAsyncReservation(args.path.id, "model-suggestion-retry:sync")
+
     log("[model-suggestion-retry] Model not found, retrying with suggestion", {
       original: `${suggestion.providerID}/${suggestion.modelID}`,
       suggested: suggestion.suggestion,
@@ -187,7 +198,8 @@ export async function promptSyncWithModelSuggestionRetry(
 
     const timeoutContext = createPromptTimeoutContext(retryArgs, timeoutMs)
     try {
-      const promptResult = await promptAfterSessionIdle({
+      const promptResult = await dispatchInternalPrompt({
+        mode: "sync",
         client,
         sessionID: retryArgs.path.id,
         input: {

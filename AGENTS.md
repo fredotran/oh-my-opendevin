@@ -44,7 +44,7 @@ oh-my-opencode/
 ├── bun-test.d.ts             # Custom bun:test type augmentations
 ├── .opencode/                # Project-scope skills + commands (skills/, command/) + background-tasks state
 ├── .agents/                  # Mirrored project-scope skills + commands (recent migration target)
-├── .sisyphus/                # AI agent workspace (run-continuation/, plans/, tasks/, notepads/)
+├── .omo/                # AI agent workspace (run-continuation/, plans/, tasks/, notepads/)
 └── .local-ignore/            # Dev-only test fixtures + PR worktrees
 ```
 
@@ -177,7 +177,7 @@ Schema autocomplete: `"$schema": "https://raw.githubusercontent.com/code-yeongyu
 - **OpenClaw bidirectional:** Outbound dispatchers fire on session events; inbound daemon polls Discord/Telegram and `send-keys` replies into the tracked tmux pane.
 - **Internal message injection is dangerous:** OpenCode의 stupid한 설계로 플러그인이 `session.prompt` / `session.promptAsync` 같은 메인 세션 메시지 API를 통해 메인 시스템을 망가뜨릴 수 있다.
   - Root cause to remember: OpenCode `promptAsync` returns before the prompt is durably accepted, and later failures can arrive as `session.error`. Multiple OMO hooks/tools can observe the same idle/error/completion edge and inject the same internal message into a live parent session.
-  - Treat every `session.prompt` / `session.promptAsync` call as a write to shared session state. Production code may call them only inside `src/shared/prompt-async-gate.ts`; all other routes must use `promptAsyncAfterSessionIdle`, `promptAfterSessionIdle`, or a proven equivalent gate.
+- Treat every `session.prompt` / `session.promptAsync` call as a write to shared session state. Production code may call them only inside `src/shared/prompt-async-gate.ts`; all other routes must use `dispatchInternalPrompt({ mode: "async" | "sync", ... })` or a proven equivalent gate.
   - Required gate semantics: reserve per session before dispatch, check active session state, keep a short post-dispatch hold, release only on intentional abort/recovery paths, and restore optimistic task/loop state when dispatch is skipped or fails later.
   - Forbidden patterns: raw prompt calls outside the shared gate, `postDispatchHoldMs: 0`, no-session fallback to raw prompt, and new internal message routes without duplicate-injection regression tests.
   - Tests must pin both the shared invariant and the route behavior: update the static raw-prompt audit, then add route-specific tests proving concurrent/live/idle/error triggers collapse to one dispatch. Cover background completion wakes, fallback retries, team mailbox live delivery, recovery continuations, CLI run resumes, Claude Code hook injections, and sync/background subagent prompts.
@@ -256,7 +256,7 @@ bunx oh-my-opencode mcp-oauth login <server-url>  # Tier-3 MCP OAuth (PKCE + DCR
 - **Build:** `bun build` (ESM) + `tsc --emitDeclarationOnly`, externals: `@ast-grep/napi`, `zod`.
 - **CI tests:** root tests run through plain `bun test`; `web/**` has its own package-level CI workflow.
 - **122 barrel `index.ts` files** establish module boundaries.
-- **Architecture rules** enforced via `.sisyphus/rules/modular-code-enforcement.md` (when present in workspace).
+- **Architecture rules** enforced via `.omo/rules/modular-code-enforcement.md` (when present in workspace).
 - **Windows builds:** run on `windows-latest` (not cross-compiled) to avoid Bun segfaults.
 - **Platform binaries:** detect AVX2 + libc family at runtime, fallback to baseline if needed.
 - **IntentGate (`keyword-detector`):** classifies user intent (`ultrawork`/`ulw`, `search`, `analyze`, `team`) and injects mode-specific prompts.
