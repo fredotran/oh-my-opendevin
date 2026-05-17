@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `e0714ff8`
+**Last updated:** `36812ead`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -391,6 +391,7 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+36812ead docs(README): remove non-relevant upstream content
 e0714ff8 docs(README): document Devin Session Watcher completion notifications
 2ea670c8 feat(devin-watcher): wire completion notifications into parent session chat + OS
 94f69926 chore(schema): regenerate with devin watcher config
