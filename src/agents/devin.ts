@@ -2,7 +2,7 @@ import type { AgentConfig } from "@opencode-ai/sdk"
 import type { AgentMode, AgentPromptMetadata } from "./types"
 import { createAgentToolRestrictions } from "../shared/permission-compat"
 
-const MODE: AgentMode = "subagent"
+const MODE: AgentMode = "primary"
 
 export const DEVIN_PROMPT_METADATA: AgentPromptMetadata = {
   category: "utility",
