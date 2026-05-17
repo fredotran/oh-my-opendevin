@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `fbfbbd10`
+**Last updated:** `a6bed0a5`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -391,11 +391,13 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+a6bed0a5 Merge branch 'code-yeongyu:dev' into fredotran/dev
 fbfbbd10 docs(README): rename title to Oh My OpenDevin
 b5644643 docs: invert Standard and Fast/Cheap tier models
 36812ead docs(README): remove non-relevant upstream content
 e0714ff8 docs(README): document Devin Session Watcher completion notifications
 2ea670c8 feat(devin-watcher): wire completion notifications into parent session chat + OS
+7285163c @ririnto has signed the CLA in code-yeongyu/oh-my-openagent#4117
 94f69926 chore(schema): regenerate with devin watcher config
 a9d008db feat(devin-watcher): wire notifications, start/stop lifecycle
 c7bd95c5 feat(devin-watcher): add barrel export
@@ -406,8 +408,11 @@ a620bb83 feat(devin-watcher): add meta-reader with tests
 caa28bf7 config: add devin watcher config schema
 bb7cca8a docs: add implementation plan for devin session watcher
 63815d40 docs: add design spec for devin session watcher
+e0d88ff2 Merge pull request #3713 from deopa0402/fix/stale-plugin-specifier-cache
 bb117107 docs: regenerate DEVIN-FEATURES.md after upstream merge
 165017e4 Merge remote-tracking branch 'upstream/dev' into fredotran/dev
+97581686 test(auto-update): isolate cached version resolution
+37d9d613 fix(auto-update): clean stale OMO cache roots
 babee921 Merge pull request #4109 from code-yeongyu/code-yeongyu/unify-prompt-async-routes
 7a3a0a03 test(tmux): ignore unrelated pane runner mock calls
 0f92d2c9 test(prompt-gate): narrow audit binding detection
