@@ -16,6 +16,8 @@ import { log } from "./shared"
 import { markServerRunningInProcess } from "./shared/tmux/tmux-utils/server-health"
 import type { ModelFallbackControllerAccessor } from "./hooks/model-fallback"
 import { DevinSessionWatcher } from "./features/devin-session-watcher"
+import { getMainSessionID } from "./features/claude-code-session-state"
+import { sendSessionNotification, detectPlatform } from "./hooks/session-notification-sender"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
@@ -169,10 +171,19 @@ export function createManagers(args: {
       systemReminders: pluginConfig.devin.watcher_system_reminders ?? false,
       logDir: join(tmpdir(), "oh-my-opencode-devin-mcp"),
       sendSystemReminder: (text) => {
-        log("[devin-watcher] system reminder:", text)
+        const sessionID = getMainSessionID()
+        if (sessionID && backgroundManager) {
+          backgroundManager.queuePendingNotification(sessionID, text)
+        } else {
+          log("[devin-watcher] no main session, dropping reminder:", text)
+        }
       },
       sendOsNotification: (text) => {
-        log("[devin-watcher] OS notification:", text)
+        const platform = detectPlatform()
+        if (platform === "unsupported") return
+        sendSessionNotification(ctx, platform, "Devin", text).catch((err) => {
+          log("[devin-watcher] OS notification failed:", err)
+        })
       },
       onSessionCompleted: (meta) => {
         log("[create-managers] Devin session completed via watcher", {

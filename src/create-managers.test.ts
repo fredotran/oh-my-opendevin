@@ -7,6 +7,8 @@ import { OhMyOpenCodeConfigSchema } from "./config/schema/oh-my-opencode-config"
 import { createManagers } from "./create-managers"
 import * as openclawRuntimeDispatch from "./openclaw/runtime-dispatch"
 import { createModelCacheState } from "./plugin-state"
+import * as sessionState from "./features/claude-code-session-state"
+import * as sessionNotificationSender from "./hooks/session-notification-sender"
 
 type CleanupRegistration = {
   shutdown: () => void | Promise<void>
@@ -26,11 +28,20 @@ const cleanupSessionTeamRunsMock = mock(async () => ({
   errors: [],
 }))
 
+const queuedNotifications = new Map<string, string[]>()
+
 class MockBackgroundManager {
   constructor(config: {
     onSubagentSessionCreated?: (event: { sessionID: string; parentID: string; title: string }) => Promise<void>
   }) {
     backgroundManagerOptions = config
+  }
+
+  queuePendingNotification(sessionID: string | undefined, notification: string): void {
+    if (!sessionID) return
+    const existing = queuedNotifications.get(sessionID) ?? []
+    existing.push(notification)
+    queuedNotifications.set(sessionID, existing)
   }
 }
 
@@ -38,8 +49,12 @@ class MockSkillMcpManager {
   constructor(..._args: unknown[]) {}
 }
 
+let devinWatcherConfig: unknown = null
+
 class MockDevinSessionWatcher {
-  constructor(_config: unknown) {}
+  constructor(config: unknown) {
+    devinWatcherConfig = config
+  }
   async start(): Promise<void> {}
   async stop(): Promise<void> {}
 }
@@ -143,7 +158,9 @@ describe("createManagers", () => {
     markServerRunningInProcess.mockClear()
     dispatchOpenClawEvent.mockReset()
     backgroundManagerOptions = null
+    devinWatcherConfig = null
     trackedPaneBySession.clear()
+    queuedNotifications.clear()
     registeredCleanupManagers.length = 0
     cleanupSessionTeamRunsMock.mockClear()
   })
@@ -326,5 +343,71 @@ describe("createManagers", () => {
 
     expect(stopSpy).toHaveBeenCalledTimes(1)
     stopSpy.mockRestore()
+  })
+
+  it("#given devin watcher is enabled #when sendSystemReminder fires #then it queues notification via backgroundManager for main session", () => {
+    const mainSessionID = "main-session-123"
+    spyOn(sessionState, "getMainSessionID").mockReturnValue(mainSessionID)
+
+    const args = {
+      ctx: createContext("/tmp/project"),
+      pluginConfig: OhMyOpenCodeConfigSchema.parse({
+        devin: {
+          watcher_enabled: true,
+          watcher_system_reminders: true,
+        },
+      }),
+      tmuxConfig: createTmuxConfig(false),
+      modelCacheState: createModelCacheState(),
+      backgroundNotificationHookEnabled: false,
+      deps: createDeps(),
+    }
+
+    createManagers(args)
+
+    expect(devinWatcherConfig).not.toBeNull()
+    const config = devinWatcherConfig as { sendSystemReminder?: (text: string) => void }
+    expect(typeof config.sendSystemReminder).toBe("function")
+
+    config.sendSystemReminder?.("Devin session abc-123 completed")
+
+    expect(queuedNotifications.get(mainSessionID)).toEqual(["Devin session abc-123 completed"])
+  })
+
+  it("#given devin watcher is enabled #when sendOsNotification fires #then it sends OS notification", async () => {
+    const sendSessionNotificationSpy = spyOn(sessionNotificationSender, "sendSessionNotification").mockResolvedValue(undefined)
+    spyOn(sessionNotificationSender, "detectPlatform").mockReturnValue("linux")
+
+    const args = {
+      ctx: createContext("/tmp/project"),
+      pluginConfig: OhMyOpenCodeConfigSchema.parse({
+        devin: {
+          watcher_enabled: true,
+          watcher_os_notifications: true,
+        },
+      }),
+      tmuxConfig: createTmuxConfig(false),
+      modelCacheState: createModelCacheState(),
+      backgroundNotificationHookEnabled: false,
+      deps: createDeps(),
+    }
+
+    createManagers(args)
+
+    expect(devinWatcherConfig).not.toBeNull()
+    const config = devinWatcherConfig as { sendOsNotification?: (text: string) => void }
+    expect(typeof config.sendOsNotification).toBe("function")
+
+    config.sendOsNotification?.("Devin session abc-123 completed")
+
+    await new Promise((r) => setTimeout(r, 10))
+
+    expect(sendSessionNotificationSpy).toHaveBeenCalledTimes(1)
+    const callArgs = sendSessionNotificationSpy.mock.calls[0]
+    expect(callArgs?.[1]).toBe("linux")
+    expect(callArgs?.[2]).toBe("Devin")
+    expect(callArgs?.[3]).toBe("Devin session abc-123 completed")
+
+    sendSessionNotificationSpy.mockRestore()
   })
 })
