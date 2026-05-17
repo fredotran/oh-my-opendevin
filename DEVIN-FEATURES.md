@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `bb117107`
+**Last updated:** `94f69926`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -391,6 +391,16 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+94f69926 chore(schema): regenerate with devin watcher config
+a9d008db feat(devin-watcher): wire notifications, start/stop lifecycle
+c7bd95c5 feat(devin-watcher): add barrel export
+99df025e feat(devin-watcher): add core watcher with tests
+532c7bb5 feat(devin-watcher): add notifier with tests
+a620bb83 feat(devin-watcher): add meta-reader with tests
+69cef656 feat(devin-watcher): add watcher types
+caa28bf7 config: add devin watcher config schema
+bb7cca8a docs: add implementation plan for devin session watcher
+63815d40 docs: add design spec for devin session watcher
 bb117107 docs: regenerate DEVIN-FEATURES.md after upstream merge
 165017e4 Merge remote-tracking branch 'upstream/dev' into fredotran/dev
 babee921 Merge pull request #4109 from code-yeongyu/code-yeongyu/unify-prompt-async-routes
