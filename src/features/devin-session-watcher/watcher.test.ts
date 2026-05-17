@@ -1,9 +1,10 @@
 import { describe, expect, test } from "bun:test"
-import { mkdtempSync, writeFileSync, rmSync } from "fs"
+import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from "fs"
 import { join } from "path"
 import { tmpdir } from "os"
 import { readMetaFile } from "./meta-reader"
 import { createDevinNotifier } from "./notifier"
+import { DevinSessionWatcher } from "./watcher"
 import type { WatchedSession } from "./types"
 
 describe("devin-session-watcher types", () => {
@@ -112,5 +113,89 @@ describe("createDevinNotifier", () => {
 
     expect(systemReminders.length).toBe(1)
     expect(session.notified).toBe(true)
+  })
+})
+
+describe("DevinSessionWatcher", () => {
+  test("detects session completion and notifies", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "devin-watcher-"))
+    mkdirSync(join(dir, "sessions"), { recursive: true })
+
+    const notifications: string[] = []
+    const watcher = new DevinSessionWatcher({
+      logDir: join(dir, "sessions"),
+      pollIntervalMs: 100,
+      enabled: true,
+      osNotifications: true,
+      systemReminders: true,
+      sendSystemReminder: (text) => notifications.push(text),
+      sendOsNotification: (text) => notifications.push(text),
+    })
+
+    watcher.start()
+
+    // Create a running session
+    writeFileSync(
+      join(dir, "sessions", "abc-123.meta.json"),
+      JSON.stringify({ id: "abc-123", status: "running", prompt: "fix", model: "m", cwd: "/tmp" }),
+    )
+
+    await new Promise((r) => setTimeout(r, 150))
+    expect(notifications.length).toBe(0) // still running
+
+    // Transition to completed
+    writeFileSync(
+      join(dir, "sessions", "abc-123.meta.json"),
+      JSON.stringify({ id: "abc-123", status: "completed", exitCode: 0, endedAt: Date.now(), prompt: "fix", model: "m", cwd: "/tmp" }),
+    )
+
+    await new Promise((r) => setTimeout(r, 150))
+    expect(notifications.length).toBe(2) // system + OS
+
+    watcher.stop()
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  test("does not duplicate notifications", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "devin-watcher-"))
+    mkdirSync(join(dir, "sessions"), { recursive: true })
+
+    const notifications: string[] = []
+    const watcher = new DevinSessionWatcher({
+      logDir: join(dir, "sessions"),
+      pollIntervalMs: 100,
+      enabled: true,
+      osNotifications: true,
+      systemReminders: true,
+      sendSystemReminder: (text) => notifications.push(text),
+      sendOsNotification: (text) => notifications.push(text),
+    })
+
+    watcher.start()
+
+    // First, create a running session
+    writeFileSync(
+      join(dir, "sessions", "def-456.meta.json"),
+      JSON.stringify({ id: "def-456", status: "running", prompt: "fix", model: "m", cwd: "/tmp" }),
+    )
+
+    await new Promise((r) => setTimeout(r, 150))
+    expect(notifications.length).toBe(0) // still running
+
+    // Transition to completed
+    writeFileSync(
+      join(dir, "sessions", "def-456.meta.json"),
+      JSON.stringify({ id: "def-456", status: "completed", exitCode: 0, endedAt: Date.now(), prompt: "fix", model: "m", cwd: "/tmp" }),
+    )
+
+    await new Promise((r) => setTimeout(r, 150))
+    expect(notifications.length).toBe(2)
+
+    // Second poll — should not re-notify
+    await new Promise((r) => setTimeout(r, 150))
+    expect(notifications.length).toBe(2)
+
+    watcher.stop()
+    rmSync(dir, { recursive: true, force: true })
   })
 })
