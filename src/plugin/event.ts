@@ -719,6 +719,9 @@ export function createEventHandler(args: {
             sessionID,
           });
         }
+        if (managers.devinSessionWatcher) {
+          managers.devinSessionWatcher.stop();
+        }
       }
 
       await runEventHookSafely("teamLeadOrphanHandler", teamLeadOrphanHandler, input);

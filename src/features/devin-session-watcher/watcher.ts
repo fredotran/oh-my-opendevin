@@ -8,6 +8,15 @@ export type WatcherDeps = DevinWatcherConfig & {
   logDir: string
   sendSystemReminder?: (text: string) => void
   sendOsNotification?: (text: string) => void
+  onSessionCompleted?: (meta: {
+    id: string
+    status: string
+    exitCode?: number
+    durationSec?: number
+    prompt: string
+    model: string
+  }) => void
+  onError?: (error: Error) => void
 }
 
 export class DevinSessionWatcher {
@@ -43,12 +52,12 @@ export class DevinSessionWatcher {
         if (!meta) continue
         this.handleMeta(meta)
       }
-    } catch {
-      // LOG_DIR may not exist yet — silently skip
+    } catch (err) {
+      this.deps.onError?.(err instanceof Error ? err : new Error(String(err)))
     }
   }
 
-  private handleMeta(meta: { id: string; status: string; exitCode?: number; endedAt?: number; prompt: string; model: string; cwd: string }): void {
+  private handleMeta(meta: { id: string; status: string; exitCode?: number; startedAt?: number; endedAt?: number; prompt: string; model: string; cwd: string }): void {
     const known = this.knownSessions.get(meta.id)
     const isTerminal = meta.status === "completed" || meta.status === "error" || meta.status === "cancelled"
 
@@ -71,6 +80,18 @@ export class DevinSessionWatcher {
       known.exitCode = meta.exitCode
       known.endedAt = meta.endedAt
       this.notifier.notify(known)
+
+      const durationSec = meta.startedAt && meta.endedAt
+        ? Math.round((meta.endedAt - meta.startedAt) / 1000)
+        : undefined
+      this.deps.onSessionCompleted?.({
+        id: meta.id,
+        status: meta.status,
+        exitCode: meta.exitCode,
+        durationSec,
+        prompt: meta.prompt,
+        model: meta.model,
+      })
     }
   }
 }

@@ -38,6 +38,12 @@ class MockSkillMcpManager {
   constructor(..._args: unknown[]) {}
 }
 
+class MockDevinSessionWatcher {
+  constructor(_config: unknown) {}
+  async start(): Promise<void> {}
+  async stop(): Promise<void> {}
+}
+
 class MockTmuxSessionManager {
   constructor(_ctx: PluginInput, _config: unknown) {}
 
@@ -72,6 +78,7 @@ function createDeps(): NonNullable<Parameters<typeof createManagers>[0]["deps"]>
     BackgroundManagerClass: MockBackgroundManager as typeof import("./features/background-agent").BackgroundManager,
     SkillMcpManagerClass: MockSkillMcpManager as typeof import("./features/skill-mcp-manager").SkillMcpManager,
     TmuxSessionManagerClass: MockTmuxSessionManager as typeof import("./features/tmux-subagent").TmuxSessionManager,
+    DevinSessionWatcherClass: MockDevinSessionWatcher as typeof import("./features/devin-session-watcher").DevinSessionWatcher,
     initTaskToastManagerFn: initTaskToastManager,
     registerManagerForCleanupFn: registerManagerForCleanup,
     cleanupSessionTeamRunsFn: cleanupSessionTeamRunsMock as CleanupSessionTeamRunsFn,
@@ -259,5 +266,65 @@ describe("createManagers", () => {
     })
     expect(cleanupArgs?.tmuxMgr).toBeInstanceOf(MockTmuxSessionManager)
     expect(cleanupArgs?.bgMgr).toBeInstanceOf(MockBackgroundManager)
+  })
+
+  it("#given devin watcher is enabled #when managers are created #then devinSessionWatcher is instantiated and started", () => {
+    const startSpy = spyOn(MockDevinSessionWatcher.prototype, "start")
+    const args = {
+      ctx: createContext("/tmp/project"),
+      pluginConfig: OhMyOpenCodeConfigSchema.parse({
+        devin: {
+          watcher_enabled: true,
+          watcher_poll_interval_ms: 3000,
+        },
+      }),
+      tmuxConfig: createTmuxConfig(false),
+      modelCacheState: createModelCacheState(),
+      backgroundNotificationHookEnabled: false,
+      deps: createDeps(),
+    }
+
+    const managers = createManagers(args)
+
+    expect(managers.devinSessionWatcher).toBeInstanceOf(MockDevinSessionWatcher)
+    expect(startSpy).toHaveBeenCalledTimes(1)
+    startSpy.mockRestore()
+  })
+
+  it("#given devin watcher is disabled #when managers are created #then devinSessionWatcher is undefined", () => {
+    const args = {
+      ctx: createContext("/tmp/project"),
+      pluginConfig: OhMyOpenCodeConfigSchema.parse({}),
+      tmuxConfig: createTmuxConfig(false),
+      modelCacheState: createModelCacheState(),
+      backgroundNotificationHookEnabled: false,
+      deps: createDeps(),
+    }
+
+    const managers = createManagers(args)
+
+    expect(managers.devinSessionWatcher).toBeUndefined()
+  })
+
+  it("#given devin watcher is enabled #when process cleanup runs #then watcher stop is called", async () => {
+    const stopSpy = spyOn(MockDevinSessionWatcher.prototype, "stop")
+    const args = {
+      ctx: createContext("/tmp/project"),
+      pluginConfig: OhMyOpenCodeConfigSchema.parse({
+        devin: {
+          watcher_enabled: true,
+        },
+      }),
+      tmuxConfig: createTmuxConfig(false),
+      modelCacheState: createModelCacheState(),
+      backgroundNotificationHookEnabled: false,
+      deps: createDeps(),
+    }
+
+    createManagers(args)
+    await registeredCleanupManagers[0]?.shutdown()
+
+    expect(stopSpy).toHaveBeenCalledTimes(1)
+    stopSpy.mockRestore()
   })
 })

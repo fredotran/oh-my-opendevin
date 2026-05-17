@@ -15,11 +15,15 @@ import { createConfigHandler } from "./plugin-handlers"
 import { log } from "./shared"
 import { markServerRunningInProcess } from "./shared/tmux/tmux-utils/server-health"
 import type { ModelFallbackControllerAccessor } from "./hooks/model-fallback"
+import { DevinSessionWatcher } from "./features/devin-session-watcher"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 
 type CreateManagersDeps = {
   BackgroundManagerClass: typeof BackgroundManager
   SkillMcpManagerClass: typeof SkillMcpManager
   TmuxSessionManagerClass: typeof TmuxSessionManager
+  DevinSessionWatcherClass: typeof DevinSessionWatcher
   initTaskToastManagerFn: typeof initTaskToastManager
   registerManagerForCleanupFn: typeof registerManagerForCleanup
   cleanupSessionTeamRunsFn: typeof cleanupSessionTeamRuns
@@ -31,6 +35,7 @@ const defaultCreateManagersDeps: CreateManagersDeps = {
   BackgroundManagerClass: BackgroundManager,
   SkillMcpManagerClass: SkillMcpManager,
   TmuxSessionManagerClass: TmuxSessionManager,
+  DevinSessionWatcherClass: DevinSessionWatcher,
   initTaskToastManagerFn: initTaskToastManager,
   registerManagerForCleanupFn: registerManagerForCleanup,
   cleanupSessionTeamRunsFn: cleanupSessionTeamRuns,
@@ -44,6 +49,7 @@ export type Managers = {
   skillMcpManager: SkillMcpManager
   configHandler: ReturnType<typeof createConfigHandler>
   modelFallbackControllerAccessor: ModelFallbackControllerAccessor
+  devinSessionWatcher: DevinSessionWatcher | undefined
 }
 
 export function createManagers(args: {
@@ -71,6 +77,7 @@ export function createManagers(args: {
   const tmuxSessionManager = new deps.TmuxSessionManagerClass(ctx, tmuxConfig)
   const modelFallbackControllerAccessor = createModelFallbackControllerAccessor()
   let backgroundManager: BackgroundManager | undefined
+  let devinSessionWatcher: DevinSessionWatcher | undefined
 
   const cleanupTeamModeRuns = async (): Promise<void> => {
     if (!pluginConfig.team_mode?.enabled) return
@@ -92,6 +99,13 @@ export function createManagers(args: {
       await tmuxSessionManager.cleanup().catch((error) => {
         log("[create-managers] tmux cleanup error during process shutdown:", error)
       })
+      if (devinSessionWatcher) {
+        try {
+          devinSessionWatcher.stop()
+        } catch (error) {
+          log("[create-managers] devin session watcher cleanup error during process shutdown:", error)
+        }
+      }
     },
   })
 
@@ -147,6 +161,33 @@ export function createManagers(args: {
 
   const skillMcpManager = new deps.SkillMcpManagerClass()
 
+  if (pluginConfig.devin?.watcher_enabled) {
+    devinSessionWatcher = new deps.DevinSessionWatcherClass({
+      enabled: pluginConfig.devin.watcher_enabled,
+      pollIntervalMs: pluginConfig.devin.watcher_poll_interval_ms ?? 5000,
+      osNotifications: pluginConfig.devin.watcher_os_notifications ?? false,
+      systemReminders: pluginConfig.devin.watcher_system_reminders ?? false,
+      logDir: join(tmpdir(), "oh-my-opencode-devin-mcp"),
+      sendSystemReminder: (text) => {
+        log("[devin-watcher] system reminder:", text)
+      },
+      sendOsNotification: (text) => {
+        log("[devin-watcher] OS notification:", text)
+      },
+      onSessionCompleted: (meta) => {
+        log("[create-managers] Devin session completed via watcher", {
+          sessionId: meta.id,
+          status: meta.status,
+          durationSec: meta.durationSec,
+        })
+      },
+      onError: (error) => {
+        log("[create-managers] Devin session watcher error:", error)
+      },
+    })
+    devinSessionWatcher.start()
+  }
+
   const configHandler = deps.createConfigHandlerFn({
     ctx: { directory: ctx.directory, client: ctx.client },
     pluginConfig,
@@ -158,5 +199,6 @@ export function createManagers(args: {
     skillMcpManager,
     configHandler,
     modelFallbackControllerAccessor,
+    devinSessionWatcher,
   }
 }
