@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `165017e4`
+**Last updated:** `bb117107`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -391,417 +391,418 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
-165017e44 Merge remote-tracking branch 'upstream/dev' into fredotran/dev
-babee921b Merge pull request #4109 from code-yeongyu/code-yeongyu/unify-prompt-async-routes
-7a3a0a031 test(tmux): ignore unrelated pane runner mock calls
-0f92d2c98 test(prompt-gate): narrow audit binding detection
-98df0a43e docs(prompt-gate): document unified dispatch invariant
-6768decdd fix(session-recovery): fallback when stored unavailable-tool parts are absent
-12bd65807 refactor(prompt-async-gate): remove deprecated dispatch wrappers
-1bbe065c6 refactor(prompt-callers): migrate shared and cli dispatch
-989ab7171 refactor(hooks): use unified internal prompt dispatch
-dd3fecaf4 refactor(plugin): use unified internal prompt dispatch
-fee515c5a refactor(prompt-callers): migrate team and call_omo_agent dispatch
-df198d8b2 refactor(background-agent): use unified internal prompt dispatch
-a42f894f8 refactor(prompt-async-gate): collapse dispatch into mode-based entrypoint
-b5d24619c test(prompt-async-gate): pin unified internal prompt dispatch contract
-f1a0ba206 Merge pull request #4108 from code-yeongyu/code-yeongyu/fix-idle-recovery-fanout
-8bc497756 fix(slash-command): skip already tagged command output
-55312cc4b fix(session-recovery): preflight idle recovery fanout
-1fea761cf Merge pull request #4106 from code-yeongyu/code-yeongyu/fix-stale-tool-hang
-a7b7ace7e fix(prompt-gate): block prompts into pending tool turns
-6eb88a054 fix(session-recovery): prefer valid tool use ids
-4d417a33b fix(process-cleanup): stop force-exiting opencode on transient unhandled errors
-f43effb84 fix(session-recovery): recover interrupted idle tool turns
-fbec112bc fix(background-output): bound session.messages fetch to stop forever-hang during /init-deep
-24261da82 Merge pull request #4103 from code-yeongyu/code-yeongyu/fix-prompt-hang-race
-f4f1efcb6 fix(call-omo-agent): fail fast on lost prompts
-8c770db8c refactor(devin): keep devin as primary so it remains in TUI agent list
-257ff0e21 refactor(devin): make devin a subagent instead of primary
-89c5be3fa ci: let auto-updater run through CI instead of skipping it
-2057de4f1 refactor(devin-mcp): swap default model from kimi-k2.6 to swe-1.6
-75223149d Merge pull request #4096 from code-yeongyu/kimi-k2.6
-412ac0455 docs: add debugging journal for prompt hang investigation
-d8f365bfd test(guard): add merge-conflict guard to prevent unresolved git conflicts in source files
-38702f6e8 Merge pull request #4094 from code-yeongyu/fix/opus-4.7
-c142066fd Merge pull request #4093 from code-yeongyu/k2p6-turbo
-67ead7bf6 fix(dynamic-truncator): bound session.messages fetch to stop forever-hang on Read (#4086)
-fcd0011a6 test(atlas): track active timers instead of scheduled delays in setTimeout mock
-2613de522 fix(prompt-async-gate): timeout isSessionActive to prevent infinite hang on stale SDK status
-169e61f77 test(audit): allowlist build-team-idle-wake-hint-client.ts in prompt route audit
-a43215f24 fix(plugin/event): bind team-idle-wake-hint client methods to SDK Session
-271878bce perf(rules-injector): cache full candidates and memoize ancestor scans
-c25f75294 perf(rules-injector): cache project root for visited ancestors
-f843f57cf Merge pull request #4088 from code-yeongyu/fix/session-agent-map-cleanup
-2b8782de8 fix(claude-code-session-state): clear session-agent map on delete and sync cleanup
-25d805419 Merge pull request #4074 from code-yeongyu/fix/delegate-task-spawn
-c9ec11dd5 bump comment-checker to 0.7.1
-d3318617d fix(background-agent): clean child session-agent state on pre-start abort and normalize stored agent
-cc97a023c test(agents): drop unsafe AgentFactory cast and add typed empty skills
-791fbf3e5 refactor(delegate-task): share buildSyncPromptTools between bootstrap and prompt dispatch
-ea5f6ddfd fix(call-omo-agent): register bootstrap and session agent before sync prompt dispatch
-097d7dc54 fix(background-agent): keep delegated skill, permission, and child agent across retries
-ba648685d fix(runtime-fallback): carry delegated system and tools through bootstrap retry
-761f682ad refactor(delegated-bootstrap): accept optional system and tools
-4f9813848 feat: add ci test runner, session routing, bash parser, and test fixtures
-166e5de06 @pizzav-xyz has signed the CLA in code-yeongyu/oh-my-openagent#4084
-80fa177b1 Merge pull request #4075 from code-yeongyu/feature/migrate-sisyphus-to-omo
-6573bd943 chore(workspace): move test discipline rule to omo
-5a2c3bbba fix(workspace): match omo guard paths cross-platform
-b5992b13e test(shared): stabilize port utility interface check
-cdac0d69b fix(workspace): report only the active notepad change
-240a4a17a fix(workspace): harden omo migration review issues
-fbc5768f9 Merge pull request #3971 from MoerAI/fix/task-examples-add-run-in-background
-82ec099c3 fix(atlas): match omo as a path segment
-63519ec56 docs(workspace): document omo workspace paths
-f10f79631 fix(workspace): keep omo and legacy rules compatible
-36e373cdb feat(workspace): point planning guardrails at omo
-a86221b1a feat(workspace): store runtime state under omo
-5dca1a574 feat(workspace): migrate legacy sisyphus state to omo
-7c2e2fe1f fix(background-agent): redact task registry views
-982fa8136 fix(delegate-task): start child prompts reliably
-76e573a92 Merge pull request #4073 from code-yeongyu/fix/team-create-permission-inline-spec
-d974cd3d3 test(hooks): repair stale retry harnesses
-cf7bf9d02 fix(team-mode): accept legacy inline specs
-a20540579 Merge pull request #4068 from code-yeongyu/feat/pre-publish-fix-v420
-496e00b74 refactor(devin-mcp): rename fully-qualified model from swe-1-6 to swe-1.6
-64f5dc431 feat(devin-mcp): add safety-net fallback to default model on quota exhaustion
-6576cb127 refactor(agents): rename devin display name to Devin - CLI Executor
-3f3a63c54 docs(changelog): v4.2.0 entry with known issues and supersession history
-eba17441c test(mock-module-audit): require lifecycle cleanup for mock.module
-aaa215c5d docs(release-process): add post-fix repro verification policy
-3435c9bef docs(adr): write prompt-async-gate ADR
-102d06702 fix(model-suggestion-retry): release reservation on async error path
-5a8bd05db test(prompt-async-gate): replace timer waits with deterministic sync (BLOCKER-3)
-9dd52a043 docs(changelog): v4.2.0 entry covering BLOCKER + HIGH + KNOWN ISSUES
-e68a07074 fix(test): update install test to check for oh-my-opendevin plugin name
-5ba1fe443 fix(agents): add first-run fallback for Atlas agent registration
-7779213ae fix(installer): ensure plugin is recognized by OpenCode
-80c0ea533 fix(cli): use PUBLISHED_PACKAGE_NAME for plugin config detection and registration
-3477b600d refactor(installer): remove npm dependency, keep only local symlink installation
-5c1437413 fix(install-global): symlink into OpenCode node_modules for Electron runtime
-dc98bb8d6 docs: update DEVIN-FEATURES.md with symlink fix and agent recognition fixes
-9f5f46b13 fix: devin agent not recognized by OpenCode
-7432181a7 feat(devin-mcp): add health/resumable tools, cost estimates, doctor check, and schema fixes
-a576e8951 ci: filter [skip ci] commits from DEVIN-FEATURES.md auto-updater
-4cf56a40f fix(toast): show correct default agent in startup toast
-6e13aec88 docs: update DEVIN-FEATURES.md with README commit
-d2cbe3ca3 docs(readme): add Devin CLI Reliability section and update fork features
-3e9d17808 docs: add model selection rationale and spawned CLI command to DEVIN-FEATURES.md
-c4bb5d616 docs: update DEVIN-FEATURES.md with reliability pack and limit recovery features
-48897669a docs(devin-mcp): update AGENTS.md with all reliability features
-d054ca770 docs: update DEVIN-FEATURES.md — model disclosure now on first line
-c277d125a feat(devin-mcp): put model info on first line of devin_start response
-1663e6fa5 feat(devin-mcp): structured error hints + agent fallback chain for limit recovery
-31bc20608 docs(superpowers): add devin limit/quota error recovery design spec
-21da12784 feat(devin-mcp): reliability pack — max duration, log caps, error handling, schema fix
-24ff702bf docs(devin-mcp): remove stale references to deleted /devin and /devin-models slash commands
-a7b5cdbe9 docs(superpowers): add devin-mcp-reliability-pack design
-5b79c2bf1 docs: update DEVIN-FEATURES.md with latest fork features
-b530e49bd feat(devin-mcp): add stdin EOF handler for parent process crash detection
-ccd77bba8 feat(devin-mcp): make model/tier info prominent in all tool outputs
-6649ed605 feat(devin-cli): stronger guidance for very long tasks — tell user once, then be silent
-70b5a6f0e feat(devin-cli): add dedicated guidance for very long tasks (Docker builds)
-395d3c865 feat(devin-cli): add ultrawork safeguard and cleaner wait logging to skill template
-e51e28d4e refactor(devin-mcp): extract shared tiers module + fix swe keyword tier mapping
-6f6aba769 feat(devin-mcp): disclose resolved model+tier to user on delegation
-cf33d0111 fix(devin-mcp): cap devin_wait at 30s, guide agents to since_bytes polling
-a1d4f2057 feat(devin-mcp): add 5 resilience features for MCP server
-2e8089674 fix: anchor skip-ci detection to end of subject line
-b0f1a0b4a fix: prevent auto-update commits from desyncing DEVIN-FEATURES.md
-112281a26 fix: remove merge conflict markers from DEVIN-FEATURES.md and harden updater script
-985202e7b test: fix additional fork-specific test failures
-40a22767e test: fix fork-specific test failures on fredotran/dev
-c9039bcc7 fix(reporter): strip trailing whitespace and flatten newlines before wrapping
-911b58f2a feat(devin-mcp): write .meta.json with spawn command + model for each session
-ac83f46f6 ci: fix failing CI on fredotran/dev
-be29fa919 docs: add Devin CLI test reporter script and update DEVIN-FEATURES.md
-0d0ca2e9c ci: extract fork-specific automation into dedicated fork-sync workflow
-9ee16028b  docs(readme): sync Devin CLI model section with DEVIN-FEATURES.md
-587e20aef ci: verify installer runs `bun run build` end-to-end
-9ca2183da docs: correct Last updated commit hash in DEVIN-FEATURES.md
-7cbe12476 ci: add branch triggers, build verification, and installer checks
-568fe3f68 Fix README architecture diagram alignment
-a0f8adbf3 fix(installer): correct --uninstall flag variable name from DO_UNLINK to DO_UNINSTALL
-9c432171b fix(devin): anchor MCP server cwd at module load time + recommend explicit cwd
-6733a64e9 fix(devin): correct balanced tier model name to sonnet
-14bf0dced docs: add DEVIN-FEATURES.md — comprehensive fork feature registry
-b7a0b39c3 fix(devin): use resolvedModel for concurrency slot acquisition
-b78335df3 docs(readme): document Devin CLI tiered model routing system
-0f0983b60 feat(devin-cli): document model tier system in built-in skill
-44e6cc98b feat(devin): add incremental polling instructions and model tier guidance
-81d14cef7 feat(devin): optimize CLI calls and task management
-a06ac8051 feat(devin-mcp): default devin-cli model to kimi-k2.6
-9a587b8f2 feat(devin): add 'devin do [task]' prompt recognition + remove deepseek-v4-flash from fallback
-94a5240cb fix(devin): restore original nemotron model name — nemotron-3-super-120b-a12b:free
-226aeeb67 fix(devin): correct deepseek model name — deepseek-v4-flash
-557782435 fix(model-resolution): auto-prefix provider for bare model names in config overrides
-ac07cf431 fix(devin): use valid model IDs in fallback chain
-9f4697663 feat(devin): broaden fallback chain providers — remove opencode-only lock
-ef8a1c659 docs(readme): fix indentation of paragraph after MCP JSON block
-9bf8df18e feat(commands): remove /devin and /devin-models slash commands
-839d307b3 feat(devin-cli): default permission_mode to dangerous — always bypass permission prompts
-f32ad1e3d feat(devin): harden agent separation — enforce Devin never delegates to specialists
-c3181e2e1 fix(devin): restrict fallback to free models and fix delegation prompt
-00398b078 feat(devin): configure cheap/free OpenCode model fallbacks
-4056080d5 feat(config): add devin to AgentOverridesSchema
-3e77554d4 feat(run): show session resume hint on interrupt and completion
-ddd4a9d14 fix(identity): set published package name to oh-my-opendevin
-0ddd4cad3 fix(team-mode): cast test fixture ask return to satisfy Effect type
-8f3776b98 docs(readme): document Devin x Sisyphus tag-team architecture
-45941e861 feat(agents): promote Devin to primary default agent
-7c7efd9b2 feat(agents): register Devin as a built-in subagent
-1640edccf docs(readme): remove session alias system references
-47d26b325 feat(devin-models): improve model selector display with tiers and examples
-7dcd8304e fix(version-detection): recognize oh-my-opendevin package name for version toast
-ab3778634 fix(mcp): write .mcp.json to ~/.claude/ where the plugin actually reads
-976e19caf feat(installer): auto-detect shell rc and source after PATH change
-ab2611cae feat(installer): add config backup/restore for uninstall
-c00d65689 fix(mcp): resolve MCP integration failures and harden security
-f85b097cf feat(mcp): add global MCP configuration for Devin server
-884b38264 feat(installer): add fallback to local installation via symlinks
-a8ddb7281 refactor: change package name from scoped to unscoped
-63f0cd4d1 docs: update README with comprehensive installation guide
-b1d3350c9 chore: remove local development installation scripts
-a166d63b3 feat(installer): add global installation script for npm package
-29c6ad264 Revert 'feat(install): use fixed project path for global installation'
-d4c771530 feat(install): use fixed project path for global installation
-4c955b5a0 Fix README title: this is an oh-my-openagent fork
-05754440a Reorganize README: put fork-specific content before base project
-982d88516 Update README.md with fork-specific features
-d3308804d Fix doctor check warning for local development installation
-ddb848f40 Add local development installation script
-8848b82d4 feat: add /devin slash commands for easier delegation in OpenCode
-5ad2d38a5 fix: update model names to use specific versions (swe-1-6, claude-sonnet-4-6)
-d1c3346a8 feat: add intelligent model selection guidance to devin-cli skill
-b919cd832 feat: add devin-cli built-in skill for MCP delegation guidance
-587c97a23 feat: add Devin CLI MCP server for background session delegation
-7dbb34cd4 refactor(background-agent): wire ParentWakeNotifier into BackgroundManager
-41ff7bca2 fix(background-agent): release prompt gate before agent fallback retry
-209063e86 docs(known-issues): document delegate-task early-failure-fallback deferral
-0f8902c49 docs(changelog): v4.2.0 entry
-484801721 test(mock-module-audit): require lifecycle cleanup for mock.module
-845d862b9 test(prompt-async-gate): replace setTimeout sleeps with deterministic sync
-f8d6f2a2e docs(known-issues): document delegate-task PR #3825 revert deferral
-c096a596e test(mock-module-audit): require lifecycle cleanup for mock.module
-8914dab41 docs(known-issues): reference delegate fallback tracking issue
-1590085f7 docs(release-process): add post-fix repro verification policy
-0c27ecb17 docs(adr): write prompt-async-gate ADR
-38732b426 docs(known-issues): document delegate-task empty-history fallback (BLOCKER-4)
-0941ffe7f docs(release-process): add post-fix repro verification policy
-ee6bc67c5 docs(adr): write prompt-async-gate ADR
-d706587e1 docs(known-issues): document delegate-task early-failure-fallback deferral
-ff1b15d53 fix(model-suggestion-retry): release reservation before retry attempt
-c1ccf8d09 refactor(background-agent): introduce ParentWakeNotifier module
-8c4cc09de test(prompt-async-route-audit): migrate to TypeScript AST walker
-f93d7297c test(prompt-async-gate): cover dispatch timeout and post-dispatch error hold
-b333a5280 fix(prompt-async-gate): add dispatch timeout, shared runner, harden prefix release
-a19c1bfc6 chore(release): bump version to 4.2.0
-c067b0fc0 refactor(plugin-entry): move createPluginModule to testing module
-1723a8b74 Merge pull request #3500 from Disaster-Terminator/fix/tmux-defer-attach-until-focus
-e63c5b9a2 fix(tmux): require explicit active isolated window
-1ff59f44c test(tmux): align pane-state runner format
-d02cca442 test(tmux): align pane replace placeholder expectations
-54a7256a7 test(tmux): align placeholder command expectations
-91f1cf5fb fix(tmux): pin pane commands to /bin/sh
-8c5ca7363 fix(tmux): sweep suffixed stale isolated sessions
-0c8e546c5 fix(tmux): support manager-scoped isolated session names
-4e3684eb2 fix(tmux): gate isolated pane activation on visible client focus
-c63108d55 fix(tmux): track placeholder panes before attach readiness
-688bb551b fix(tmux): defer subagent attach until pane focus
-6e5a127f8 Merge pull request #3840 from EnochLi15/codex/fix-tool-execute-after-boundary
-d11613999 fix tool execute after hook boundary
-ad10450b5 Merge pull request #3841 from Momentum96/fix/background-manager-tmux-ordering
-df64f3252 @boris-gorbylev has signed the CLA in code-yeongyu/oh-my-openagent#4057
-be25109f6 fix(continuation): skip internal user turns
-c580b8f2c fix(session): ignore internal synthetic turns
-e8de8b79a fix(team-mode): skip pending mailbox reinjection
-e90ff8058 fix(tmux): treat busy sessions as attachable
-efb862ce9 fix(tmux): prefer real tmux when session env exists
-5238dd484 fix(background-agent): start promptAsync before blocking tmux callback
-a9a003250 Merge pull request #3497 from Disaster-Terminator/fix/reminder-hooks-preserve-state-across-compaction
-291b1f7b3 test(reminder-hooks): clean up compaction regressions
-672f5d6e9 fix(keyword-detector): skip synthetic turns
-196f6512a fix(team-mode): defer live mailbox acks
-392c20e53 test(reminder-hooks): make delete reset regression diagnostic
-29e7e97d8 test(reminder-hooks): cover delegated sessions across compaction
-3db1da1e5 fix(reminder-hooks): preserve suppression state across compaction
-ae7ff3bb7 Merge pull request #3891 from wjiuxing/feat/chinese-error-patterns
-3e9b125fd test(runtime-fallback): cover localized provider errors
-c206b1686 feat: add Chinese error patterns to model-error-classifier
-149a83d70 feat: add Chinese quota patterns to classifyErrorType
-adfa8befb feat: add Chinese error patterns to RETRYABLE_ERROR_PATTERNS
-e24e495a6 Merge pull request #3322 from RaviTharuma/fix/runtime-fallback-equivalent-skip
-d9033d73a fix(runtime-fallback): keep variant in equivalence
-f501c47c4 fix(runtime-fallback): skip equivalent claude aliases
-f54888b2f Merge pull request #3576 from Disaster-Terminator/fix/background-busy-stall-detection
-27788b4ab fix(session-recovery): audit raw prompt aliases
-4a1c260d8 test(todo-continuation): cover peer-message reservation holds
-39fef2042 fix(background-agent): resolve parent wake agent aliases
-2bd4944ba fix(prompt-gate): scope reservation releases
-b6caa5d3e fix(background-agent): correct stall timeout guidance
-189af23e9 fix(background-agent): detect stalled active sessions
-2eec0d96d Merge pull request #3319 from EZotoff/fix/remove-activity-stagnation-bypass
-65c128333 fix(todo-continuation): clean up idle event diagnostics
-047ca069a test: rename test to reflect todo-only stagnation check
-68e9d54fa fix(todo-continuation): remove activity-based stagnation bypass
-fe66c9621 Merge pull request #4053 from code-yeongyu/supersede/3866-tool-result-schema
-b504fb1de fix(tool-pair-validator): emit schema-compatible synthetic tool results
-24f7e560c Merge pull request #4051 from code-yeongyu/supersede/3952-first-prompt-watchdog
-3199bd3d9 fix(runtime-fallback): broaden watchdog progress detection + harden test timing
-a130fa70d fix(runtime-fallback): add first-prompt watchdog for stuck subagents
-bda0452b2 Merge pull request #4029 from sandikodev/fix/json-error-recovery-exclude-todowrite
-f835244d4 Merge pull request #4047 from PeterPonyu/fix/3894-skip-tmux-layout-when-server-unreachable
-e66d60f4c Merge pull request #3773 from cailgarrisk-collab/fix/glm-rate-limit-fallback-statuscode
-5cda8b8fe Merge pull request #3330 from codeg-dev/fix/isplan-display-name-getAgentConfigKey
-a32834362 Merge pull request #3299 from kilhyeonjun/fix/claude-code-settings-hooks-not-executed
-0036c203a Merge pull request #3934 from Qihao0v0/fix/unifyllm-quota-classifier
-c6054af9f Merge pull request #3872 from x-x-gpu/dev
-7da44232a Merge pull request #4049 from code-yeongyu/supersede/3790-session-firstmessage-no-clear
-9f6b68118 fix(hooks): do not clear sessionFirstMessageProcessed on session.idle
-bd3928e15 fix(team-mode): skip tmux layout when opencode server unreachable
-ac66a43e9 Merge pull request #4046 from code-yeongyu/fix/3494-strip-zwsp-before-promptasync
-7caf74a9b fix(atlas,todo-continuation): strip ZWSP sort prefix before promptAsync agent
-2b43147c4 Merge pull request #4045 from code-yeongyu/supersede/3901-call-omo-agent-display-name
-10f721de1 fix(call-omo-agent): translate config-key subagent_type to display name before SDK dispatch
-437a8edba Merge pull request #4007 from PeterPonyu/feat/runtime-fallback-internal-abort
-5e7ee9418 Merge pull request #3982 from jas32096/fix/category-fallback-ignored-when-primary-set
-83ab00096 Merge pull request #3972 from MoerAI/fix/circuit-breaker-tool-input-fallback
-e2b8e49e2 Merge pull request #4044 from code-yeongyu/revert/3825-delegated-bootstrap
-3c7d1299a Revert "Merge pull request #3825 from tw-yshuang/fix/delegated-child-session-early-failure-fallback"
-cd33f3a39 Merge pull request #3825 from tw-yshuang/fix/delegated-child-session-early-failure-fallback
-521c99cf0 Merge pull request #3950 from ismetanin/fix/surface-subagent-quota-error
-f00a69398 Merge pull request #3947 from MoerAI/fix/process-cleanup-opt-out-env
-c3319c753 Merge pull request #3470 from omer-koren/fix/thinking-block-modified-recovery
-984b8c1a3 Merge pull request #4032 from PeterPonyu/fix/3996-tool-pair-validator-background-sessions
-15b0a41fe Merge pull request #4043 from code-yeongyu/fix/session-recovery-stale-error-dedupe
-8e9dea949 fix(session-recovery): persist dedupe across stale repeated session.error
-cb8738508 test(ci): isolate runtime and rules dependencies
-a02686e72 test(ci): remove suite-order mock coupling
-f1fb1e08e fix(ralph-loop): send registered agent display name on continue
-b3b2da89c test(ci): avoid global module mock leaks
-8dcbccf06 fix(tmux): inject pane action dependencies
-7a94cc72b fix(background-agent): stabilize parent wakes
-c0544a703 fix(background-agent): defer retry notifications
-462b55efc Merge pull request #4040 from code-yeongyu/cleanup/typescript-ai-slop-20260515
-b6a0be562 test: remove decorative dividers
-a9886ccbb refactor(plugin): remove metadata assertions
-0a3d1875f refactor(tools): narrow optional values
-d92e78c95 refactor(sdk): narrow response fallbacks
-4785767a0 refactor(interactive-bash): reuse tmux parser
-d8f52aae7 test: run suite without split runner
-150ccefa0 fix(delegate-task): allow hidden plan task
-c25cb8dce fix(background-task): clarify task id contracts
-15e7330ff fix(team-mode): gate status injection by keyword
-1e7a7a22a Merge pull request #4037 from code-yeongyu/fix/internal-initiator-dedupe
-cd1c1a592 fix(background-agent): avoid branched parent wakes
-9f6d0d228 docs(agents-md): refresh hierarchical knowledge base for v4.1.2
-3dd8a5cab chore(rules): forbid flaky tests, time sleeps, and prompt pinning
-53a740636 no prompt async
-ced722e25 Merge pull request #4034 from code-yeongyu/fix/promptasync-duplicate-output
-c2aa180e7 fix(prompt-gate): pin duplicate prompt dispatches
-05189700f fix(prompt-gate): hold reservations after dispatch
-c6e3b7e1f docs(agents-md): warn on prompt injection
-edf3e530d fix(hooks): gate sync injected prompts
-0b48f8056 fix(call-omo-agent): gate reused sync prompts
-439e72839 fix(runtime-fallback): gate retry prompts
-30adce9ca fix(prompt-gate): share message reservations
-dd6271bbf fix(babysitter): gate reminder prompts
-a524754ec fix(todo-continuation): gate idle prompts
-b0b61182b fix(ralph-loop): gate continuation prompts
-960baf39b fix(atlas): gate boulder continuation prompts
-b0a484b40 fix(session-recovery): gate resume prompts
-db28a32cf fix(recovery): gate compaction prompts
-c75f54886 fix(fallback): gate model retry prompts
-f1a62a9cd fix(team-mode): gate member wake prompts
-174cbd0fb fix(background-agent): gate parent wake prompts
-b2fdd728d fix(prompt-async): add session idle gate
-2567415a9 Merge pull request #4033 from code-yeongyu/perf/ci-test-build-time-20260515
-e80c2811b ci: fail closed on sharded test gate
-7ae8207ac Merge pull request #4030 from code-yeongyu/fix/promptasync-concurrency-20260515
-23dfe7eec fix(fallback): skip duplicate fallback re-arms
-fdd40815b ci: split test workflow across shards
-53de295b2 perf(ci): add sharded test runner phases
-b7482ea72 test(fallback): type chat output assertions
-26bb6231b fix(fallback): preserve provider-specific fallback retries
-005d16dd9 fix(fallback): dedupe providerless fallback errors
-da339204b fix(fallback): dedupe overlapping fallback continuations
-17030b9a0 Prevent subagent repair from corrupting background sessions
-c6c7a103d Merge pull request #4015 from code-yeongyu/fix/background-output-bg-id-20260514
-8f90c1e92 fix(background-task): log missing output retry
-d03555902 @sandikodev has signed the CLA in code-yeongyu/oh-my-openagent#4029
-c76ac27eb fix(json-error-recovery): add todowrite/todoread to JSON_ERROR_TOOL_EXCLUDE_LIST
-bd2f10551 @scw1109 has signed the CLA in code-yeongyu/oh-my-openagent#4020
-d8652863a Merge remote-tracking branch 'origin/dev' into fix/background-output-bg-id-20260514
-ca178f411 Merge pull request #4016 from code-yeongyu/fix-bg-noti-coalesce
-9b279d2f0 chore(deps): sync lockfile metadata
-8ea1e0fd6 chore: sync bun.lock with v4.1.2 release
-268c89c94 fix(background-agent): coalesce rapid-fire idle parent notifications
-1ea192b3f fix(background-task): retry transient missing output tasks
-b9beea103 feat(team-mode): drive immediate teardown and recreate-to-reshape loop
-c75deee54 release: v4.1.2
-9a1f8f679 fix(web): route installation links to docs section
-63ced1d2a Merge pull request #4010 from code-yeongyu/chore/safe-tooling-upgrades-biome-tsgo-20260514-132516
-96d724958 Merge pull request #4009 from code-yeongyu/fix/ralph-loop-compaction-race
-f10251b59 chore(tooling): refresh safe deps and checks
-9e6185266 fix(ralph-loop): guard compaction continuation ownership
-72bac14a1 @clousky2020 has signed the CLA in code-yeongyu/oh-my-openagent#4005
-d16d47a0b docs: complete v4.1.1 drift sweep in reference and guide docs
-98242ba64 docs(i18n+web): align translated READMEs and landing copy with v4.1.1 hook count
-8cc3c3209 docs: refresh user-facing docs to match v4.1.1 codebase
-1e7a7600a docs(agents-md): regenerate hierarchical AGENTS.md knowledge base for v4.1.1
-5b99a87c6 fix(runtime-fallback): preserve attemptCount when our own abort is the cause (closes #4006)
-5ffbe0e24 fix(fallback): guard duplicate prompt injections
-ea55c385b fix(background-agent): defer busy parent notifications
-6e841773b @PeterPonyu has signed the CLA in code-yeongyu/oh-my-openagent#3871
-f9b95f9e3 Merge pull request #3993 from code-yeongyu/fix/non-interactive-env-windows-shell
-43b2d0e0d Merge pull request #3992 from MoerAI/fix/omo-block-native-execution-delegation
-47d60a74d fix(non-interactive-env): honor Windows ComSpec shell
-95cc9e2d2 [sisyphus-dev] fix(delegate-task): canonicalize agent dedup key to close hidden filter bypass
-fef1d4530 fix(non-interactive-env): respect Windows command shell
-7469cb3f3 ci: skip cla for signed contributors
-cab20568d fix(deps): sync platform lock entries
-4bd81d2cd fix(delegate-task): exclude hidden agents from task delegation discovery (fixes #3957)
-61ba4e3b4 fix(ralph-loop): guard delayed start snapshots
-1fa97c6ef docs(publish): require discord announcement
-f44d94413 release: v4.1.1
-3b4d2431e fix(hooks): guard stale idle prompts
-a337635e3 fix(background-agent): defer active parent wakes
-0b99168b7 @EmiyaKiritsugu3 has signed the CLA in code-yeongyu/oh-my-openagent#3990
-39fb0143d Merge pull request #3986 from code-yeongyu/fix/continuation-message-dispatch
-36f51ddb1 fix(continuation): mark fallback resumes synthetic
-1189b96d4 fix(continuation): mark atlas resumes synthetic
-e49ba9472 chore(deps): refresh platform lock entries
-38b1433ff fix(continuation): mark resumes synthetic
-3f9226431 fix(interactive-bash): prohibit tmux kill-server
-286f5ccfd when publish always discord
-9edaa6e90 release: v4.1.0
-21460713e .opencode to .agents
-a0b46309b remove hyperplan for .opencode (not as a feature)
-711b75345 fix(delegate-task): honor user fallback_models when category primary is unreachable
-83c3379b5 Merge branch 'dev' into fix/surface-subagent-quota-error
-12f523387 merge(dev): resolve latest manager and runtime-fallback conflicts
-5cd95cf57 fix(background-agent): fall back to partInfo.input when state.input is unavailable for circuit breaker (fixes #3962)
-c4e88d63e fix(agents): add run_in_background to category task() examples in prompts (fixes #3960)
-75825eb9a fix(todo-description-override): add OpenCode schema contract for string priorities
-c740ed8ac fix(delegate-task): route sync prompts by directory
-6035a551a fix(background-agent): route session prompts by directory
-1e1f574b9 merge(dev): resolve latest sync-task conflict for delegated fallback PR
-ecb92c1e7 fix(runtime-fallback): abort stuck subagent on quota error with no fallback
-dd68f324d fix(background-agent): add OMO_DISABLE_PROCESS_CLEANUP env opt-out for global handlers (fixes #3856)
-583fa2420 fix(runtime-fallback): classify localized balance failures
-74171b915 merge(dev): resolve background-agent delegated fallback conflicts
-291eeed87 fix(delegate-task): preserve late background session wiring on abort
-0b9cc80ec fix: pass resolved model to session.create so sub-agent sessions use the correct model
-fac90d69f fix(delegate-task): harden child-session fallback bootstrap and cleanup
-61d2f1195 fix(model-fallback): add HTTP statusCode check for GLM rate limit fallback
-b6ad494f1 fix(session-recovery): detect and recover from 'thinking block modified' errors
-23d125755 fix(delegate-task): apply getAgentConfigKey normalization to isPlanAgent
-fe1cfd885 fix: preserve accumulated modifiedInput and common fields on deny/ask from exit code paths
-5d8bd99f8 fix: accumulate modifiedInput and common fields from allow hooks
-e0d611aef revert: remove incorrect claudeCodeHooks override in createHooks, add pre-tool-use tests
-5aeb5688e fix: don't early-return on 'allow' in executePreToolUseHooks
-3b5745a6e fix: wire claudeCodeHooks into createHooks() to enable .claude/settings.json hooks
+bb117107 docs: regenerate DEVIN-FEATURES.md after upstream merge
+165017e4 Merge remote-tracking branch 'upstream/dev' into fredotran/dev
+babee921 Merge pull request #4109 from code-yeongyu/code-yeongyu/unify-prompt-async-routes
+7a3a0a03 test(tmux): ignore unrelated pane runner mock calls
+0f92d2c9 test(prompt-gate): narrow audit binding detection
+98df0a43 docs(prompt-gate): document unified dispatch invariant
+6768decd fix(session-recovery): fallback when stored unavailable-tool parts are absent
+12bd6580 refactor(prompt-async-gate): remove deprecated dispatch wrappers
+1bbe065c refactor(prompt-callers): migrate shared and cli dispatch
+989ab717 refactor(hooks): use unified internal prompt dispatch
+dd3fecaf refactor(plugin): use unified internal prompt dispatch
+fee515c5 refactor(prompt-callers): migrate team and call_omo_agent dispatch
+df198d8b refactor(background-agent): use unified internal prompt dispatch
+a42f894f refactor(prompt-async-gate): collapse dispatch into mode-based entrypoint
+b5d24619 test(prompt-async-gate): pin unified internal prompt dispatch contract
+f1a0ba20 Merge pull request #4108 from code-yeongyu/code-yeongyu/fix-idle-recovery-fanout
+8bc49775 fix(slash-command): skip already tagged command output
+55312cc4 fix(session-recovery): preflight idle recovery fanout
+1fea761c Merge pull request #4106 from code-yeongyu/code-yeongyu/fix-stale-tool-hang
+a7b7ace7 fix(prompt-gate): block prompts into pending tool turns
+6eb88a05 fix(session-recovery): prefer valid tool use ids
+4d417a33 fix(process-cleanup): stop force-exiting opencode on transient unhandled errors
+f43effb8 fix(session-recovery): recover interrupted idle tool turns
+fbec112b fix(background-output): bound session.messages fetch to stop forever-hang during /init-deep
+24261da8 Merge pull request #4103 from code-yeongyu/code-yeongyu/fix-prompt-hang-race
+f4f1efcb fix(call-omo-agent): fail fast on lost prompts
+8c770db8 refactor(devin): keep devin as primary so it remains in TUI agent list
+257ff0e2 refactor(devin): make devin a subagent instead of primary
+89c5be3f ci: let auto-updater run through CI instead of skipping it
+2057de4f refactor(devin-mcp): swap default model from kimi-k2.6 to swe-1.6
+75223149 Merge pull request #4096 from code-yeongyu/kimi-k2.6
+412ac045 docs: add debugging journal for prompt hang investigation
+d8f365bf test(guard): add merge-conflict guard to prevent unresolved git conflicts in source files
+38702f6e Merge pull request #4094 from code-yeongyu/fix/opus-4.7
+c142066f Merge pull request #4093 from code-yeongyu/k2p6-turbo
+67ead7bf fix(dynamic-truncator): bound session.messages fetch to stop forever-hang on Read (#4086)
+fcd0011a test(atlas): track active timers instead of scheduled delays in setTimeout mock
+2613de52 fix(prompt-async-gate): timeout isSessionActive to prevent infinite hang on stale SDK status
+169e61f7 test(audit): allowlist build-team-idle-wake-hint-client.ts in prompt route audit
+a43215f2 fix(plugin/event): bind team-idle-wake-hint client methods to SDK Session
+271878bc perf(rules-injector): cache full candidates and memoize ancestor scans
+c25f7529 perf(rules-injector): cache project root for visited ancestors
+f843f57c Merge pull request #4088 from code-yeongyu/fix/session-agent-map-cleanup
+2b8782de fix(claude-code-session-state): clear session-agent map on delete and sync cleanup
+25d80541 Merge pull request #4074 from code-yeongyu/fix/delegate-task-spawn
+c9ec11dd bump comment-checker to 0.7.1
+d3318617 fix(background-agent): clean child session-agent state on pre-start abort and normalize stored agent
+cc97a023 test(agents): drop unsafe AgentFactory cast and add typed empty skills
+791fbf3e refactor(delegate-task): share buildSyncPromptTools between bootstrap and prompt dispatch
+ea5f6ddf fix(call-omo-agent): register bootstrap and session agent before sync prompt dispatch
+097d7dc5 fix(background-agent): keep delegated skill, permission, and child agent across retries
+ba648685 fix(runtime-fallback): carry delegated system and tools through bootstrap retry
+761f682a refactor(delegated-bootstrap): accept optional system and tools
+4f981384 feat: add ci test runner, session routing, bash parser, and test fixtures
+166e5de0 @pizzav-xyz has signed the CLA in code-yeongyu/oh-my-openagent#4084
+80fa177b Merge pull request #4075 from code-yeongyu/feature/migrate-sisyphus-to-omo
+6573bd94 chore(workspace): move test discipline rule to omo
+5a2c3bbb fix(workspace): match omo guard paths cross-platform
+b5992b13 test(shared): stabilize port utility interface check
+cdac0d69 fix(workspace): report only the active notepad change
+240a4a17 fix(workspace): harden omo migration review issues
+fbc5768f Merge pull request #3971 from MoerAI/fix/task-examples-add-run-in-background
+82ec099c fix(atlas): match omo as a path segment
+63519ec5 docs(workspace): document omo workspace paths
+f10f7963 fix(workspace): keep omo and legacy rules compatible
+36e373cd feat(workspace): point planning guardrails at omo
+a86221b1 feat(workspace): store runtime state under omo
+5dca1a57 feat(workspace): migrate legacy sisyphus state to omo
+7c2e2fe1 fix(background-agent): redact task registry views
+982fa813 fix(delegate-task): start child prompts reliably
+76e573a9 Merge pull request #4073 from code-yeongyu/fix/team-create-permission-inline-spec
+d974cd3d test(hooks): repair stale retry harnesses
+cf7bf9d0 fix(team-mode): accept legacy inline specs
+a2054057 Merge pull request #4068 from code-yeongyu/feat/pre-publish-fix-v420
+496e00b7 refactor(devin-mcp): rename fully-qualified model from swe-1-6 to swe-1.6
+64f5dc43 feat(devin-mcp): add safety-net fallback to default model on quota exhaustion
+6576cb12 refactor(agents): rename devin display name to Devin - CLI Executor
+3f3a63c5 docs(changelog): v4.2.0 entry with known issues and supersession history
+eba17441 test(mock-module-audit): require lifecycle cleanup for mock.module
+aaa215c5 docs(release-process): add post-fix repro verification policy
+3435c9be docs(adr): write prompt-async-gate ADR
+102d0670 fix(model-suggestion-retry): release reservation on async error path
+5a8bd05d test(prompt-async-gate): replace timer waits with deterministic sync (BLOCKER-3)
+9dd52a04 docs(changelog): v4.2.0 entry covering BLOCKER + HIGH + KNOWN ISSUES
+e68a0707 fix(test): update install test to check for oh-my-opendevin plugin name
+5ba1fe44 fix(agents): add first-run fallback for Atlas agent registration
+7779213a fix(installer): ensure plugin is recognized by OpenCode
+80c0ea53 fix(cli): use PUBLISHED_PACKAGE_NAME for plugin config detection and registration
+3477b600 refactor(installer): remove npm dependency, keep only local symlink installation
+5c143741 fix(install-global): symlink into OpenCode node_modules for Electron runtime
+dc98bb8d docs: update DEVIN-FEATURES.md with symlink fix and agent recognition fixes
+9f5f46b1 fix: devin agent not recognized by OpenCode
+7432181a feat(devin-mcp): add health/resumable tools, cost estimates, doctor check, and schema fixes
+a576e895 ci: filter [skip ci] commits from DEVIN-FEATURES.md auto-updater
+4cf56a40 fix(toast): show correct default agent in startup toast
+6e13aec8 docs: update DEVIN-FEATURES.md with README commit
+d2cbe3ca docs(readme): add Devin CLI Reliability section and update fork features
+3e9d1780 docs: add model selection rationale and spawned CLI command to DEVIN-FEATURES.md
+c4bb5d61 docs: update DEVIN-FEATURES.md with reliability pack and limit recovery features
+48897669 docs(devin-mcp): update AGENTS.md with all reliability features
+d054ca77 docs: update DEVIN-FEATURES.md — model disclosure now on first line
+c277d125 feat(devin-mcp): put model info on first line of devin_start response
+1663e6fa feat(devin-mcp): structured error hints + agent fallback chain for limit recovery
+31bc2060 docs(superpowers): add devin limit/quota error recovery design spec
+21da1278 feat(devin-mcp): reliability pack — max duration, log caps, error handling, schema fix
+24ff702b docs(devin-mcp): remove stale references to deleted /devin and /devin-models slash commands
+a7b5cdbe docs(superpowers): add devin-mcp-reliability-pack design
+5b79c2bf docs: update DEVIN-FEATURES.md with latest fork features
+b530e49b feat(devin-mcp): add stdin EOF handler for parent process crash detection
+ccd77bba feat(devin-mcp): make model/tier info prominent in all tool outputs
+6649ed60 feat(devin-cli): stronger guidance for very long tasks — tell user once, then be silent
+70b5a6f0 feat(devin-cli): add dedicated guidance for very long tasks (Docker builds)
+395d3c86 feat(devin-cli): add ultrawork safeguard and cleaner wait logging to skill template
+e51e28d4 refactor(devin-mcp): extract shared tiers module + fix swe keyword tier mapping
+6f6aba76 feat(devin-mcp): disclose resolved model+tier to user on delegation
+cf33d011 fix(devin-mcp): cap devin_wait at 30s, guide agents to since_bytes polling
+a1d4f205 feat(devin-mcp): add 5 resilience features for MCP server
+2e808967 fix: anchor skip-ci detection to end of subject line
+b0f1a0b4 fix: prevent auto-update commits from desyncing DEVIN-FEATURES.md
+112281a2 fix: remove merge conflict markers from DEVIN-FEATURES.md and harden updater script
+985202e7 test: fix additional fork-specific test failures
+40a22767 test: fix fork-specific test failures on fredotran/dev
+c9039bcc fix(reporter): strip trailing whitespace and flatten newlines before wrapping
+911b58f2 feat(devin-mcp): write .meta.json with spawn command + model for each session
+ac83f46f ci: fix failing CI on fredotran/dev
+be29fa91 docs: add Devin CLI test reporter script and update DEVIN-FEATURES.md
+0d0ca2e9 ci: extract fork-specific automation into dedicated fork-sync workflow
+9ee16028  docs(readme): sync Devin CLI model section with DEVIN-FEATURES.md
+587e20ae ci: verify installer runs `bun run build` end-to-end
+9ca2183d docs: correct Last updated commit hash in DEVIN-FEATURES.md
+7cbe1247 ci: add branch triggers, build verification, and installer checks
+568fe3f6 Fix README architecture diagram alignment
+a0f8adbf fix(installer): correct --uninstall flag variable name from DO_UNLINK to DO_UNINSTALL
+9c432171 fix(devin): anchor MCP server cwd at module load time + recommend explicit cwd
+6733a64e fix(devin): correct balanced tier model name to sonnet
+14bf0dce docs: add DEVIN-FEATURES.md — comprehensive fork feature registry
+b7a0b39c fix(devin): use resolvedModel for concurrency slot acquisition
+b78335df docs(readme): document Devin CLI tiered model routing system
+0f0983b6 feat(devin-cli): document model tier system in built-in skill
+44e6cc98 feat(devin): add incremental polling instructions and model tier guidance
+81d14cef feat(devin): optimize CLI calls and task management
+a06ac805 feat(devin-mcp): default devin-cli model to kimi-k2.6
+9a587b8f feat(devin): add 'devin do [task]' prompt recognition + remove deepseek-v4-flash from fallback
+94a5240c fix(devin): restore original nemotron model name — nemotron-3-super-120b-a12b:free
+226aeeb6 fix(devin): correct deepseek model name — deepseek-v4-flash
+55778243 fix(model-resolution): auto-prefix provider for bare model names in config overrides
+ac07cf43 fix(devin): use valid model IDs in fallback chain
+9f469766 feat(devin): broaden fallback chain providers — remove opencode-only lock
+ef8a1c65 docs(readme): fix indentation of paragraph after MCP JSON block
+9bf8df18 feat(commands): remove /devin and /devin-models slash commands
+839d307b feat(devin-cli): default permission_mode to dangerous — always bypass permission prompts
+f32ad1e3 feat(devin): harden agent separation — enforce Devin never delegates to specialists
+c3181e2e fix(devin): restrict fallback to free models and fix delegation prompt
+00398b07 feat(devin): configure cheap/free OpenCode model fallbacks
+4056080d feat(config): add devin to AgentOverridesSchema
+3e77554d feat(run): show session resume hint on interrupt and completion
+ddd4a9d1 fix(identity): set published package name to oh-my-opendevin
+0ddd4cad fix(team-mode): cast test fixture ask return to satisfy Effect type
+8f3776b9 docs(readme): document Devin x Sisyphus tag-team architecture
+45941e86 feat(agents): promote Devin to primary default agent
+7c7efd9b feat(agents): register Devin as a built-in subagent
+1640edcc docs(readme): remove session alias system references
+47d26b32 feat(devin-models): improve model selector display with tiers and examples
+7dcd8304 fix(version-detection): recognize oh-my-opendevin package name for version toast
+ab377863 fix(mcp): write .mcp.json to ~/.claude/ where the plugin actually reads
+976e19ca feat(installer): auto-detect shell rc and source after PATH change
+ab2611ca feat(installer): add config backup/restore for uninstall
+c00d6568 fix(mcp): resolve MCP integration failures and harden security
+f85b097c feat(mcp): add global MCP configuration for Devin server
+884b3826 feat(installer): add fallback to local installation via symlinks
+a8ddb728 refactor: change package name from scoped to unscoped
+63f0cd4d docs: update README with comprehensive installation guide
+b1d3350c chore: remove local development installation scripts
+a166d63b feat(installer): add global installation script for npm package
+29c6ad26 Revert 'feat(install): use fixed project path for global installation'
+d4c77153 feat(install): use fixed project path for global installation
+4c955b5a Fix README title: this is an oh-my-openagent fork
+05754440 Reorganize README: put fork-specific content before base project
+982d8851 Update README.md with fork-specific features
+d3308804 Fix doctor check warning for local development installation
+ddb848f4 Add local development installation script
+8848b82d feat: add /devin slash commands for easier delegation in OpenCode
+5ad2d38a fix: update model names to use specific versions (swe-1-6, claude-sonnet-4-6)
+d1c3346a feat: add intelligent model selection guidance to devin-cli skill
+b919cd83 feat: add devin-cli built-in skill for MCP delegation guidance
+587c97a2 feat: add Devin CLI MCP server for background session delegation
+7dbb34cd refactor(background-agent): wire ParentWakeNotifier into BackgroundManager
+41ff7bca fix(background-agent): release prompt gate before agent fallback retry
+209063e8 docs(known-issues): document delegate-task early-failure-fallback deferral
+0f8902c4 docs(changelog): v4.2.0 entry
+48480172 test(mock-module-audit): require lifecycle cleanup for mock.module
+845d862b test(prompt-async-gate): replace setTimeout sleeps with deterministic sync
+f8d6f2a2 docs(known-issues): document delegate-task PR #3825 revert deferral
+c096a596 test(mock-module-audit): require lifecycle cleanup for mock.module
+8914dab4 docs(known-issues): reference delegate fallback tracking issue
+1590085f docs(release-process): add post-fix repro verification policy
+0c27ecb1 docs(adr): write prompt-async-gate ADR
+38732b42 docs(known-issues): document delegate-task empty-history fallback (BLOCKER-4)
+0941ffe7 docs(release-process): add post-fix repro verification policy
+ee6bc67c docs(adr): write prompt-async-gate ADR
+d706587e docs(known-issues): document delegate-task early-failure-fallback deferral
+ff1b15d5 fix(model-suggestion-retry): release reservation before retry attempt
+c1ccf8d0 refactor(background-agent): introduce ParentWakeNotifier module
+8c4cc09d test(prompt-async-route-audit): migrate to TypeScript AST walker
+f93d7297 test(prompt-async-gate): cover dispatch timeout and post-dispatch error hold
+b333a528 fix(prompt-async-gate): add dispatch timeout, shared runner, harden prefix release
+a19c1bfc chore(release): bump version to 4.2.0
+c067b0fc refactor(plugin-entry): move createPluginModule to testing module
+1723a8b7 Merge pull request #3500 from Disaster-Terminator/fix/tmux-defer-attach-until-focus
+e63c5b9a fix(tmux): require explicit active isolated window
+1ff59f44 test(tmux): align pane-state runner format
+d02cca44 test(tmux): align pane replace placeholder expectations
+54a7256a test(tmux): align placeholder command expectations
+91f1cf5f fix(tmux): pin pane commands to /bin/sh
+8c5ca736 fix(tmux): sweep suffixed stale isolated sessions
+0c8e546c fix(tmux): support manager-scoped isolated session names
+4e3684eb fix(tmux): gate isolated pane activation on visible client focus
+c63108d5 fix(tmux): track placeholder panes before attach readiness
+688bb551 fix(tmux): defer subagent attach until pane focus
+6e5a127f Merge pull request #3840 from EnochLi15/codex/fix-tool-execute-after-boundary
+d1161399 fix tool execute after hook boundary
+ad10450b Merge pull request #3841 from Momentum96/fix/background-manager-tmux-ordering
+df64f325 @boris-gorbylev has signed the CLA in code-yeongyu/oh-my-openagent#4057
+be25109f fix(continuation): skip internal user turns
+c580b8f2 fix(session): ignore internal synthetic turns
+e8de8b79 fix(team-mode): skip pending mailbox reinjection
+e90ff805 fix(tmux): treat busy sessions as attachable
+efb862ce fix(tmux): prefer real tmux when session env exists
+5238dd48 fix(background-agent): start promptAsync before blocking tmux callback
+a9a00325 Merge pull request #3497 from Disaster-Terminator/fix/reminder-hooks-preserve-state-across-compaction
+291b1f7b test(reminder-hooks): clean up compaction regressions
+672f5d6e fix(keyword-detector): skip synthetic turns
+196f6512 fix(team-mode): defer live mailbox acks
+392c20e5 test(reminder-hooks): make delete reset regression diagnostic
+29e7e97d test(reminder-hooks): cover delegated sessions across compaction
+3db1da1e fix(reminder-hooks): preserve suppression state across compaction
+ae7ff3bb Merge pull request #3891 from wjiuxing/feat/chinese-error-patterns
+3e9b125f test(runtime-fallback): cover localized provider errors
+c206b168 feat: add Chinese error patterns to model-error-classifier
+149a83d7 feat: add Chinese quota patterns to classifyErrorType
+adfa8bef feat: add Chinese error patterns to RETRYABLE_ERROR_PATTERNS
+e24e495a Merge pull request #3322 from RaviTharuma/fix/runtime-fallback-equivalent-skip
+d9033d73 fix(runtime-fallback): keep variant in equivalence
+f501c47c fix(runtime-fallback): skip equivalent claude aliases
+f54888b2 Merge pull request #3576 from Disaster-Terminator/fix/background-busy-stall-detection
+27788b4a fix(session-recovery): audit raw prompt aliases
+4a1c260d test(todo-continuation): cover peer-message reservation holds
+39fef204 fix(background-agent): resolve parent wake agent aliases
+2bd4944b fix(prompt-gate): scope reservation releases
+b6caa5d3 fix(background-agent): correct stall timeout guidance
+189af23e fix(background-agent): detect stalled active sessions
+2eec0d96 Merge pull request #3319 from EZotoff/fix/remove-activity-stagnation-bypass
+65c12833 fix(todo-continuation): clean up idle event diagnostics
+047ca069 test: rename test to reflect todo-only stagnation check
+68e9d54f fix(todo-continuation): remove activity-based stagnation bypass
+fe66c962 Merge pull request #4053 from code-yeongyu/supersede/3866-tool-result-schema
+b504fb1d fix(tool-pair-validator): emit schema-compatible synthetic tool results
+24f7e560 Merge pull request #4051 from code-yeongyu/supersede/3952-first-prompt-watchdog
+3199bd3d fix(runtime-fallback): broaden watchdog progress detection + harden test timing
+a130fa70 fix(runtime-fallback): add first-prompt watchdog for stuck subagents
+bda0452b Merge pull request #4029 from sandikodev/fix/json-error-recovery-exclude-todowrite
+f835244d Merge pull request #4047 from PeterPonyu/fix/3894-skip-tmux-layout-when-server-unreachable
+e66d60f4 Merge pull request #3773 from cailgarrisk-collab/fix/glm-rate-limit-fallback-statuscode
+5cda8b8f Merge pull request #3330 from codeg-dev/fix/isplan-display-name-getAgentConfigKey
+a3283436 Merge pull request #3299 from kilhyeonjun/fix/claude-code-settings-hooks-not-executed
+0036c203 Merge pull request #3934 from Qihao0v0/fix/unifyllm-quota-classifier
+c6054af9 Merge pull request #3872 from x-x-gpu/dev
+7da44232 Merge pull request #4049 from code-yeongyu/supersede/3790-session-firstmessage-no-clear
+9f6b6811 fix(hooks): do not clear sessionFirstMessageProcessed on session.idle
+bd3928e1 fix(team-mode): skip tmux layout when opencode server unreachable
+ac66a43e Merge pull request #4046 from code-yeongyu/fix/3494-strip-zwsp-before-promptasync
+7caf74a9 fix(atlas,todo-continuation): strip ZWSP sort prefix before promptAsync agent
+2b43147c Merge pull request #4045 from code-yeongyu/supersede/3901-call-omo-agent-display-name
+10f721de fix(call-omo-agent): translate config-key subagent_type to display name before SDK dispatch
+437a8edb Merge pull request #4007 from PeterPonyu/feat/runtime-fallback-internal-abort
+5e7ee941 Merge pull request #3982 from jas32096/fix/category-fallback-ignored-when-primary-set
+83ab0009 Merge pull request #3972 from MoerAI/fix/circuit-breaker-tool-input-fallback
+e2b8e49e Merge pull request #4044 from code-yeongyu/revert/3825-delegated-bootstrap
+3c7d1299 Revert "Merge pull request #3825 from tw-yshuang/fix/delegated-child-session-early-failure-fallback"
+cd33f3a3 Merge pull request #3825 from tw-yshuang/fix/delegated-child-session-early-failure-fallback
+521c99cf Merge pull request #3950 from ismetanin/fix/surface-subagent-quota-error
+f00a6939 Merge pull request #3947 from MoerAI/fix/process-cleanup-opt-out-env
+c3319c75 Merge pull request #3470 from omer-koren/fix/thinking-block-modified-recovery
+984b8c1a Merge pull request #4032 from PeterPonyu/fix/3996-tool-pair-validator-background-sessions
+15b0a41f Merge pull request #4043 from code-yeongyu/fix/session-recovery-stale-error-dedupe
+8e9dea94 fix(session-recovery): persist dedupe across stale repeated session.error
+cb873850 test(ci): isolate runtime and rules dependencies
+a02686e7 test(ci): remove suite-order mock coupling
+f1fb1e08 fix(ralph-loop): send registered agent display name on continue
+b3b2da89 test(ci): avoid global module mock leaks
+8dcbccf0 fix(tmux): inject pane action dependencies
+7a94cc72 fix(background-agent): stabilize parent wakes
+c0544a70 fix(background-agent): defer retry notifications
+462b55ef Merge pull request #4040 from code-yeongyu/cleanup/typescript-ai-slop-20260515
+b6a0be56 test: remove decorative dividers
+a9886ccb refactor(plugin): remove metadata assertions
+0a3d1875 refactor(tools): narrow optional values
+d92e78c9 refactor(sdk): narrow response fallbacks
+4785767a refactor(interactive-bash): reuse tmux parser
+d8f52aae test: run suite without split runner
+150ccefa fix(delegate-task): allow hidden plan task
+c25cb8dc fix(background-task): clarify task id contracts
+15e7330f fix(team-mode): gate status injection by keyword
+1e7a7a22 Merge pull request #4037 from code-yeongyu/fix/internal-initiator-dedupe
+cd1c1a59 fix(background-agent): avoid branched parent wakes
+9f6d0d22 docs(agents-md): refresh hierarchical knowledge base for v4.1.2
+3dd8a5ca chore(rules): forbid flaky tests, time sleeps, and prompt pinning
+53a74063 no prompt async
+ced722e2 Merge pull request #4034 from code-yeongyu/fix/promptasync-duplicate-output
+c2aa180e fix(prompt-gate): pin duplicate prompt dispatches
+05189700 fix(prompt-gate): hold reservations after dispatch
+c6e3b7e1 docs(agents-md): warn on prompt injection
+edf3e530 fix(hooks): gate sync injected prompts
+0b48f805 fix(call-omo-agent): gate reused sync prompts
+439e7283 fix(runtime-fallback): gate retry prompts
+30adce9c fix(prompt-gate): share message reservations
+dd6271bb fix(babysitter): gate reminder prompts
+a524754e fix(todo-continuation): gate idle prompts
+b0b61182 fix(ralph-loop): gate continuation prompts
+960baf39 fix(atlas): gate boulder continuation prompts
+b0a484b4 fix(session-recovery): gate resume prompts
+db28a32c fix(recovery): gate compaction prompts
+c75f5488 fix(fallback): gate model retry prompts
+f1a62a9c fix(team-mode): gate member wake prompts
+174cbd0f fix(background-agent): gate parent wake prompts
+b2fdd728 fix(prompt-async): add session idle gate
+2567415a Merge pull request #4033 from code-yeongyu/perf/ci-test-build-time-20260515
+e80c2811 ci: fail closed on sharded test gate
+7ae8207a Merge pull request #4030 from code-yeongyu/fix/promptasync-concurrency-20260515
+23dfe7ee fix(fallback): skip duplicate fallback re-arms
+fdd40815 ci: split test workflow across shards
+53de295b perf(ci): add sharded test runner phases
+b7482ea7 test(fallback): type chat output assertions
+26bb6231 fix(fallback): preserve provider-specific fallback retries
+005d16dd fix(fallback): dedupe providerless fallback errors
+da339204 fix(fallback): dedupe overlapping fallback continuations
+17030b9a Prevent subagent repair from corrupting background sessions
+c6c7a103 Merge pull request #4015 from code-yeongyu/fix/background-output-bg-id-20260514
+8f90c1e9 fix(background-task): log missing output retry
+d0355590 @sandikodev has signed the CLA in code-yeongyu/oh-my-openagent#4029
+c76ac27e fix(json-error-recovery): add todowrite/todoread to JSON_ERROR_TOOL_EXCLUDE_LIST
+bd2f1055 @scw1109 has signed the CLA in code-yeongyu/oh-my-openagent#4020
+d8652863 Merge remote-tracking branch 'origin/dev' into fix/background-output-bg-id-20260514
+ca178f41 Merge pull request #4016 from code-yeongyu/fix-bg-noti-coalesce
+9b279d2f chore(deps): sync lockfile metadata
+8ea1e0fd chore: sync bun.lock with v4.1.2 release
+268c89c9 fix(background-agent): coalesce rapid-fire idle parent notifications
+1ea192b3 fix(background-task): retry transient missing output tasks
+b9beea10 feat(team-mode): drive immediate teardown and recreate-to-reshape loop
+c75deee5 release: v4.1.2
+9a1f8f67 fix(web): route installation links to docs section
+63ced1d2 Merge pull request #4010 from code-yeongyu/chore/safe-tooling-upgrades-biome-tsgo-20260514-132516
+96d72495 Merge pull request #4009 from code-yeongyu/fix/ralph-loop-compaction-race
+f10251b5 chore(tooling): refresh safe deps and checks
+9e618526 fix(ralph-loop): guard compaction continuation ownership
+72bac14a @clousky2020 has signed the CLA in code-yeongyu/oh-my-openagent#4005
+d16d47a0 docs: complete v4.1.1 drift sweep in reference and guide docs
+98242ba6 docs(i18n+web): align translated READMEs and landing copy with v4.1.1 hook count
+8cc3c320 docs: refresh user-facing docs to match v4.1.1 codebase
+1e7a7600 docs(agents-md): regenerate hierarchical AGENTS.md knowledge base for v4.1.1
+5b99a87c fix(runtime-fallback): preserve attemptCount when our own abort is the cause (closes #4006)
+5ffbe0e2 fix(fallback): guard duplicate prompt injections
+ea55c385 fix(background-agent): defer busy parent notifications
+6e841773 @PeterPonyu has signed the CLA in code-yeongyu/oh-my-openagent#3871
+f9b95f9e Merge pull request #3993 from code-yeongyu/fix/non-interactive-env-windows-shell
+43b2d0e0 Merge pull request #3992 from MoerAI/fix/omo-block-native-execution-delegation
+47d60a74 fix(non-interactive-env): honor Windows ComSpec shell
+95cc9e2d [sisyphus-dev] fix(delegate-task): canonicalize agent dedup key to close hidden filter bypass
+fef1d453 fix(non-interactive-env): respect Windows command shell
+7469cb3f ci: skip cla for signed contributors
+cab20568 fix(deps): sync platform lock entries
+4bd81d2c fix(delegate-task): exclude hidden agents from task delegation discovery (fixes #3957)
+61ba4e3b fix(ralph-loop): guard delayed start snapshots
+1fa97c6e docs(publish): require discord announcement
+f44d9441 release: v4.1.1
+3b4d2431 fix(hooks): guard stale idle prompts
+a337635e fix(background-agent): defer active parent wakes
+0b99168b @EmiyaKiritsugu3 has signed the CLA in code-yeongyu/oh-my-openagent#3990
+39fb0143 Merge pull request #3986 from code-yeongyu/fix/continuation-message-dispatch
+36f51ddb fix(continuation): mark fallback resumes synthetic
+1189b96d fix(continuation): mark atlas resumes synthetic
+e49ba947 chore(deps): refresh platform lock entries
+38b1433f fix(continuation): mark resumes synthetic
+3f922643 fix(interactive-bash): prohibit tmux kill-server
+286f5ccf when publish always discord
+9edaa6e9 release: v4.1.0
+21460713 .opencode to .agents
+a0b46309 remove hyperplan for .opencode (not as a feature)
+711b7534 fix(delegate-task): honor user fallback_models when category primary is unreachable
+83c3379b Merge branch 'dev' into fix/surface-subagent-quota-error
+12f52338 merge(dev): resolve latest manager and runtime-fallback conflicts
+5cd95cf5 fix(background-agent): fall back to partInfo.input when state.input is unavailable for circuit breaker (fixes #3962)
+c4e88d63 fix(agents): add run_in_background to category task() examples in prompts (fixes #3960)
+75825eb9 fix(todo-description-override): add OpenCode schema contract for string priorities
+c740ed8a fix(delegate-task): route sync prompts by directory
+6035a551 fix(background-agent): route session prompts by directory
+1e1f574b merge(dev): resolve latest sync-task conflict for delegated fallback PR
+ecb92c1e fix(runtime-fallback): abort stuck subagent on quota error with no fallback
+dd68f324 fix(background-agent): add OMO_DISABLE_PROCESS_CLEANUP env opt-out for global handlers (fixes #3856)
+583fa242 fix(runtime-fallback): classify localized balance failures
+74171b91 merge(dev): resolve background-agent delegated fallback conflicts
+291eeed8 fix(delegate-task): preserve late background session wiring on abort
+0b9cc80e fix: pass resolved model to session.create so sub-agent sessions use the correct model
+fac90d69 fix(delegate-task): harden child-session fallback bootstrap and cleanup
+61d2f119 fix(model-fallback): add HTTP statusCode check for GLM rate limit fallback
+b6ad494f fix(session-recovery): detect and recover from 'thinking block modified' errors
+23d12575 fix(delegate-task): apply getAgentConfigKey normalization to isPlanAgent
+fe1cfd88 fix: preserve accumulated modifiedInput and common fields on deny/ask from exit code paths
+5d8bd99f fix: accumulate modifiedInput and common fields from allow hooks
+e0d611ae revert: remove incorrect claudeCodeHooks override in createHooks, add pre-tool-use tests
+5aeb5688 fix: don't early-return on 'allow' in executePreToolUseHooks
+3b5745a6 fix: wire claudeCodeHooks into createHooks() to enable .claude/settings.json hooks
 ```
 
 ---
