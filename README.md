@@ -9,7 +9,7 @@ This fork adds:
   - **Devin** (default): Local execution + Devin CLI sandbox delegation. Never uses specialist agents.
   - **Sisyphus**: Full specialist agent orchestration (Oracle, Librarian, Explore, Hephaestus, Atlas, Metis, Momus).
   - Switch between them anytime based on your needs.
-- **Devin CLI Integration** - MCP server, built-in skill, slash commands, and a dedicated `devin` built-in agent for delegating tasks to the Devin CLI sandbox.
+- **Devin CLI Integration** - MCP server, built-in skill, slash commands, and a dedicated `devin` built-in agent for delegating tasks to the Devin CLI sandbox. Includes **live session completion notifications** via the Devin Session Watcher.
 - **Global Installer** - Easy installation script for deploying to any system.
 - **Custom Configurations** - Tailored settings for specific workflows.
 
@@ -46,6 +46,32 @@ This fork includes a complete integration with the [Devin CLI](https://cli.devin
 - Idle session detection: sessions with no output for 30min marked as `"stalled"`
 - First-class CLI reporter: `bunx oh-my-opencode devin-report [--json] [--tier <tier>]`
 - Model disclosure: agents always tell you which tier and model was selected when delegating to Devin CLI
+
+**Devin Session Watcher** (live completion notifications)
+- Lightweight file watcher that polls the Devin MCP log directory for session state changes
+- Detects when a Devin session transitions from `running` → `completed` / `error` / `cancelled`
+- Fires two notification paths:
+  - **System reminder** — queued into the active OpenCode chat session via `backgroundManager.queuePendingNotification`, injected on the next `chat.message` via the existing `backgroundNotificationHook`
+  - **OS notification** — cross-platform native toast (macOS `osascript`/`terminal-notifier`, Linux `notify-send`, Windows PowerShell toast)
+- Configurable: enable/disable, poll interval (default 5s), toggle system reminders vs OS notifications independently
+- Automatically starts when `devin.watcher_enabled: true`, stops on `session.deleted` and process shutdown
+
+Enable in `~/.config/opencode/oh-my-openagent.jsonc`:
+
+```jsonc
+{
+  "devin": {
+    "watcher_enabled": true,
+    "watcher_poll_interval_ms": 5000,
+    "watcher_system_reminders": true,
+    "watcher_os_notifications": true
+  }
+}
+```
+
+Restart OpenCode after changing. When a Devin session completes, you will see:
+- **In chat**: *"Devin session `{id}` completed with status: `{status}`. Duration: `{duration}`. Prompt: `{preview}"*`
+- **OS banner**: Native notification titled "Devin" with the same message
 
 ### Devin x Sisyphus Dual-Primary Architecture
 
