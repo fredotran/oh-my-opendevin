@@ -51,14 +51,14 @@ Each tool returns a human-readable text snapshot. \`session_id\` is a UUID — s
 1. **Compose a self-contained prompt.** Devin will not see your conversation history. The prompt must contain everything Devin needs: goal, constraints, file paths, acceptance criteria. Treat it like delegating to a remote engineer.
 2. **Pick a working directory (required).** Always pass \`cwd\` explicitly — the MCP server's default directory is fixed at startup and may differ from the current session's working directory (e.g. after a session fork). Use the repository root unless the task belongs to a sibling project.
 3. **Pick a model tier (optional).** The Devin agent (you) runs on free models. When delegating to Devin CLI, choose the tier based on task complexity:
-   - **Standard** — omit \`model\` → defaults to \`kimi-k2.6\` (most tasks)
-   - **Fast/Cheap** — \`model: "swe"\` (simple edits, typos)
+   - **Standard** — omit \`model\` → defaults to \`swe-1.6\` (most tasks)
+   - **Fast/Cheap** — \`model: "kimi"\` (simple edits, typos)
    - **Code Gen** — \`model: "codex"\` (boilerplate, scaffolding)
    - **Deep** — \`model: "opus"\` (architecture, complex debugging)
    - **Balanced** — \`model: "sonnet"\` (moderate complexity)
 4. **Start the session.** Call \`devin_start({ prompt, cwd?, model? })\`. Save the returned \`session_id\`.
 5. **Tell the user the resolved model — this is MANDATORY.** The \`devin_start\` response includes the resolved model and tier in the FIRST line. ALWAYS echo this back to the user immediately. Do NOT bury it or skip it. Examples:
-   - "Started Devin (session abc-123, **Standard tier**, model **kimi-k2.6**) on the auth refactor."
+   - "Started Devin (session abc-123, **Standard tier**, model **swe-1.6**) on the auth refactor."
    - "Started Devin (session def-456, **Deep tier**, model **opus**) on the architecture review."
    This gives the user visibility into cost and capability level. Then return to whatever else you were doing.
    - **In CLI mode:** the model appears inline in the tool output. Read the first line of the \`devin_start\` result and repeat it to the user verbatim.
@@ -101,16 +101,16 @@ The Devin agent (you) runs on free models. When delegating to the Devin CLI sand
 
 | Tier | How to invoke | Resolved model | Use for |
 |------|---------------|----------------|---------|
-| **Standard** | Omit \`model\` | \`kimi-k2.6\` | Most tasks — good balance of capability and cost |
-| **Fast/Cheap** | \`model: "swe"\` | \`swe-1.6\` | Simple edits, typos, single-file fixes, cost-sensitive batches |
+| **Standard** | Omit \`model\` | \`swe-1.6\` | Most tasks — good balance of capability and cost |
+| **Fast/Cheap** | \`model: "kimi"\` | \`kimi-k2.6\` | Simple edits, typos, single-file fixes, cost-sensitive batches |
 | **Code Gen** | \`model: "codex"\` | \`codex\` | Boilerplate, CRUD, test scaffolding, repetitive patterns |
 | **Balanced** | \`model: "sonnet"\` | \`sonnet\` | Moderate complexity, general purpose, documentation |
 | **Deep** | \`model: "opus"\` | \`opus\` | Architecture refactors, multi-file, complex debugging, critical correctness |
 
 ### Selection heuristics
 
-- **Default to standard tier** (omit \`model\`) for almost everything. \`kimi-k2.6\` handles most engineering tasks well.
-- Use **\`"swe"\`** only for trivial tasks where speed matters more than reasoning (typos, import fixes).
+- **Default to standard tier** (omit \`model\`) for almost everything. \`swe-1.6\` handles most engineering tasks well.
+- Use **\`"kimi"\`** only for trivial tasks where speed matters more than reasoning (typos, import fixes).
 - Use **\`"codex"\`** for pure code generation (scaffolding, repetitive patterns).
 - Use **\`"opus"\`** sparingly — reserve for architectural refactors, deep debugging, or when correctness is critical.
 - Use **\`"sonnet"\`** when you need more than \`swe\` but don't want \`opus\` cost.
@@ -121,7 +121,7 @@ The Devin agent (you) runs on free models. When delegating to the Devin CLI sand
 → **Tier**: Deep (\`model: "opus"\`)
 
 **Task**: "Fix the typo in the error message on line 42."
-→ **Tier**: Standard (omit \`model\`) or Fast (\`model: "swe"\`)
+→ **Tier**: Standard (omit \`model\`) or Fast (\`model: "kimi"\`)
 
 **Task**: "Generate unit tests for all service methods in src/services/."
 → **Tier**: Code Gen (\`model: "codex"\`)
@@ -151,7 +151,7 @@ If a model is unavailable due to quota or usage limits, fall back in this order:
 | Tag | What happened | Agent action |
 |-----|---------------|--------------|
 | \`RATE_LIMIT\` | Too many requests | Wait \`retryAfterMs\`, then **retry with same model** |
-| \`QUOTA_EXCEEDED\` | Model quota exhausted | **Retry with \`suggestedFallback\`** (next in chain). After the chain is exhausted, safety-net retries are \`kimi-k2.6\` first, then \`swe-1.6\`. Do NOT do the work locally — keep retrying with fallback models |
+| \`QUOTA_EXCEEDED\` | Model quota exhausted | **Retry with \`suggestedFallback\`** (next in chain). After the chain is exhausted, safety-net retries are \`swe-1.6\` first, then \`kimi-k2.6\`. Do NOT do the work locally — keep retrying with fallback models |
 | \`CONTEXT_LIMIT\` | Prompt too long | **Summarize the prompt** (remove files, shorten instructions) or pick a model with larger context |
 | \`UNKNOWN\` | Unclear error | Read the full log, diagnose, ask the user if stuck |
 
@@ -160,9 +160,9 @@ If a model is unavailable due to quota or usage limits, fall back in this order:
 1. If \`RATE_LIMIT\` → wait the specified duration, call \`devin_start\` again with **same model**
 2. If \`QUOTA_EXCEEDED\` → call \`devin_start\` with \`model: suggestedFallback\`
 3. If \`CONTEXT_LIMIT\` → shorten the prompt, retry with same model (or omit model for default)
-4. If the fallback chain is exhausted → first retry with \`model: "kimi-k2.6"\` (default), then if that also fails retry with \`model: "swe-1.6"\` (cheap). Only tell the user after all safety-net fallbacks fail
+4. If the fallback chain is exhausted → first retry with \`model: "swe-1.6"\` (default), then if that also fails retry with \`model: "kimi-k2.6"\` (cheap). Only tell the user after all safety-net fallbacks fail
 5. **Do NOT silently skip the error or switch models without telling the user** — model selection affects cost and capability
-6. **Do NOT do the work locally when Devin CLI hits a quota error** — always retry with fallback models \`kimi-k2.6\` then \`swe-1.6\` first
+6. **Do NOT do the work locally when Devin CLI hits a quota error** — always retry with fallback models \`swe-1.6\` then \`kimi-k2.6\` first
 
 ---
 
@@ -272,12 +272,12 @@ Run \`bunx oh-my-opencode devin-report\` to see a full session report with model
 ### User: "Ask Devin to fix the typo in the error message."
 
 \`\`\`
-1. Analyze task: single-file, straightforward → use Standard tier (omit model) or Fast ("swe")
+1. Analyze task: single-file, straightforward → use Standard tier (omit model) or Fast ("kimi")
 2. devin_start({
      prompt: "Fix the typo in the error message on line 42 of src/errors.ts",
      cwd: "/path/to/repo",
    }) → session_id "def-456"
-3. Tell user: "Started Devin (session def-456, **Standard tier**, model **kimi-k2.6**) on the typo fix."
+3. Tell user: "Started Devin (session def-456, **Standard tier**, model **swe-1.6**) on the typo fix."
 4. devin_wait({ session_id: "def-456" })
 5. Report: "Devin fixed the typo. Here's the change: ..."
 \`\`\`
