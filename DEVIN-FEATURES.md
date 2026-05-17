@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `b5644643`
+**Last updated:** `fbfbbd10`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -391,6 +391,7 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+fbfbbd10 docs(README): rename title to Oh My OpenDevin
 b5644643 docs: invert Standard and Fast/Cheap tier models
 36812ead docs(README): remove non-relevant upstream content
 e0714ff8 docs(README): document Devin Session Watcher completion notifications
