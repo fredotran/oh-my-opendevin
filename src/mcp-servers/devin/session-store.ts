@@ -519,16 +519,16 @@ async function cleanupOldLogs(): Promise<void> {
   }
 }
 
-function updateMetaFile(session: { id: string; model?: string | undefined; status: string; exitCode?: number | null; endedAt?: number | null }): void {
+async function updateMetaFile(session: { id: string; model?: string | undefined; status: string; exitCode?: number | null; endedAt?: number | null }): Promise<void> {
   try {
     const metaPath = join(LOG_DIR, `${session.id}.meta.json`)
     if (!existsSync(metaPath)) return
-    const raw = Bun.file(metaPath)
-    const meta = JSON.parse(raw.text() as unknown as string) as Record<string, unknown>
+    const raw = await Bun.file(metaPath).text()
+    const meta = JSON.parse(raw) as Record<string, unknown>
     meta.status = session.status
     if (session.exitCode !== undefined) meta.exitCode = session.exitCode
     if (session.endedAt !== undefined) meta.endedAt = session.endedAt
-    Bun.write(metaPath, JSON.stringify(meta, null, 2))
+    await Bun.write(metaPath, JSON.stringify(meta, null, 2))
   } catch {
     // Best-effort: don't crash the session if meta write fails
   }
@@ -584,7 +584,7 @@ async function tryStartDevinSession(
     startedAt: Date.now(),
     status: "running",
   }
-  Bun.write(metaPath, JSON.stringify(meta, null, 2))
+  await Bun.write(metaPath, JSON.stringify(meta, null, 2))
 
   let proc: DevinSession["proc"]
   try {
@@ -644,18 +644,18 @@ async function tryStartDevinSession(
   sessions.set(id, session)
 
   proc.exited
-    .then((exitCode) => {
+    .then(async (exitCode) => {
       session.exitCode = exitCode
       session.endedAt = Date.now()
       session.status = exitCode === 0 ? "completed" : session.status === "cancelled" ? "cancelled" : "error"
-      updateMetaFile(session)
+      await updateMetaFile(session)
       releaseModelSlot(session.model)
     })
-    .catch((err) => {
+    .catch(async (err) => {
       session.endedAt = Date.now()
       session.status = "error"
       console.error(`[devin-mcp] Session ${id} process error:`, err)
-      updateMetaFile(session)
+      await updateMetaFile(session)
       releaseModelSlot(session.model)
     })
 
@@ -824,7 +824,7 @@ export async function cancelDevinSession(id: string): Promise<DevinSession | und
   if (session.status === "running") {
     session.status = "cancelled"
     await killWithGracefulFallback(session.proc, id)
-    updateMetaFile(session)
+    await updateMetaFile(session)
     releaseModelSlot(session.model)
   }
   return session
