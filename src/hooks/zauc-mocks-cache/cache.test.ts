@@ -76,7 +76,10 @@ describe("invalidatePackage", () => {
     mkdirSync(join(packagesAcceptedSpecifierDir, "node_modules", "oh-my-openagent"), { recursive: true })
     mkdirSync(otherSpecifierDir, { recursive: true })
 
-    const result = testInvalidatePackage()
+    // Pass the package name explicitly so it matches defaultPackageName.
+    // In the fork, PACKAGE_NAME is "oh-my-opendevin" which differs from
+    // the test's defaultPackageName of "oh-my-opencode".
+    const result = testInvalidatePackage("oh-my-opencode")
 
     expect(result).toBe(true)
     expect(existsSync(rootSpecifierDir)).toBe(false)

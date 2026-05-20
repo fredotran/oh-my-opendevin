@@ -22,6 +22,14 @@ const RAW_PROMPT_ALLOWLIST = new Map<string, string>([
     path.join(SOURCE_ROOT, "hooks", "session-recovery", "recover-unavailable-tool.ts"),
     "runtime type guard checks promptAsync presence before gate-routed dispatchInternalPrompt",
   ],
+  [
+    path.join(SOURCE_ROOT, "features", "devin-session-watcher", "notifier.ts"),
+    "reads the Devin session.prompt string field (not a method call) to build notification text",
+  ],
+  [
+    path.join(SOURCE_ROOT, "mcp-servers", "devin", "session-store.ts"),
+    "reads the Devin session.prompt string field (not a method call) for metadata serialization",
+  ],
 ])
 
 async function listSourceFiles(directory: string): Promise<string[]> {

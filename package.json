@@ -44,7 +44,7 @@
     "typecheck": "tsgo --noEmit && bun run typecheck:packages",
     "typecheck:packages": "tsgo --noEmit -p packages/rules-core/tsconfig.json && tsgo --noEmit -p packages/ast-grep-mcp/tsconfig.json",
     "typecheck:script": "tsgo --noEmit -p script/tsconfig.json",
-    "test": "bun run script/run-ci-tests.ts",
+    "test": "bun test",
     "build:ast-grep-mcp": "bun run --cwd packages/ast-grep-mcp build",
     "mcp:devin": "bun run src/mcp-servers/devin/index.ts",
     "install:global": "./install-global.sh"

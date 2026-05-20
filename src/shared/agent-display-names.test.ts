@@ -259,7 +259,7 @@ describe("AGENT_DISPLAY_NAMES", () => {
       hephaestus: "Hephaestus - Deep Agent",
       prometheus: "Prometheus - Plan Builder",
       atlas: "Atlas - Plan Executor",
-      devin: "Devin - CLI Delegator",
+      devin: "Devin - CLI Executor",
       "sisyphus-junior": "Sisyphus-Junior",
       metis: "Metis - Plan Consultant",
       momus: "Momus - Plan Critic",

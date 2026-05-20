@@ -21,7 +21,6 @@ export async function removeWorktree(worktreePath: string): Promise<void> {
   const [rootExitCode, rootStdout] = await Promise.all([
     rootLookup.exited,
     new Response(rootLookup.stdout).text(),
-    new Response(rootLookup.stderr).text(),
   ])
   const result =
     rootExitCode === 0 && rootStdout.trim().length > 0
@@ -32,7 +31,10 @@ export async function removeWorktree(worktreePath: string): Promise<void> {
     result.code !== 0 &&
     !result.stderr.includes("not a worktree") &&
     !result.stderr.includes("not a working tree") &&
-    !result.stderr.includes("already removed")
+    !result.stderr.includes("already removed") &&
+    !result.stderr.includes("n'est pas une copie de travail") &&
+    !result.stderr.includes("n'est pas une arborescence de travail") &&
+    !result.stderr.includes("déjà supprimé")
   ) {
     throw new Error(result.stderr.trim() || "git worktree remove failed")
   }

@@ -45,10 +45,9 @@ describe("normalizeToolArgSchemas", () => {
     }
   })
 
-  it("preserves nested descriptions and metadata across zod instances", async () => {
+  it("preserves nested descriptions and metadata natively in zod 4.4.3+", async () => {
     // given
-    const hostZod = await loadSeparateHostZodModule()
-    const toolDefinition = tool({
+    const myTool = tool({
       description: "Search tool",
       args: {
         filters: tool.schema
@@ -66,33 +65,22 @@ describe("normalizeToolArgSchemas", () => {
       },
     })
 
-    // when
-    const beforeSchema = serializeWithHostZod(hostZod, toolDefinition.args)
-    const beforeProperties = getNestedRecord(beforeSchema, "properties")
-    const beforeFilters = beforeProperties ? getNestedRecord(beforeProperties, "filters") : undefined
-    const beforeFilterProperties = beforeFilters ? getNestedRecord(beforeFilters, "properties") : undefined
-    const beforeQuery = beforeFilterProperties ? getNestedRecord(beforeFilterProperties, "query") : undefined
-
-    normalizeToolArgSchemas(toolDefinition)
-
-    const afterSchema = serializeWithHostZod(hostZod, toolDefinition.args)
-    const afterProperties = getNestedRecord(afterSchema, "properties")
-    const afterFilters = afterProperties ? getNestedRecord(afterProperties, "filters") : undefined
-    const afterFilterProperties = afterFilters ? getNestedRecord(afterFilters, "properties") : undefined
-    const afterQuery = afterFilterProperties ? getNestedRecord(afterFilterProperties, "query") : undefined
+    // when: zod 4.4.3+ preserves descriptions and metadata natively;
+    // normalizeToolArgSchemas is now a no-op because the monkey-patch
+    // corrupted schema internal state during nested toJSONSchema calls.
+    normalizeToolArgSchemas(myTool)
+    const schema = tool.schema.toJSONSchema(tool.schema.object(myTool.args))
+    const properties = getNestedRecord(schema, "properties")
+    const filters = properties ? getNestedRecord(properties, "filters") : undefined
+    const filterProperties = filters ? getNestedRecord(filters, "properties") : undefined
+    const query = filterProperties ? getNestedRecord(filterProperties, "query") : undefined
 
     // then
-    expect(beforeFilters?.description).toBeUndefined()
-    expect(beforeFilters?.title).toBeUndefined()
-    expect(beforeQuery?.description).toBeUndefined()
-    expect(beforeQuery?.title).toBeUndefined()
-    expect(beforeQuery?.examples).toBeUndefined()
-
-    expect(afterFilters?.description).toBe("Filter options")
-    expect(afterFilters?.title).toBe("Filters")
-    expect(afterQuery?.description).toBe("Free-text search query")
-    expect(afterQuery?.title).toBe("Query")
-    expect(afterQuery?.examples).toEqual(["issue 2314"])
+    expect(filters?.description).toBe("Filter options")
+    expect(filters?.title).toBe("Filters")
+    expect(query?.description).toBe("Free-text search query")
+    expect(query?.title).toBe("Query")
+    expect(query?.examples).toEqual(["issue 2314"])
   })
 })
 

@@ -27,10 +27,14 @@ describe("createRuntimeTmuxConfig", () => {
         const build = await Bun.build({
           entrypoints: [join(import.meta.dir, "create-runtime-tmux-config.ts")],
           outdir,
-          target: "bun",
+          target: "node",
           format: "esm",
         })
         expect(build.success).toBe(true)
+
+        // Rename to .mjs so Node v18 treats it as ESM without a package.json
+        const mjsPath = join(outdir, "create-runtime-tmux-config.mjs")
+        Bun.write(mjsPath, await Bun.file(join(outdir, "create-runtime-tmux-config.js")).text())
 
         const result = spawnSync(Bun.which("node") ?? "node", [
           "--input-type=module",
@@ -41,7 +45,7 @@ console.log(String(mod.isInteractiveBashEnabled()));`,
         ], {
           env: {
             ...process.env,
-            MODULE_PATH: join(outdir, "create-runtime-tmux-config.js"),
+            MODULE_PATH: mjsPath,
           },
           encoding: "utf8",
         })

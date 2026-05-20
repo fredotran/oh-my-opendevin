@@ -7,7 +7,7 @@ import {
   getAgentListDisplayName,
   normalizeAgentForPromptKey,
 } from "./agent-display-names"
-import { installAgentSortShim } from "./agent-sort-shim"
+import { installAgentSortShim, setAgentSortOrder } from "./agent-sort-shim"
 
 type AgentListItem = {
   name: string
@@ -34,6 +34,7 @@ function simulateOpencodeSort(agentNames: string[], defaultName: string): string
 
 describe("OpenCode Agent.list() sort with runtime display names", () => {
   beforeAll(() => {
+    setAgentSortOrder(undefined)
     installAgentSortShim()
   })
 

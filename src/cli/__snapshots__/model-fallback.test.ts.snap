@@ -1476,7 +1476,12 @@ exports[`generateModelConfig fallback providers uses GitHub Copilot models when 
       "model": "github-copilot/claude-sonnet-4.6",
     },
     "devin": {
-      "model": "github-copilot/big-pickle",
+      "fallback_models": [
+        {
+          "model": "github-copilot/big-pickle",
+        },
+      ],
+      "model": "github-copilot/gpt-4.1",
     },
     "explore": {
       "model": "github-copilot/gpt-5-mini",
@@ -1663,7 +1668,12 @@ exports[`generateModelConfig fallback providers uses GitHub Copilot models with 
       "model": "github-copilot/claude-sonnet-4.6",
     },
     "devin": {
-      "model": "github-copilot/big-pickle",
+      "fallback_models": [
+        {
+          "model": "github-copilot/big-pickle",
+        },
+      ],
+      "model": "github-copilot/gpt-4.1",
     },
     "explore": {
       "model": "github-copilot/gpt-5-mini",
@@ -2286,7 +2296,12 @@ exports[`generateModelConfig mixed provider scenarios uses OpenAI + Copilot comb
       "model": "github-copilot/claude-sonnet-4.6",
     },
     "devin": {
-      "model": "github-copilot/big-pickle",
+      "fallback_models": [
+        {
+          "model": "github-copilot/big-pickle",
+        },
+      ],
+      "model": "github-copilot/gpt-4.1",
     },
     "explore": {
       "fallback_models": [
@@ -2791,6 +2806,9 @@ exports[`generateModelConfig mixed provider scenarios uses all fallback provider
     "devin": {
       "fallback_models": [
         {
+          "model": "opencode/minimax-m2.5-free",
+        },
+        {
           "model": "opencode/big-pickle",
         },
         {
@@ -2800,7 +2818,7 @@ exports[`generateModelConfig mixed provider scenarios uses all fallback provider
           "model": "opencode/nemotron-3-super-120b-a12b:free",
         },
       ],
-      "model": "opencode/minimax-m2.5-free",
+      "model": "github-copilot/gpt-4.1",
     },
     "explore": {
       "fallback_models": [
@@ -3200,6 +3218,9 @@ exports[`generateModelConfig mixed provider scenarios uses all providers togethe
     "devin": {
       "fallback_models": [
         {
+          "model": "opencode/minimax-m2.5-free",
+        },
+        {
           "model": "opencode/big-pickle",
         },
         {
@@ -3209,7 +3230,7 @@ exports[`generateModelConfig mixed provider scenarios uses all providers togethe
           "model": "opencode/nemotron-3-super-120b-a12b:free",
         },
       ],
-      "model": "opencode/minimax-m2.5-free",
+      "model": "github-copilot/gpt-4.1",
     },
     "explore": {
       "fallback_models": [
@@ -3774,6 +3795,9 @@ exports[`generateModelConfig mixed provider scenarios uses all providers with is
     "devin": {
       "fallback_models": [
         {
+          "model": "opencode/minimax-m2.5-free",
+        },
+        {
           "model": "opencode/big-pickle",
         },
         {
@@ -3783,7 +3807,7 @@ exports[`generateModelConfig mixed provider scenarios uses all providers with is
           "model": "opencode/nemotron-3-super-120b-a12b:free",
         },
       ],
-      "model": "opencode/minimax-m2.5-free",
+      "model": "github-copilot/gpt-4.1",
     },
     "explore": {
       "fallback_models": [
