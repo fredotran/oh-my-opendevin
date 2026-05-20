@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `a6bed0a5`
+**Last updated:** `1f03f275`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -391,13 +391,234 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+1f03f275 Merge branch 'origin/dev' into fredotran/dev
+46118561 Merge pull request #4172 from MoerAI/fix/team-mode-base-dir-chmod-eperm
+efe0458c release: v4.2.3
+4e4bb361 docs(release): finalize v4.2.3 release notes
+fbcc1435 fix(runtime-fallback): recognize completion progress events
+2f5fc7c4 fix(rules-core): block symlinked rule directory escapes
+330e437f docs(agents): regenerate hierarchical AGENTS.md for 2026-05-20
+39aadbf9 fix(context-recovery): handle idle sessions
+caa751aa @jeongjin0 has signed the CLA in code-yeongyu/oh-my-openagent#4206
+c197c240 docs(agents): require merge commits for PRs
+23396066 docs(release): expand v4.2.3 CHANGELOG and add OmO logo to README.ru.md
+a0d75d15 docs(prompt-gate): document DEFAULT_PROMPT_ASYNC_POST_DISPATCH_HOLD_MS 250 -> 2000
+b24dc6ee fix(rules-core): isolate package + block symlink escape from rule sources
+89f69026 Merge pull request #4205 from code-yeongyu/fix/comment-checker-apply-patch-payloads
+b5277251 Merge pull request #4203 from code-yeongyu/fix/continuation-prompt-dispatch-20260520051014
+3bd63020 fix(comment-checker): handle apply_patch payloads
+7d9cc4fb Merge pull request #4204 from code-yeongyu/hotfix/og-static-deploy-fix
+6fd5e7c9 fix(web): switch OG image from next/og to static PNG file convention
+5154ab4c Merge pull request #4202 from code-yeongyu/feature/web-portfolio-refinement-20260520
+e9c44ddb fix(web): drop nested <main> on manifesto (WCAG 1.3.1)
+f5d5e980 fix(web): hero Get Started CTA -> /docs#installation (closes #3848)
+0ebba9eb fix(rules-injector): retry storage writes after cleanup race
+4a72729a fix(plugin): run idle hooks for synthetic status idle
+64997d5e test(web): responsive matrix — 6 viewports x 4 locales x 2 pages
+623af759 feat(web): dynamic OG + Twitter card images via next/og
+022eb784 refactor(web): decompose 358-LOC manifesto into 9 section components
+4d5f58f0 refactor(web): decompose 832-LOC landing into 10 section components
+78ca837e style(web): extract design system tokens + DESIGN.md
+7e0406f4 fix(web): UX/a11y polish + middleware metadata route fix
+68b80e03 perf(web): optimize CI + build pipeline
+9799c54a chore(web): remove dead deps + safe version bumps
+faf2b021 fix(lsp): update lsp-tools-mcp cleanup
+18b58914 docs(reference): cross-module rules injection comparison report
+fbe423a2 feat(rules-injector): hydrate dedup cache from session transcript
+4de2782b Merge pull request #4201 from code-yeongyu/fix/test-isolation-cross-test-state-leak
+f8d04d74 fix(test-isolation): isolate rules injector storage and fixture home
+c6dc266f test(test-isolation): add diagnostic regression test for cross-suite leak
+504a7779 Merge pull request #4200 from code-yeongyu/fix/rules-core-restore-sisyphus-with-deprecation-warning
+dd9dd428 Merge pull request #4199 from code-yeongyu/fix/parent-wake-same-source-reservation-requeue
+12aaff28 test(rules-core): isolate sisyphus deprecation warning assertion
+53ddc470 test(rules-injector): align duplicate-cache mock types
+d92894a3 docs(changelog): document .sisyphus/rules restoration and planned removal in v4.3.0
+1bab6ec4 fix(rules-core): restore .sisyphus/rules discovery with deprecation warning (planned removal v4.3.0)
+7ffe823f test(rules-core): add red tests for restored .sisyphus/rules discovery + deprecation warning (BUG-G)
+11d2cfb8 fix(background-agent): re-enqueue parent wake on same-source reservation instead of dropping
+ee8b80a5 test(background-agent): add red test for parent-wake drop on same-source reservation hold (BUG-E)
+1760ffb6 Merge pull request #4196 from code-yeongyu/fix/rules-core-fallback-to-workspace-when-no-project-root
+1f9a581e fix(rules-core): fall back to workspace directory when no project root marker is found
+2c62e729 test(rules-core): add red test for project rule discovery in markerless workspaces (BUG-F)
+913cc089 Merge pull request #4198 from code-yeongyu/fix/ast-grep-mcp-allow-absolute-paths-inside-workspace
+4c7d7e8c Merge pull request #4197 from code-yeongyu/fix/prompt-gate-event-shapes-and-finish-marker
+bd2823e8 Merge pull request #4195 from code-yeongyu/fix/team-send-message-ambiguous-delivery-loss
+9cdcb429 revert(agents-md): restore ROADMAP warning banner unrelated to this PR
+2ea2159d fix(ast-grep-mcp): allow absolute paths whose realpath is inside the workspace
+b2e42e1b test(ast-grep-mcp): add red test for absolute paths inside workspace
+f8f4b572 fix(runtime-fallback,prompt-gate): recognize all OpenCode progress event shapes and boolean/completed finish markers
+20efb79f test(runtime-fallback,prompt-gate): add red tests for event-shape and finish-marker blind spots (BUG-C+D)
+da5aa7f3 test(team-mode): allow reclaimed reservations to stay readable
+579b8c38 docs(AGENTS.md): add aggressive refactoring-in-progress warning
+f79da77f test(team-mode): decouple resume history fixture from session routing
+af42f0ac test(team-mode): stabilize resume stale reservation history check
+655dffbc fix(team-mode): release reservation on ambiguous failure, commit on success-path mark failure
+7adb8336 test(team-mode): add red tests for ambiguous delivery loss (BUG-A + BUG-B)
+847a8db2 fix(runtime-fallback): preserve accepted pending retries
+6df148f0 fix(team-mode): close peer message delivery races
+d3e218f9 fix(prompt): treat post-dispatch failures as accepted
+f5402498 docs(readme): add OmO logo to hero section
+b2918fd4 fix(team-mode): close peer message delivery races
+bcea4a9d fix(prompt-gate): harden sync and team prompt dispatch
+1492bffd fix(prompt-gate): harden internal prompt dispatch
+6c63372e @lang-911 has signed the CLA in code-yeongyu/oh-my-openagent#4186
+22cf4fcc @devswha has signed the CLA in code-yeongyu/oh-my-openagent#4181
+49066e7e @JacobZyy has signed the CLA in code-yeongyu/oh-my-openagent#4180
+3dd41422 fix(rules): drop legacy sisyphus rule sources
+7db3a7f9 fix(team-mode): preserve live delivery holds after ambiguous prompt failure
+bb757514 fix(babysitter): avoid double prompt gate
+44ef5dec fix(runtime-events): honor OpenCode progress shapes
+38462aa9 fix(recovery): avoid duplicate continuation prompts
+e57bac3b fix(prompt-retry): preserve async holds without blocking validation fallbacks
+5f733f47 fix(parent-wake): recognize sdk tool progress
+67bd3249 fix(runtime-fallback): keep pending retry state on gate skip
+98c3fee1 fix(prompt-gate): detect finish-only tool waits
+d3d2d491 fix(parent-wake): preserve stale tool-call wake escape
+dfc2e8e4 fix(prompt-retry): preserve peer prompt reservations
+b53a8b5e fix(parent-wake): close duplicate wake races
+f5f358ab fix(prompt-gate): ignore internal user tails in tool waits
+63e4198d @jangByeongHui has signed the CLA in code-yeongyu/oh-my-openagent#4176
+1f3245e8 Merge pull request #4175 from code-yeongyu/fix/anthropic-assistant-prefill-tail
+5f0e037d fix(plugin): cover Anthropic-family prefill guard
+45d670a7 fix(plugin): constrain Anthropic prefill guard
+3509bf47 fix(plugin): guard Anthropic assistant prefill tails
+35d40cfd Merge pull request #4173 from code-yeongyu/roadmap-refactor
+ff78aeda docs: add ROADMAP.md with package layering refactor plan
+688d7395 fix(team-mode): swallow EPERM/ENOTSUP/EINVAL from chmod on base dir to keep init alive (fixes #4023)
+33b66376 fix(background-agent): defer live tool-turn wakes
+6915f152 fix(todo-continuation): cancel stale ULW countdown
+37bd866c Merge pull request #4155 from code-yeongyu/feature/rules-astgrep-packages-20260518
+d8f6d59d docs: update rules and MCP inventories
+06f67093 build: wire ast-grep MCP into release gates
+05c09c1d fix(doctor): list all built-in MCP servers
+90b3f4ac test: harden workspace package assumptions
+a86cc6af refactor(tools): remove native ast-grep tool
+ef09880e feat(mcp): register ast-grep as built-in MCP
+499aff01 feat(mcp): add package-backed ast-grep MCP
+4ea29e2c refactor(rules): delegate injectors to rules-core
+fb7d47f1 feat(rules): add shared rules-core package
+472c2931 chore(packages): declare shared tool workspaces
+25171a6c chore(hashline): update fixture dependencies
+a6f1950d fix(web): restore navigation smoke coverage
+9a9d9bd5 fix(web): adapt build tooling
+92a5a442 chore(web): update web dependencies
+c9a3c34a test: stabilize dependency verification
+f925d130 chore(deps): update root dependencies
+6fe2f72c fix(mcp): bootstrap lsp when cli is unavailable
+f6fba0b1 chore(deps): bump @code-yeongyu/comment-checker to 0.8.0
+ea249121 @LYY has signed the CLA in code-yeongyu/oh-my-openagent#4146
+2926e366 Merge pull request #4148 from code-yeongyu/fix/prompt-async-duplicate-response
+5862292e chore: refresh platform binary lockfile entries
+450c1f9e fix(runtime-fallback): ignore stale assistant errors during fallback wait
+2638dee2 @z-traveler has signed the CLA in code-yeongyu/oh-my-openagent#2827
+b9707b84 Fix paused boulder session resolution
+751f969f release: v4.2.0
+881e990c fix(test/session-recovery): replace mock.calls[0][0] with typed accessor
+9ddf1310 fix(test/runtime-fallback): add git_master to config fixture
+394567a6 fix(ci): initialize submodules in publish-main checkout
+ae278eb9 fix(mcp): always register lsp server
+bf967945 chore(web): move site under packages
+5e9a26c1 chore(packages): align platform package dirs
+3e3beef2 fix(mcp): point CI lsp submodule path at packages
+e9061731 fix(ralph-loop): guard verification retry ownership
+9c19bd8c fix(ralph-loop): defer during fresh user prompts
+cf901d4b chore(workspace): drop stale root plans
+7187db6e chore(mcp): move lsp submodule under packages
+bcbab055 fix(todo-continuation-enforcer): preserve countdown across compaction
+f898116b test(todo-continuation-enforcer): lock compaction countdown state
+ca3ea0bb fix(messages-transform): narrow assistant-tail recovery trigger
+44ee5e6a test(messages-transform): lock assistant-tail continuation guard
+f20294a7 fix(unstable-agent-babysitter): normalize reminder agent names
+0ee45aa6 fix(unstable-agent-babysitter): respect active sessions
+af1ad4d0 fix(background-agent): coalesce parent wake races
+c712b71d test(tmux): isolate pane close logic tests
+3b54d587 Merge pull request #4132 from code-yeongyu/fix/3446-atlas-runaway-loop
+6dc31b2c fix(atlas): scope no-tool-progress counter to active plan path before stall
+ed5a3f90 Merge pull request #4142 from code-yeongyu/fix/prompt-dispatch-gate
+428a18c7 test(prompt-gate): tighten dispatch route regressions
+e1554c08 fix(ralph-loop): preserve prompt dispatch holds through activity
+66cb72b8 fix(prompt-gate): bind session messages receiver
+1a66b96b docs: note Atlas stalled continuation fix
+d3b4c022 fix(atlas): stop stalled boulder continuations
+fff99aeb fix(atlas): track no-tool-progress state
+0994c107 fix(atlas): require blocked plan checkbox edits
+d44cd1c1 fix(background-agent): preserve parent agent on retry wakes
+3b50b7c8 Merge pull request #4143 from code-yeongyu/fix/shell-env-csh-support
+82b0672c fix(git-master): emit csh-compatible setenv syntax for csh/tcsh shells
+b2961409 test(shell-env): add csh/tcsh detection and buildEnvPrefix coverage
+bc2ed016 Merge pull request #4141 from code-yeongyu/fix/3396-config-skills-paths-discovery
+b0f432db Merge pull request #4136 from code-yeongyu/fix/4059-blocker4-reland
+c8c06d60 Merge pull request #4020 from scw1109/fix/default-agent-sort-order
+c37725bb Merge pull request #4139 from code-yeongyu/fix/3450-anthropic-context-limit-revisited
+ecb87608 fix: wire host config.skills.paths into command skill discovery
+971be27b docs(known-issues): mark blocker-4 resolved
+d5b1d361 docs(changelog): add 4.2.1 blocker-4 entry
+14127958 fix: wire host config.skills.paths into agent skill discovery
+043e84be fix: add adaptHostSkillConfig utility for host config.skills.paths
+f5e063b0 fix: only call setDefaultAgentForSort when user explicitly sets default_agent
+f17623d4 test(shared): isolate logger module in full suite
+0f8fc548 fix(runtime-fallback): consume delegated bootstrap retry payload
+f0f798d1 Merge pull request #4138 from code-yeongyu/fix/3207-git-master-shell-detect-reland
+fdf7ba2e Merge pull request #4129 from code-yeongyu/feature/stage-c-lsp-mcp
+6251a632 Merge pull request #4135 from code-yeongyu/fix/3893-team-mode-fresh-install
+2387f1e7 Merge pull request #4134 from code-yeongyu/ulw/rule-comment-baseline-20260518
+35df9119 test(hooks): update preemptive-compaction token thresholds for GA 1M context
+b9a8ffec fix(shared): return GA 1M context limit for Anthropic 4.6/4.7 models without cached entry
+161813c1 test(doctor): remove unstable unavailable-binary assertion
+a0b01550 Merge pull request #4137 from code-yeongyu/fix/3763-exa-bearer-auth-reland
+d7caeb01 fix(git-master): use shared shell detection for cross-platform env prefix (fix #3207)
+00e6c824 Merge pull request #4117 from ririnto/fix/plan-subagent-hidden-registry
+50ae2e11 perf(rules-injector): cache match decisions
+a4cd7457 test(doctor): force unavailable lsp binary branch in CI
+5ae0db04 fix(websearch): use Bearer auth for Exa MCP
+364c7fee docs: note team mode fresh install fix
+36409270 docs: add team mode fresh install note
+03f04ca3 test(shared): isolate logger test overrides
+21b782de test(plugin): cover fresh install team mode tools
+9bae8733 fix(plugin): log team tool registry state
+e5653f16 fix(config): log resolved team mode state
+9560e932 docs: correct tool directory counts and lsp alias wording
+7e777b0c chore(mcp): ship vendored lsp cli in npm artifacts
+69371b78 test(mcp): stabilize lsp builtin and doctor checks
+f7b60e36 fix(mcp): harden lsp cli resolution and doctor disable checks
+5555dbfc Merge pull request #4133 from code-yeongyu/fix/3816-frozen-output-args
+b20e2c9c fix: refactor 5 additional aliased output.args mutations + strengthen audit test
+61890f08 fix(rules-injector): bound parsed rule cache
+46b965b9 fix(rules-injector): bound matcher cache
+1ab1b54c perf(rules-injector): cache compiled glob matchers
+a7e5a657 Merge pull request #4131 from code-yeongyu/fix/3563-effort-max-pre-set-clamp
+3a63a8b2 test(shared): add audit test forbidding direct output.args mutation + fix 9th site
+13d88574 refactor(hooks): replace direct output.args mutation with replaceToolArgs (question/webfetch/null-byte)
+af66b8de refactor(hooks): replace direct output.args mutation with replaceToolArgs (env + prompt injectors)
+63a30210 test(anthropic-effort): cover pre-set effort=max clamping for constrained providers (#3563)
+96767b5d fix(anthropic-effort): clamp pre-set effort=max for constrained providers regardless of variant
+f72bb3fe refactor(hooks): replace direct output.args mutation with replaceToolArgs (claude-code-hooks)
+6bffb2c4 feat(shared): add replaceToolArgs helper for safe tool-args mutation
+b149ce53 docs: update AGENTS docs for MCP-backed LSP architecture
+54eb3963 chore(ci): init and build vendor lsp submodule in CI
+48c827ff test: update plugin tests for MCP-backed LSP
+8716ef45 refactor(plugin): drop lspManager lifecycle wiring
+ca51f613 refactor(tools): remove native LSP tool registry wiring
+c2c078fe feat(mcp): register lsp tier-1 stdio MCP server
+d95a45c8 chore: add lsp-tools-mcp submodule at vendor/lsp-tools-mcp
+34e6af1a docs: update AGENTS guidance
+c4dd21e1 Merge pull request #4127 from code-yeongyu/fix/3997-notification-crash
+baa0470e Merge pull request #3870 from cvqluu/fix/3772-log-bloat-and-epipe-suppression
+6037b917 Merge pull request #4122 from mguttmann/fix-4120
+442cdebc docs: add Deepgram to sponsor list in README files
+755f380a docs: update AGENTS.md metadata for v4.2.0 release
+397ed104 fix(hooks): guard session-notification against missing ctx.$ (refs #3997)
 a6bed0a5 Merge branch 'code-yeongyu:dev' into fredotran/dev
 fbfbbd10 docs(README): rename title to Oh My OpenDevin
 b5644643 docs: invert Standard and Fast/Cheap tier models
+4713a908 fix(shared): cap log file growth via size-based rotation
+32941282 fix(background-agent): defer parent-wake when a user message just arrived (fixes #4120)
 36812ead docs(README): remove non-relevant upstream content
 e0714ff8 docs(README): document Devin Session Watcher completion notifications
 2ea670c8 feat(devin-watcher): wire completion notifications into parent session chat + OS
 7285163c @ririnto has signed the CLA in code-yeongyu/oh-my-openagent#4117
+19aaf5d3 fix(prompts): point planning guidance at plan subagent
+a1630685 fix(delegate-task): restore hidden plan delegation
 94f69926 chore(schema): regenerate with devin watcher config
 a9d008db feat(devin-watcher): wire notifications, start/stop lifecycle
 c7bd95c5 feat(devin-watcher): add barrel export
@@ -753,6 +974,7 @@ c6c7a103 Merge pull request #4015 from code-yeongyu/fix/background-output-bg-id-
 d0355590 @sandikodev has signed the CLA in code-yeongyu/oh-my-openagent#4029
 c76ac27e fix(json-error-recovery): add todowrite/todoread to JSON_ERROR_TOOL_EXCLUDE_LIST
 bd2f1055 @scw1109 has signed the CLA in code-yeongyu/oh-my-openagent#4020
+ec7168eb fix: respect default_agent in sort shim ordering (#3900)
 d8652863 Merge remote-tracking branch 'origin/dev' into fix/background-output-bg-id-20260514
 ca178f41 Merge pull request #4016 from code-yeongyu/fix-bg-noti-coalesce
 9b279d2f chore(deps): sync lockfile metadata
