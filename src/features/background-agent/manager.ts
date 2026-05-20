@@ -3,11 +3,15 @@ import type { PluginInput } from "@opencode-ai/plugin"
 import type { BackgroundTaskConfig, TmuxConfig } from "../../config/schema"
 import { setContinuationMarkerSource } from "../../features/run-continuation-state"
 import type { ModelFallbackControllerAccessor } from "../../hooks/model-fallback"
-import { dispatchInternalPrompt, type PromptAsyncGateResult } from "../../hooks/shared/prompt-async-gate"
+import {
+  dispatchInternalPrompt,
+  type PromptAsyncGateResult,
+} from "../../hooks/shared/prompt-async-gate"
 import { isSessionActive as isOpenCodeSessionActive } from "../../hooks/shared/session-idle-settle"
 import {
   createInternalAgentTextPart,
   getAgentToolRestrictions,
+  isAmbiguousPostDispatchPromptFailure,
   log,
   messagesInDirectory,
   normalizePromptTools,
@@ -130,6 +134,14 @@ const PENDING_PARENT_WAKE_RETRY_MS = 1_000
 const PENDING_PARENT_WAKE_DEBOUNCE_MS = 100
 const PARENT_WAKE_ACCEPTED_MESSAGE_SKEW_MS = 5_000
 const PARENT_WAKE_TOOL_CALL_DEFER_MAX_MS = 5_000
+/**
+ * Window during which a freshly-arrived user message in the parent session
+ * causes a queued parent-wake to defer instead of dispatching. Mitigates the
+ * macOS/Electron sidecar crash where parent-wake `promptAsync` collides with a
+ * user prompt and trips `@parcel/watcher` TSFN callbacks into a torn-down JS
+ * env. See issue #4120.
+ */
+const PARENT_WAKE_USER_MESSAGE_IN_PROGRESS_WINDOW_MS = 2_000
 
 interface MessagePartInfo {
   id?: string
@@ -296,6 +308,7 @@ export class BackgroundManager {
         acceptedMessageSkewMs: PARENT_WAKE_ACCEPTED_MESSAGE_SKEW_MS,
         toolCallDeferMaxMs: PARENT_WAKE_TOOL_CALL_DEFER_MAX_MS,
         failureRequeueWindowMs: PARENT_WAKE_FAILURE_REQUEUE_WINDOW_MS,
+        userMessageInProgressWindowMs: PARENT_WAKE_USER_MESSAGE_IN_PROGRESS_WINDOW_MS,
       },
     )
     this.registerProcessCleanup()
@@ -476,7 +489,7 @@ export class BackgroundManager {
   private restoreTaskAfterSkippedResume(
     task: BackgroundTask,
     snapshot: ResumeTaskSnapshot,
-    skippedStatus: Exclude<PromptAsyncGateResult["status"], "dispatched" | "failed">,
+    skippedStatus: Exclude<PromptAsyncGateResult["status"], "dispatched" | "queued" | "failed">,
   ): void {
     log("[background-agent] Restoring task after skipped resume prompt:", {
       taskId: task.id,
@@ -812,6 +825,7 @@ export class BackgroundManager {
         ? `\n- Error: ${failedError}`
         : ""
       const retryModel = formatAttemptModelSummary(boundAttempt) ?? task.retryNotification.nextModel
+      const parentPromptContext = await this.resolveParentWakePromptContext(task)
       this.queuePendingParentWake(
         task.parentSessionId,
         `<system-reminder>
@@ -824,7 +838,7 @@ export class BackgroundManager {
 
 The fallback retry session is now created and can be inspected directly.
 </system-reminder>`,
-        {},
+        parentPromptContext,
         false,
         PENDING_PARENT_WAKE_DEBOUNCE_MS,
       )
@@ -1299,6 +1313,7 @@ The fallback retry session is now created and can be inspected directly.
       sessionID: existingTask.sessionId,
       source: "background-agent-resume",
       settleMs: 0,
+      queueBehavior: "defer",
       input: {
         path: { id: existingTask.sessionId },
         body: {
@@ -1323,7 +1338,23 @@ The fallback retry session is now created and can be inspected directly.
       },
     }).then((promptResult) => {
       if (promptResult.status === "failed") {
+        if (isAmbiguousPostDispatchPromptFailure(promptResult)) {
+          log("[background-agent] resume prompt may have been accepted before ambiguous failure; continuing to poll", {
+            taskId: existingTask.id,
+            sessionID: existingTask.sessionId,
+            error: promptResult.error instanceof Error ? promptResult.error.message : String(promptResult.error),
+          })
+          return
+        }
         throw promptResult.error
+      }
+      if (promptResult.status === "queued") {
+        log("[background-agent] resume prompt queued by prompt dispatcher:", {
+          taskId: existingTask.id,
+          sessionID: existingTask.sessionId,
+          queuedBy: promptResult.queuedBy,
+        })
+        return
       }
       if (promptResult.status !== "dispatched") {
         log("[background-agent] resume prompt skipped by promptAsync gate:", {
@@ -1914,6 +1945,7 @@ The fallback retry session is now created and can be inspected directly.
     source: string,
   ): Promise<boolean> {
     const previousSessionID = task.sessionId
+    let retryingNotification: string | undefined
     const result = tryFallbackRetry({
       task,
       errorInfo,
@@ -1932,22 +1964,26 @@ The fallback retry session is now created and can be inspected directly.
         const failedModelLine = failedModel ? `\n- Failed model: \`${failedModel}\`` : ""
         const failedErrorLine = previousAttempt?.error ? `\n- Error: ${previousAttempt.error}` : ""
         const nextModel = formatAttemptModelSummary(currentAttempt)
-        this.queuePendingParentWake(
-          task.parentSessionId,
-          `<system-reminder>
+        retryingNotification = `<system-reminder>
 [BACKGROUND TASK RETRYING]
 **ID:** \`${task.id}\`
 **Description:** ${task.description}${sourceText}${failedSessionLine}${failedModelLine}${failedErrorLine}${nextModel ? `\n- Next model: \`${nextModel}\`` : ""}
 
 The task was re-queued on a fallback model after a retryable failure.
-</system-reminder>`,
-          {},
-          false,
-          PENDING_PARENT_WAKE_DEBOUNCE_MS,
-        )
+</system-reminder>`
       },
     })
     const retried = await result
+    if (retried && retryingNotification) {
+      const parentPromptContext = await this.resolveParentWakePromptContext(task)
+      this.queuePendingParentWake(
+        task.parentSessionId,
+        retryingNotification,
+        parentPromptContext,
+        false,
+        PENDING_PARENT_WAKE_DEBOUNCE_MS,
+      )
+    }
     if (retried && previousSessionID) {
       this.clearSessionOutputObserved(previousSessionID)
       this.clearSessionTodoObservation(previousSessionID)
@@ -2406,76 +2442,18 @@ The task was re-queued on a fallback model after a retryable failure.
       completedTasks,
     })
 
-      let agent: string | undefined = task.parentAgent
-      let model: { providerID: string; modelID: string } | undefined
-      let tools: Record<string, boolean> | undefined = task.parentTools
-      let promptContext: ReturnType<typeof resolvePromptContextFromSessionMessages> = null
-
       if (this.enableParentSessionNotifications) {
-        try {
-          const messagesResp = await messagesInDirectory(this.client, {
-            path: { id: task.parentSessionId },
-          }, this.directory)
-          const messages = normalizeSDKResponse(messagesResp, [] as Array<{
-            info?: {
-              agent?: string
-              model?: { providerID: string; modelID: string }
-              modelID?: string
-              providerID?: string
-              tools?: Record<string, boolean | "allow" | "deny" | "ask">
-            }
-          }>)
-          promptContext = resolvePromptContextFromSessionMessages(
-            messages,
-            task.parentSessionId,
-          )
-          const normalizedTools = isRecord(promptContext?.tools)
-            ? normalizePromptTools(promptContext.tools)
-            : undefined
-
-          if (promptContext?.agent || promptContext?.model || normalizedTools) {
-            agent = promptContext?.agent ?? task.parentAgent
-            model = promptContext?.model?.providerID && promptContext.model.modelID
-              ? { providerID: promptContext.model.providerID, modelID: promptContext.model.modelID }
-              : undefined
-            tools = normalizedTools ?? tools
-          }
-        } catch (error) {
-          if (isAbortedSessionError(error)) {
-            log("[background-agent] Parent session aborted while loading messages; using messageDir fallback:", {
-              taskId: task.id,
-              parentSessionID: task.parentSessionId,
-            })
-          }
-          const messageDir = join(MESSAGE_STORAGE, task.parentSessionId)
-          const currentMessage = messageDir
-            ? findNearestMessageExcludingCompaction(messageDir, task.parentSessionId)
-            : null
-          agent = currentMessage?.agent ?? task.parentAgent
-          model = currentMessage?.model?.providerID && currentMessage?.model?.modelID
-            ? { providerID: currentMessage.model.providerID, modelID: currentMessage.model.modelID }
-            : undefined
-          tools = normalizePromptTools(currentMessage?.tools) ?? tools
-        }
-
-        const resolvedTools = resolveInheritedPromptTools(task.parentSessionId, tools)
+        const parentPromptContext = await this.resolveParentWakePromptContext(task)
 
         log("[background-agent] notifyParentSession context:", {
           taskId: task.id,
-          resolvedAgent: agent,
-          resolvedModel: model,
+          resolvedAgent: parentPromptContext.agent,
+          resolvedModel: parentPromptContext.model,
         })
 
         const isTaskFailure = task.status === "error" || task.status === "cancelled" || task.status === "interrupt"
         const shouldReply = allComplete || isTaskFailure
 
-        const variant = promptContext?.model?.variant
-        const parentPromptContext: ParentWakePromptContext = {
-          ...(agent !== undefined ? { agent } : {}),
-          ...(model !== undefined ? { model } : {}),
-          ...(variant !== undefined ? { variant } : {}),
-          ...(resolvedTools ? { tools: resolvedTools } : {}),
-        }
         const shouldDeferNotification = await this.isSessionActive(task.parentSessionId)
 
         if (shouldDeferNotification) {
@@ -2510,6 +2488,69 @@ The task was re-queued on a fallback model after a retryable failure.
 
     if (task.status !== "running" && task.status !== "pending") {
       this.scheduleTaskRemoval(task.id)
+    }
+  }
+
+  private async resolveParentWakePromptContext(task: BackgroundTask): Promise<ParentWakePromptContext> {
+    let agent: string | undefined = task.parentAgent
+    let model: { providerID: string; modelID: string } | undefined
+    let tools: Record<string, boolean> | undefined = task.parentTools
+    let variant: string | undefined
+
+    try {
+      const messagesResp = await messagesInDirectory(this.client, {
+        path: { id: task.parentSessionId },
+      }, this.directory)
+      const messages = normalizeSDKResponse(messagesResp, [] as Array<{
+        info?: {
+          agent?: string
+          model?: { providerID: string; modelID: string; variant?: string }
+          modelID?: string
+          providerID?: string
+          tools?: Record<string, boolean | "allow" | "deny" | "ask">
+        }
+      }>)
+      const promptContext = resolvePromptContextFromSessionMessages(
+        messages,
+        task.parentSessionId,
+      )
+      const normalizedTools = isRecord(promptContext?.tools)
+        ? normalizePromptTools(promptContext.tools)
+        : undefined
+
+      if (promptContext?.agent || promptContext?.model || normalizedTools) {
+        agent = promptContext?.agent ?? task.parentAgent
+        model = promptContext?.model?.providerID && promptContext.model.modelID
+          ? { providerID: promptContext.model.providerID, modelID: promptContext.model.modelID }
+          : undefined
+        variant = promptContext?.model?.variant
+        tools = normalizedTools ?? tools
+      }
+    } catch (error) {
+      if (isAbortedSessionError(error)) {
+        log("[background-agent] Parent session aborted while loading messages; using messageDir fallback:", {
+          taskId: task.id,
+          parentSessionID: task.parentSessionId,
+        })
+      }
+      const messageDir = join(MESSAGE_STORAGE, task.parentSessionId)
+      const currentMessage = messageDir
+        ? findNearestMessageExcludingCompaction(messageDir, task.parentSessionId)
+        : null
+      agent = currentMessage?.agent ?? task.parentAgent
+      model = currentMessage?.model?.providerID && currentMessage?.model?.modelID
+        ? { providerID: currentMessage.model.providerID, modelID: currentMessage.model.modelID }
+        : undefined
+      variant = currentMessage?.model?.variant
+      tools = normalizePromptTools(currentMessage?.tools) ?? tools
+    }
+
+    const resolvedTools = resolveInheritedPromptTools(task.parentSessionId, tools)
+    return {
+      ...(agent !== undefined ? { agent } : {}),
+      ...(model !== undefined ? { model } : {}),
+      ...(variant !== undefined ? { variant } : {}),
+      ...(resolvedTools ? { tools: resolvedTools } : {}),
     }
   }
 

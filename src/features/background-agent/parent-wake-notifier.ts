@@ -1,7 +1,14 @@
 import { resolveRegisteredAgentName } from "../claude-code-session-state"
-import { createInternalAgentTextPart, log, messagesInDirectory, normalizeSDKResponse } from "../../shared"
+import {
+  createInternalAgentTextPart,
+  isAmbiguousPostDispatchPromptFailure,
+  isSyntheticOrInternalUserMessage,
+  log,
+  messagesInDirectory,
+  normalizeSDKResponse,
+} from "../../shared"
 import { isSessionActive as isOpenCodeSessionActive, settleAfterSessionIdle } from "../../hooks/shared/session-idle-settle"
-import { dispatchInternalPrompt } from "../../hooks/shared/prompt-async-gate"
+import { dispatchInternalPrompt, isInternalPromptDispatchAccepted } from "../../hooks/shared/prompt-async-gate"
 import type { PluginInput } from "@opencode-ai/plugin"
 
 type OpencodeClient = PluginInput["client"]
@@ -33,6 +40,7 @@ type ParentWakeSessionMessage = {
   parts?: Array<{
     type?: string
     text?: string
+    synthetic?: boolean
     content?: unknown
     state?: {
       status?: unknown
@@ -51,6 +59,34 @@ type ParentWakeNotifierOptions = {
   acceptedMessageSkewMs: number
   toolCallDeferMaxMs: number
   failureRequeueWindowMs: number
+  /**
+   * If the latest message in the parent session is a `user` message added
+   * within this window, the parent-wake injection is deferred. Prevents the
+   * race where a parent-wake `dispatchInternalPrompt` collides with a fresh
+   * user prompt, which on macOS/Electron has triggered native SIGABRT crashes
+   * inside OpenCode's `@parcel/watcher` TSFN callback path. See issue #4120.
+   */
+  userMessageInProgressWindowMs: number
+}
+
+type ToolWaitDeferralDecision = {
+  defer: boolean
+  skipPromptGateToolStateCheck: boolean
+}
+
+type Unrefable = ReturnType<typeof setTimeout> & { unref?: () => unknown }
+
+function unrefTimerHandle(handle: ReturnType<typeof setTimeout>): void {
+  const maybeUnref = (handle as Unrefable).unref
+  if (typeof maybeUnref === "function") {
+    try {
+      maybeUnref.call(handle)
+    } catch {
+      // unref is best-effort; some runtimes (e.g. browser-like shims) don't
+      // expose it. Failing here would only make the host event loop pinned —
+      // not a hard error.
+    }
+  }
 }
 
 export class ParentWakeNotifier {
@@ -127,8 +163,23 @@ export class ParentWakeNotifier {
       return
     }
 
-    if (await this.shouldDeferParentWakeForSessionHistory(sessionID, latestWake)) {
+    const toolWaitDecision = await this.shouldDeferParentWakeForSessionHistory(sessionID, latestWake)
+    if (toolWaitDecision.defer) {
       this.schedulePendingParentWakeFlush(sessionID)
+      return
+    }
+
+    if (await this.isUserMessageInProgress(sessionID)) {
+      // The user just sent a new message into the parent session. Dispatching
+      // a parent-wake right now would race their prompt and, on Electron-hosted
+      // OpenCode (macOS arm64), has been observed to crash the sidecar via
+      // @parcel/watcher TSFN callbacks firing into a torn-down JS env.
+      // The user's own message will drive the model; the queued notifications
+      // will be re-flushed on the next idle. See issue #4120.
+      this.schedulePendingParentWakeFlush(sessionID)
+      log("[background-agent] Deferred parent wake because user message just arrived:", {
+        sessionID,
+      })
       return
     }
 
@@ -136,14 +187,17 @@ export class ParentWakeNotifier {
 
     const notificationContent = latestWake.notifications.join("\n\n")
 
+    let dispatchStartedAt = Date.now()
     try {
+      dispatchStartedAt = Date.now()
       const promptResult = await dispatchInternalPrompt({
         mode: "async",
         client: this.deps.client,
         sessionID,
         source: "background-agent-parent-wake",
         settleMs: 0,
-        postDispatchHoldMs: 250,
+        queueBehavior: "defer",
+        checkToolState: !toolWaitDecision.skipPromptGateToolStateCheck,
         input: {
           path: { id: sessionID },
           body: {
@@ -155,9 +209,27 @@ export class ParentWakeNotifier {
         },
       })
       if (promptResult.status === "failed") {
+        if (isAmbiguousPostDispatchPromptFailure(promptResult)) {
+          const dispatchedWake = this.cloneParentWake(latestWake)
+          dispatchedWake.dispatchedAt = dispatchStartedAt
+          if (await this.hasAcceptedMessageAfterDispatchedParentWake(sessionID, dispatchedWake)) {
+            this.trackDispatchedParentWake(sessionID, latestWake, dispatchStartedAt)
+            log("[background-agent] Treated failed parent wake prompt as accepted after observing session history:", {
+              sessionID,
+              error: promptResult.error,
+            })
+            return
+          }
+        }
         throw promptResult.error
       }
-      if (promptResult.status !== "dispatched") {
+      if (promptResult.status === "reserved" && promptResult.reservedBy === "background-agent-parent-wake") {
+        this.requeueWake(sessionID, latestWake)
+        this.schedulePendingParentWakeFlush(sessionID, 2_000)
+        log("[background-agent] Requeued parent wake flush reserved by promptAsync gate hold:", { sessionID })
+        return
+      }
+      if (!isInternalPromptDispatchAccepted(promptResult)) {
         this.requeueWake(sessionID, latestWake)
         this.schedulePendingParentWakeFlush(sessionID)
         log("[background-agent] Deferred parent wake skipped by promptAsync gate:", {
@@ -167,7 +239,7 @@ export class ParentWakeNotifier {
         return
       }
       log("[background-agent] Sent deferred parent wake:", { sessionID })
-      this.trackDispatchedParentWake(sessionID, latestWake)
+      this.trackDispatchedParentWake(sessionID, latestWake, dispatchStartedAt)
     } catch (error) {
       this.requeueWake(sessionID, latestWake)
       this.schedulePendingParentWakeFlush(sessionID)
@@ -222,6 +294,10 @@ export class ParentWakeNotifier {
         log("[background-agent] Failed to retry pending parent wake:", { sessionID, error })
       })
     }, delayMs ?? this.options.pendingRetryMs)
+    // Don't pin the host event loop with retry timers; the sidecar should be
+    // free to exit cleanly during teardown even if a wake is still pending.
+    // See issue #4120.
+    unrefTimerHandle(timer)
 
     this.pendingParentWakeTimers.set(sessionID, timer)
   }
@@ -277,15 +353,18 @@ export class ParentWakeNotifier {
     }
   }
 
-  private trackDispatchedParentWake(sessionID: string, wake: PendingParentWake): void {
+  private trackDispatchedParentWake(sessionID: string, wake: PendingParentWake, dispatchedAt: number): void {
     this.clearDispatchedParentWake(sessionID)
     const dispatchedWake = this.cloneParentWake(wake)
-    dispatchedWake.dispatchedAt = Date.now()
+    dispatchedWake.dispatchedAt = dispatchedAt
     this.dispatchedParentWakes.set(sessionID, dispatchedWake)
     const timer = setTimeout(() => {
       this.dispatchedParentWakeTimers.delete(sessionID)
       this.dispatchedParentWakes.delete(sessionID)
     }, this.options.failureRequeueWindowMs)
+    // Best-effort unref so the dispatched-wake bookkeeping doesn't keep the
+    // event loop alive past the natural teardown window (issue #4120).
+    unrefTimerHandle(timer)
     this.dispatchedParentWakeTimers.set(sessionID, timer)
   }
 
@@ -328,7 +407,12 @@ export class ParentWakeNotifier {
   }
 
   private parentWakePartIsWaitingOnTool(part: NonNullable<ParentWakeSessionMessage["parts"]>[number]): boolean {
-    if (part.type !== "tool" && part.type !== "tool_use") {
+    if (
+      part.type !== "tool"
+      && part.type !== "tool_use"
+      && part.type !== "tool-call"
+      && part.type !== "tool-invocation"
+    ) {
       return false
     }
 
@@ -336,7 +420,10 @@ export class ParentWakeNotifier {
     return status === "pending" || status === "running"
   }
 
-  private latestAssistantTurnIsWaitingOnTools(messages: ParentWakeSessionMessage[]): boolean {
+  private latestAssistantToolWaitState(messages: ParentWakeSessionMessage[]): {
+    waiting: boolean
+    createdAt?: number
+  } {
     for (let index = messages.length - 1; index >= 0; index--) {
       const message = messages[index]
       if (!message) {
@@ -344,14 +431,20 @@ export class ParentWakeNotifier {
       }
       const role = this.getParentWakeMessageRole(message)
       if (role === "assistant") {
-        return this.getParentWakeMessageFinish(message) === "tool-calls"
+        const waiting = this.getParentWakeMessageFinish(message) === "tool-calls"
           || message.parts?.some((part) => this.parentWakePartIsWaitingOnTool(part)) === true
+        return waiting
+          ? { waiting: true, createdAt: this.getParentWakeMessageCreatedAt(message) }
+          : { waiting: false }
       }
       if (role === "user") {
-        return false
+        if (isSyntheticOrInternalUserMessage(message)) {
+          continue
+        }
+        return { waiting: false }
       }
     }
-    return false
+    return { waiting: false }
   }
 
   private parentWakeMessageHasOutput(message: ParentWakeSessionMessage): boolean {
@@ -366,7 +459,14 @@ export class ParentWakeNotifier {
       if (part.type === "text" || part.type === "reasoning") {
         return typeof part.text === "string" && part.text.trim().length > 0
       }
-      if (part.type === "tool" || part.type === "tool_result") {
+      if (
+        part.type === "tool"
+        || part.type === "tool_use"
+        || part.type === "tool-call"
+        || part.type === "tool-invocation"
+        || part.type === "tool_result"
+        || part.type === "tool-result"
+      ) {
         return true
       }
       if (part.content !== undefined) {
@@ -391,24 +491,65 @@ export class ParentWakeNotifier {
     ) ?? false
   }
 
-  private async shouldDeferParentWakeForSessionHistory(sessionID: string, wake: PendingParentWake): Promise<boolean> {
-    const messages = await this.loadParentWakeSessionMessages(sessionID)
-    if (!this.latestAssistantTurnIsWaitingOnTools(messages)) {
-      delete wake.toolCallDeferralStartedAt
+  private async isUserMessageInProgress(sessionID: string): Promise<boolean> {
+    if (this.options.userMessageInProgressWindowMs <= 0) {
       return false
+    }
+    const messages = await this.loadParentWakeSessionMessages(sessionID)
+    for (let index = messages.length - 1; index >= 0; index--) {
+      const message = messages[index]
+      if (!message) {
+        continue
+      }
+      const role = this.getParentWakeMessageRole(message)
+      if (role === "user") {
+        if (isSyntheticOrInternalUserMessage(message)) {
+          continue
+        }
+        const createdAt = this.getParentWakeMessageCreatedAt(message)
+        if (createdAt === undefined) {
+          return false
+        }
+        return Date.now() - createdAt <= this.options.userMessageInProgressWindowMs
+      }
+      if (role === "assistant" || role === "tool") {
+        // An assistant/tool message is more recent than the last user message,
+        // so the user is not actively prompting right now.
+        return false
+      }
+    }
+    return false
+  }
+
+  private async shouldDeferParentWakeForSessionHistory(
+    sessionID: string,
+    wake: PendingParentWake,
+  ): Promise<ToolWaitDeferralDecision> {
+    const messages = await this.loadParentWakeSessionMessages(sessionID)
+    const toolWaitState = this.latestAssistantToolWaitState(messages)
+    if (!toolWaitState.waiting) {
+      delete wake.toolCallDeferralStartedAt
+      return { defer: false, skipPromptGateToolStateCheck: false }
     }
     const now = Date.now()
     wake.toolCallDeferralStartedAt ??= now
-    if (wake.shouldReply && now - wake.toolCallDeferralStartedAt >= this.options.toolCallDeferMaxMs) {
+    const latestToolWaitAgeMs = toolWaitState.createdAt === undefined
+      ? 0
+      : now - toolWaitState.createdAt
+    if (
+      wake.shouldReply
+      && now - wake.toolCallDeferralStartedAt >= this.options.toolCallDeferMaxMs
+      && latestToolWaitAgeMs >= this.options.toolCallDeferMaxMs
+    ) {
       log("[background-agent] Sending parent wake after stale tool-call deferral window:", {
         sessionID,
       })
-      return false
+      return { defer: false, skipPromptGateToolStateCheck: true }
     }
     log("[background-agent] Deferred parent wake because latest assistant turn is waiting on tool results:", {
       sessionID,
     })
-    return true
+    return { defer: true, skipPromptGateToolStateCheck: false }
   }
 
   private async hasAcceptedMessageAfterDispatchedParentWake(sessionID: string, wake: PendingParentWake): Promise<boolean> {

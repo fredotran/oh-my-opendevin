@@ -6,7 +6,7 @@ import {
   clearAllDelegatedChildSessionBootstrap,
   getDelegatedChildSessionBootstrap,
 } from "../../shared/delegated-child-session-bootstrap"
-import { dispatchInternalPrompt } from "../../shared/prompt-async-gate"
+import { dispatchInternalPrompt, releaseAllPromptAsyncReservationsForTesting } from "../../shared/prompt-async-gate"
 import { clearSessionPromptParams, getSessionPromptParams } from "../../shared/session-prompt-params-state"
 import {
   getSessionAgent,
@@ -26,6 +26,7 @@ afterAll(() => { mock.restore() })
 
 afterEach(() => {
   clearBackgroundTaskRegistryForTesting()
+  releaseAllPromptAsyncReservationsForTesting()
 })
 
 const TASK_TTL_MS = 30 * 60 * 1000
@@ -629,6 +630,63 @@ describe("BackgroundManager prompt rejection fallback routing", () => {
     expect(storedTask?.status).toBe("pending")
   })
 
+  test("keeps launch running when promptAsync returns ambiguous EOF after dispatch", async () => {
+    //#given
+    let abortCalls = 0
+    const client = {
+      session: {
+        get: async () => ({ data: { directory: tmpdir() } }),
+        create: async () => ({ data: { id: "ses_launch_ambiguous" } }),
+        promptAsync: async () => {
+          throw new Error("JSON Parse error: Unexpected EOF")
+        },
+        abort: async () => {
+          abortCalls += 1
+          return {}
+        },
+      },
+    }
+    const manager = new BackgroundManager({ pluginContext: createPluginInput(client) })
+    stubNotifyParentSession(manager)
+    ;(cast<{
+      reserveSubagentSpawn: () => Promise<{
+        spawnContext: { rootSessionID: string; parentDepth: number; childDepth: number }
+        descendantCount: number
+        commit: () => number
+        rollback: () => void
+      }>
+    }>(manager)).reserveSubagentSpawn = async () => ({
+      spawnContext: { rootSessionID: "parent-session", parentDepth: 0, childDepth: 1 },
+      descendantCount: 1,
+      commit: () => 1,
+      rollback: () => {},
+    })
+    const retried: string[] = []
+    ;(cast<{
+      tryFallbackRetry: (task: BackgroundTask, errorInfo: { name?: string; message?: string }, source: string) => Promise<boolean>
+    }>(manager)).tryFallbackRetry = async (_task, _errorInfo, source) => {
+      retried.push(source)
+      return true
+    }
+
+    //#when
+    const launchedTask = await manager.launch({
+      description: "ambiguous launch",
+      prompt: "say hi",
+      agent: "sisyphus-junior",
+      parentSessionId: "parent-session",
+      parentMessageId: "parent-message",
+      fallbackChain: [{ model: "claude-haiku-4-5", providers: ["anthropic"] }],
+    })
+    await flushBackgroundNotifications()
+
+    //#then
+    const storedTask = getTaskMap(manager).get(launchedTask.id)
+    expect(retried).toEqual([])
+    expect(abortCalls).toBe(0)
+    expect(storedTask?.status).toBe("running")
+  })
+
   test("routes resume-time prompt rejections into tryFallbackRetry before marking interrupt", async () => {
     //#given
     const promptError = {
@@ -690,6 +748,61 @@ describe("BackgroundManager prompt rejection fallback routing", () => {
     })
     expect(storedTask?.status).toBe("pending")
   })
+
+  test("keeps resumed task running when promptAsync returns ambiguous EOF after dispatch", async () => {
+    //#given
+    let abortCalls = 0
+    const client = {
+      session: {
+        promptAsync: async () => {
+          throw new Error("JSON Parse error: Unexpected EOF")
+        },
+        abort: async () => {
+          abortCalls += 1
+          return {}
+        },
+      },
+    }
+    const manager = new BackgroundManager({ pluginContext: createPluginInput(client) })
+    stubNotifyParentSession(manager)
+    const task: BackgroundTask = {
+      id: "bg_resume_ambiguous",
+      sessionId: "ses_resume_ambiguous",
+      parentSessionId: "parent-session",
+      parentMessageId: "parent-message",
+      description: "resume ambiguous test",
+      prompt: "say hi",
+      agent: "sisyphus-junior",
+      status: "completed",
+      startedAt: new Date(),
+      completedAt: new Date(),
+      fallbackChain: [{ model: "claude-haiku-4-5", providers: ["anthropic"] }],
+      concurrencyGroup: "anthropic/claude-haiku-4-5",
+    }
+    getTaskMap(manager).set(task.id, task)
+    const retried: string[] = []
+    ;(cast<{
+      tryFallbackRetry: (task: BackgroundTask, errorInfo: { name?: string; message?: string }, source: string) => Promise<boolean>
+    }>(manager)).tryFallbackRetry = async (_retryTask, _errorInfo, source) => {
+      retried.push(source)
+      return true
+    }
+
+    //#when
+    await manager.resume({
+      sessionId: "ses_resume_ambiguous",
+      prompt: "continue",
+      parentSessionId: "parent-session",
+      parentMessageId: "parent-message-2",
+    })
+    await flushBackgroundNotifications()
+
+    //#then
+    expect(retried).toEqual([])
+    expect(abortCalls).toBe(0)
+    expect(task.status).toBe("running")
+    expect(task.completedAt).toBeUndefined()
+  })
 })
 
 describe("BackgroundManager retry observability", () => {
@@ -697,6 +810,19 @@ describe("BackgroundManager retry observability", () => {
     //#given
     const client = {
       session: {
+        messages: async () => [
+          {
+            info: {
+              agent: "hephaestus",
+              model: {
+                providerID: "openai",
+                modelID: "gpt-5",
+                variant: "xhigh",
+              },
+              tools: { bash: "allow", edit: "deny" },
+            },
+          },
+        ],
         abort: async () => ({}),
       },
     }
@@ -749,12 +875,134 @@ describe("BackgroundManager retry observability", () => {
     }
     const [sessionID, notification, promptContext, shouldReply] = retryingCall
     expect(sessionID).toBe("parent-session")
-    expect(promptContext).toEqual({})
+    expect(promptContext).toEqual({
+      agent: "hephaestus",
+      model: { providerID: "openai", modelID: "gpt-5" },
+      variant: "xhigh",
+      tools: { bash: true, edit: false },
+    })
     expect(shouldReply).toBe(false)
     expect(notification).toContain("[BACKGROUND TASK RETRYING]")
     expect(notification).toContain("ses_retry_visibility")
     expect(notification).toContain("genai-proxy-openai/gpt-5.4-mini")
     expect(notification).toContain("anthropic/claude-haiku-4.5")
+  })
+
+  test("falls back to task parent agent when retrying wake cannot load parent messages", async () => {
+    //#given
+    const client = {
+      session: {
+        messages: async () => {
+          throw new Error("parent messages unavailable")
+        },
+        abort: async () => ({}),
+      },
+    }
+    const manager = new BackgroundManager({ pluginContext: createPluginInput(client) })
+    const task = createMockTask({
+      id: "bg_retry_parent_agent_fallback",
+      parentSessionId: "parent-session-agent-fallback",
+      parentAgent: "hephaestus",
+      parentTools: { bash: true },
+      fallbackChain: [{ model: "claude-haiku-4-5", providers: ["anthropic"] }],
+      attemptCount: 0,
+      status: "running",
+      attempts: [
+        {
+          attemptId: "att_retry_parent_agent_fallback",
+          attemptNumber: 1,
+          sessionId: "ses_retry_parent_agent_fallback",
+          providerId: "genai-proxy-openai",
+          modelId: "gpt-5.4-mini",
+          status: "running",
+        },
+      ],
+      currentAttemptID: "att_retry_parent_agent_fallback",
+    })
+    getTaskMap(manager).set(task.id, task)
+    const queuePendingParentWake = mock(() => {})
+    ;(cast<{
+      queuePendingParentWake: (
+        sessionId: string,
+        notification: string,
+        promptContext: Record<string, unknown>,
+        shouldReply: boolean,
+        delayMs?: number,
+      ) => void
+    }>(manager)).queuePendingParentWake = queuePendingParentWake
+
+    //#when
+    await (cast<{
+      tryFallbackRetry: (task: BackgroundTask, errorInfo: { name?: string; message?: string }, source: string) => Promise<boolean>
+    }>(manager)).tryFallbackRetry(task, {
+      name: "APIError",
+      message: "Forbidden: Selected provider is forbidden",
+    }, "promptAsync.launch")
+
+    //#then
+    const retryingCall = cast<Array<[string, string, Record<string, unknown>, boolean]>>(
+      queuePendingParentWake.mock.calls,
+    )[0]
+    expect(retryingCall?.[2]).toEqual({
+      agent: "hephaestus",
+      tools: { bash: true },
+    })
+  })
+
+  test("does not invent a parent agent when retrying wake has no context source", async () => {
+    //#given
+    const client = {
+      session: {
+        messages: async () => {
+          throw new Error("parent messages unavailable")
+        },
+        abort: async () => ({}),
+      },
+    }
+    const manager = new BackgroundManager({ pluginContext: createPluginInput(client) })
+    const task = createMockTask({
+      id: "bg_retry_no_parent_context",
+      parentSessionId: "parent-session-no-context",
+      fallbackChain: [{ model: "claude-haiku-4-5", providers: ["anthropic"] }],
+      attemptCount: 0,
+      status: "running",
+      attempts: [
+        {
+          attemptId: "att_retry_no_parent_context",
+          attemptNumber: 1,
+          sessionId: "ses_retry_no_parent_context",
+          providerId: "genai-proxy-openai",
+          modelId: "gpt-5.4-mini",
+          status: "running",
+        },
+      ],
+      currentAttemptID: "att_retry_no_parent_context",
+    })
+    getTaskMap(manager).set(task.id, task)
+    const queuePendingParentWake = mock(() => {})
+    ;(cast<{
+      queuePendingParentWake: (
+        sessionId: string,
+        notification: string,
+        promptContext: Record<string, unknown>,
+        shouldReply: boolean,
+        delayMs?: number,
+      ) => void
+    }>(manager)).queuePendingParentWake = queuePendingParentWake
+
+    //#when
+    await (cast<{
+      tryFallbackRetry: (task: BackgroundTask, errorInfo: { name?: string; message?: string }, source: string) => Promise<boolean>
+    }>(manager)).tryFallbackRetry(task, {
+      name: "APIError",
+      message: "Forbidden: Selected provider is forbidden",
+    }, "promptAsync.launch")
+
+    //#then
+    const retryingCall = cast<Array<[string, string, Record<string, unknown>, boolean]>>(
+      queuePendingParentWake.mock.calls,
+    )[0]
+    expect(retryingCall?.[2]).toEqual({})
   })
 
   test("queues a second parent-visible notification once the retry session ID is created", async () => {
@@ -764,6 +1012,19 @@ describe("BackgroundManager retry observability", () => {
       session: {
         get: async () => ({ data: { directory: tmpdir() } }),
         create: async () => ({ data: { id: "ses_retry_created" } }),
+        messages: async () => [
+          {
+            info: {
+              agent: "hephaestus",
+              model: {
+                providerID: "openai",
+                modelID: "gpt-5",
+                variant: "xhigh",
+              },
+              tools: { bash: "allow", edit: "deny" },
+            },
+          },
+        ],
         promptAsync: async () => ({}),
       },
     }
@@ -837,12 +1098,18 @@ describe("BackgroundManager retry observability", () => {
     }>(manager)).startTask(item)
 
     //#then
-    const notifications = cast<Array<[string, string, Record<string, unknown>, boolean, number | undefined]>>(
+    const retryReadyCall = cast<Array<[string, string, Record<string, unknown>, boolean, number | undefined]>>(
       queuePendingParentWake.mock.calls,
-    ).map((call) => call[1])
-    const retryReadyNotification = notifications.find((notification) => notification.includes("[BACKGROUND TASK RETRY SESSION READY]"))
+    ).find((call) => call[1].includes("[BACKGROUND TASK RETRY SESSION READY]"))
+    const retryReadyNotification = retryReadyCall?.[1]
     const expectedRetryLink = `http://127.0.0.1:4096/${Buffer.from(tmpdir()).toString("base64url")}/session/ses_retry_created`
     expect(retryReadyNotification).toBeDefined()
+    expect(retryReadyCall?.[2]).toEqual({
+      agent: "hephaestus",
+      model: { providerID: "openai", modelID: "gpt-5" },
+      variant: "xhigh",
+      tools: { bash: true, edit: false },
+    })
     expect(retryReadyNotification).toContain("**Retry attempt:** 2")
     expect(retryReadyNotification).toContain("ses_retry_created")
     expect(retryReadyNotification).toContain(expectedRetryLink)
@@ -5549,6 +5816,7 @@ describe("BackgroundManager.handleEvent - session.error", () => {
           {
             info: {
               role: "assistant",
+              finish: "end_turn",
               time: { created: 2_000 },
             },
             parts: [{ type: "text", text: "wake was already accepted" }],

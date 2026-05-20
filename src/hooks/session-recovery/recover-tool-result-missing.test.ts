@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test"
 
+import { releaseAllPromptAsyncReservationsForTesting } from "../shared/prompt-async-gate"
 import type { MessageData } from "./types"
 
 let sqliteBackend = false
@@ -21,8 +22,28 @@ const failedAssistantMsg: MessageData = {
   parts: [],
 }
 
-function createMockClient(messages: MessageData[] = []) {
-  const promptAsync = mock(() => Promise.resolve({}))
+interface PromptAsyncInput {
+  readonly path: { readonly id: string }
+  readonly body: {
+    readonly agent?: string
+    readonly model?: { readonly providerID: string; readonly modelID: string }
+    readonly variant?: string
+    readonly parts: ReadonlyArray<{
+      readonly toolUseId: string
+      readonly content?: ReadonlyArray<{ readonly text: string }>
+    }>
+  }
+}
+
+function createMockClient(
+  messages: MessageData[] = [],
+  promptAsyncImpl?: (input: PromptAsyncInput) => Promise<unknown>,
+) {
+  const promptAsyncCalls: PromptAsyncInput[] = []
+  const promptAsync = mock((input: PromptAsyncInput) => {
+    promptAsyncCalls.push(input)
+    return promptAsyncImpl ? promptAsyncImpl(input) : Promise.resolve({})
+  })
 
   return {
     client: {
@@ -32,7 +53,16 @@ function createMockClient(messages: MessageData[] = []) {
       },
     } as never,
     promptAsync,
+    promptAsyncCalls,
   }
+}
+
+function firstPromptAsyncCall(calls: readonly PromptAsyncInput[]): PromptAsyncInput {
+  const call = calls[0]
+  if (!call) {
+    throw new Error("expected promptAsync to be called at least once")
+  }
+  return call
 }
 
 describe("recoverToolResultMissing", () => {
@@ -43,6 +73,7 @@ describe("recoverToolResultMissing", () => {
 
   afterEach(() => {
     mock.restore()
+    releaseAllPromptAsyncReservationsForTesting()
   })
 
   it("returns false for sqlite fallback when tool part has no valid callID", async () => {
@@ -94,7 +125,7 @@ describe("recoverToolResultMissing", () => {
 
   it("falls back to a valid id when callID is malformed", async () => {
     //#given
-    const { client, promptAsync } = createMockClient()
+    const { client, promptAsync, promptAsyncCalls } = createMockClient()
     const failedAssistantWithMalformedCallID: MessageData = {
       info: { id: "msg_failed", role: "assistant" },
       parts: [{
@@ -113,18 +144,14 @@ describe("recoverToolResultMissing", () => {
     //#then
     expect(result).toBe(true)
     expect(promptAsync).toHaveBeenCalledTimes(1)
-    const call = promptAsync.mock.calls[0]?.[0] as {
-      body: {
-        parts: Array<{ toolUseId: string }>
-      }
-    }
+    const call = firstPromptAsyncCall(promptAsyncCalls)
     expect(call.body.parts.map((part) => part.toolUseId)).toEqual(["toolu_recovered_from_id"])
   })
 
   it("sends only interrupted sqlite tool results when recoverStatuses is provided", async () => {
     //#given
     sqliteBackend = true
-    const { client, promptAsync } = createMockClient([
+    const { client, promptAsync, promptAsyncCalls } = createMockClient([
       {
         info: { id: "msg_failed", role: "assistant" },
         parts: [
@@ -166,13 +193,9 @@ describe("recoverToolResultMissing", () => {
     //#then
     expect(result).toBe(true)
     expect(promptAsync).toHaveBeenCalledTimes(1)
-    const call = promptAsync.mock.calls[0]?.[0] as {
-      body: {
-        parts: Array<{ toolUseId: string; content: Array<{ text: string }> }>
-      }
-    }
+    const call = firstPromptAsyncCall(promptAsyncCalls)
     expect(call.body.parts.map((part) => part.toolUseId)).toEqual(["call_running", "toolu_pending"])
-    expect(call.body.parts[0]?.content[0]?.text).toBe("Tool execution was interrupted before producing a result.")
+    expect(call.body.parts[0]?.content?.[0]?.text).toBe("Tool execution was interrupted before producing a result.")
   })
 
   it("returns false for stored parts when tool part has no valid callID", async () => {
@@ -227,7 +250,7 @@ describe("recoverToolResultMissing", () => {
       tool: "bash",
       state: { input: {} },
     }]
-    const { client, promptAsync } = createMockClient()
+    const { client, promptAsync, promptAsyncCalls } = createMockClient()
     const resumeConfig = {
       sessionID: "ses_pin",
       agent: "Hephaestus",
@@ -240,14 +263,7 @@ describe("recoverToolResultMissing", () => {
     // then
     expect(result).toBe(true)
     expect(promptAsync).toHaveBeenCalledTimes(1)
-    const call = promptAsync.mock.calls[0]?.[0] as {
-      body: {
-        agent?: string
-        model?: { providerID: string; modelID: string }
-        variant?: string
-        parts: unknown[]
-      }
-    }
+    const call = firstPromptAsyncCall(promptAsyncCalls)
     expect(call.body.agent).toBe("Hephaestus")
     expect(call.body.model).toEqual({ providerID: "openai", modelID: "gpt-5.3-codex" })
     expect(call.body.variant).toBe("max")
@@ -262,17 +278,39 @@ describe("recoverToolResultMissing", () => {
       tool: "bash",
       state: { input: {} },
     }]
-    const { client, promptAsync } = createMockClient()
+    const { client, promptAsync, promptAsyncCalls } = createMockClient()
 
     // when
     const result = await recoverToolResultMissing(client, "ses_nopin", failedAssistantMsg)
 
     // then
     expect(result).toBe(true)
-    const call = promptAsync.mock.calls[0]?.[0] as { body: Record<string, unknown> }
+    expect(promptAsync).toHaveBeenCalledTimes(1)
+    const call = firstPromptAsyncCall(promptAsyncCalls)
     expect(call.body).not.toHaveProperty("agent")
     expect(call.body).not.toHaveProperty("model")
     expect(call.body).not.toHaveProperty("variant")
+  })
+
+  it("#given recovered tool result may have been accepted before EOF #when promptAsync fails ambiguously #then recovery is treated as started", async () => {
+    // given
+    storedParts = [{
+      type: "tool",
+      id: "prt_stored_eof_call",
+      callID: "toolu_eof",
+      tool: "bash",
+      state: { input: {} },
+    }]
+    const { client, promptAsync } = createMockClient([], async () => {
+      throw new Error("JSON Parse error: Unexpected EOF")
+    })
+
+    // when
+    const result = await recoverToolResultMissing(client, "ses_eof_recovery", failedAssistantMsg)
+
+    // then
+    expect(result).toBe(true)
+    expect(promptAsync).toHaveBeenCalledTimes(1)
   })
 })
 
