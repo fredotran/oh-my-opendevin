@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `b4c4c53b`
+**Last updated:** `e83bdb83`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -391,6 +391,7 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+e83bdb83 release: v2.0.0
 b4c4c53b fix(devin-mcp): await async file ops in session-store meta updates
 e250c715 fix(tests): resolve fork-specific and upstream merge test failures
 3ac42616 fix(build): align zod version override to resolve MCP SDK type incompatibility
