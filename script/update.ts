@@ -297,9 +297,23 @@ async function verifyTests(): Promise<void> {
   log("Tests passed")
 }
 
+async function hasChangesToCommit(): Promise<boolean> {
+  const status = (await $`git status --short`.text()).trim()
+  return status.length > 0
+}
+
 async function commitMerge(): Promise<void> {
   if (DRY_RUN) {
     log("Would commit merge")
+    return
+  }
+  // Stage bun.lock if it was regenerated
+  if (existsSync("bun.lock")) {
+    await $`git add bun.lock`
+  }
+  // Skip commit if nothing changed (e.g. already up to date)
+  if (!(await hasChangesToCommit())) {
+    log("No changes to commit")
     return
   }
   await $`git commit -m "Merge upstream/dev into ${TARGET_BRANCH}"`
