@@ -203,18 +203,8 @@ const CONFLICT_RULES: ConflictRule[] = [
     strategy: "theirs",
   },
 
-  // Bun lockfile: delete and regenerate (MUST run after package.json is resolved)
-  {
-    pattern: "bun.lock",
-    strategy: "custom",
-    async customResolver(filePath: string) {
-      if (!DRY_RUN) {
-        await $`rm -f ${filePath}`
-        await $`bun install`
-      }
-      log("Resolved bun.lock: regenerated via bun install")
-    },
-  },
+  // NOTE: bun.lock is handled separately after post-merge fixes
+  // (bun install triggers prepare -> build, so it must run after all fixes)
 ]
 
 async function resolveFile(filePath: string): Promise<void> {
@@ -251,18 +241,28 @@ async function resolveFile(filePath: string): Promise<void> {
 }
 
 async function resolveAllConflicts(files: string[]): Promise<void> {
-  // Sort to ensure package.json is resolved before bun.lock
-  // (bun install needs a valid package.json)
+  // Sort to ensure package.json is resolved first
   const sorted = files.sort((a, b) => {
     if (a === "package.json") return -1
     if (b === "package.json") return 1
-    if (a === "bun.lock") return 1
-    if (b === "bun.lock") return -1
     return a.localeCompare(b)
   })
   for (const file of sorted) {
+    // Skip bun.lock — handled separately after post-merge fixes
+    if (file === "bun.lock") continue
     await resolveFile(file)
   }
+}
+
+async function regenerateLockfile(): Promise<void> {
+  log("Regenerating lockfile...")
+  if (DRY_RUN) {
+    log("[DRY-RUN] Would run: rm -f bun.lock && bun install")
+    return
+  }
+  await $`rm -f bun.lock package-lock.json`
+  await $`bun install`
+  log("Lockfile regenerated")
 }
 
 // Post-merge semantic fixes for files that auto-merged textually
@@ -338,14 +338,8 @@ async function main(): Promise<void> {
     // BEFORE regenerating lockfile (bun install triggers prepare -> build)
     await applyPostMergeFixes()
 
-    // Always regenerate lockfile to be safe
-    if (existsSync("bun.lock") || existsSync("package-lock.json")) {
-      log("Regenerating lockfile...")
-      if (!DRY_RUN) {
-        await $`rm -f bun.lock package-lock.json`
-        await $`bun install`
-      }
-    }
+    // Regenerate lockfile AFTER all fixes (bun install triggers prepare -> build)
+    await regenerateLockfile()
 
     await verifyBuild()
     await verifyTests()
