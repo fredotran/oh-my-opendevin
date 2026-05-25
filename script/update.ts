@@ -96,6 +96,7 @@ function matchesPattern(filePath: string, pattern: RegExp | string): boolean {
 const CONFLICT_RULES: ConflictRule[] = [
   // Auto-generated docs — always take upstream
   { pattern: "AGENTS.md", strategy: "theirs" },
+  { pattern: /^src\/agents\/AGENTS\.md$/, strategy: "theirs" },
 
   // README: take upstream (regenerated frequently), fork header can be reapplied
   {
@@ -182,7 +183,27 @@ const CONFLICT_RULES: ConflictRule[] = [
     strategy: "theirs",
   },
 
-  // Bun lockfile: delete and regenerate
+  // Agent source files: take upstream (agent logic is upstream-owned)
+  {
+    pattern: /^src\/agents\/builtin-agents\/.*\.ts$/,
+    strategy: "theirs",
+  },
+  {
+    pattern: /^src\/agents\/types\.ts$/,
+    strategy: "theirs",
+  },
+
+  // CLI/handlers: take upstream
+  {
+    pattern: /^src\/cli\/cli-program\.ts$/,
+    strategy: "theirs",
+  },
+  {
+    pattern: /^src\/plugin-handlers\/.*\.ts$/,
+    strategy: "theirs",
+  },
+
+  // Bun lockfile: delete and regenerate (MUST run after package.json is resolved)
   {
     pattern: "bun.lock",
     strategy: "custom",
@@ -230,7 +251,16 @@ async function resolveFile(filePath: string): Promise<void> {
 }
 
 async function resolveAllConflicts(files: string[]): Promise<void> {
-  for (const file of files) {
+  // Sort to ensure package.json is resolved before bun.lock
+  // (bun install needs a valid package.json)
+  const sorted = files.sort((a, b) => {
+    if (a === "package.json") return -1
+    if (b === "package.json") return 1
+    if (a === "bun.lock") return 1
+    if (b === "bun.lock") return -1
+    return a.localeCompare(b)
+  })
+  for (const file of sorted) {
     await resolveFile(file)
   }
 }
