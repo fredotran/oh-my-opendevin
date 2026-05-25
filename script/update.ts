@@ -265,6 +265,26 @@ async function resolveAllConflicts(files: string[]): Promise<void> {
   }
 }
 
+// Post-merge semantic fixes for files that auto-merged textually
+// but have semantic incompatibilities
+async function applyPostMergeFixes(): Promise<void> {
+  // Fix: builtin-agents.ts may have fork-specific isFirstRunNoCache
+  // that upstream's buildAgent doesn't accept
+  const builtinAgentsPath = "src/agents/builtin-agents.ts"
+  if (existsSync(builtinAgentsPath)) {
+    const content = readFileSync(builtinAgentsPath, "utf-8")
+    if (content.includes("isFirstRunNoCache")) {
+      log(`Applying post-merge fix: removing isFirstRunNoCache from ${builtinAgentsPath}`)
+      if (!DRY_RUN) {
+        const lines = content.split("\n")
+        const filtered = lines.filter((line) => !line.includes("isFirstRunNoCache"))
+        writeFileSync(builtinAgentsPath, filtered.join("\n"))
+        await $`git add ${builtinAgentsPath}`
+      }
+    }
+  }
+}
+
 async function verifyBuild(): Promise<void> {
   log("Running build...")
   if (!DRY_RUN) {
@@ -313,6 +333,9 @@ async function main(): Promise<void> {
         fatal(`Unresolved conflicts remain: ${remaining.join(", ")}`)
       }
     }
+
+    // Apply semantic fixes for auto-merged files with incompatibilities
+    await applyPostMergeFixes()
 
     // Always regenerate lockfile to be safe
     if (existsSync("bun.lock") || existsSync("package-lock.json")) {
