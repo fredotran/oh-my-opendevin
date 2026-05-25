@@ -335,6 +335,7 @@ async function main(): Promise<void> {
     }
 
     // Apply semantic fixes for auto-merged files with incompatibilities
+    // BEFORE regenerating lockfile (bun install triggers prepare -> build)
     await applyPostMergeFixes()
 
     // Always regenerate lockfile to be safe
