@@ -248,8 +248,14 @@ async function resolveAllConflicts(files: string[]): Promise<void> {
     return a.localeCompare(b)
   })
   for (const file of sorted) {
-    // Skip bun.lock — handled separately after post-merge fixes
-    if (file === "bun.lock") continue
+    // Skip bun.lock — remove it from index, regenerate after post-merge fixes
+    if (file === "bun.lock") {
+      if (!DRY_RUN) {
+        await $`git rm -f ${file}`
+      }
+      log("Marked bun.lock as resolved (will regenerate after post-merge fixes)")
+      continue
+    }
     await resolveFile(file)
   }
 }
