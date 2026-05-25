@@ -55,7 +55,8 @@
     "test": "bun test",
     "build:ast-grep-mcp": "bun run --cwd packages/ast-grep-mcp build",
     "mcp:devin": "bun run src/mcp-servers/devin/index.ts",
-    "install:global": "./install-global.sh"
+    "install:global": "./install-global.sh",
+    "update": "bun run script/update.ts"
   },
   "keywords": [
     "opencode",
