@@ -4,7 +4,7 @@
 **Fork branch:** `fredotran/dev`  
 **Upstream:** `dev`  
 **Since commit:** `7d09d2c8` (last upstream merge before fork divergence)  
-**Last updated:** `e83bdb83`
+**Last updated:** `fbabacc3`
 
 This document tracks all features, fixes, and architectural changes added in the `oh-my-opendevin` fork that are not present in the upstream `oh-my-openagent` project.
 
@@ -391,11 +391,312 @@ This document tracks all features, fixes, and architectural changes added in the
 ## Full Commit Log
 
 ```
+fbabacc3 fix(update): stage bun.lock and skip commit when no changes
+a62490d7 fix(builtin-agents): remove isFirstRunNoCache from atlas call (upstream type doesn't accept it)
+b4bc1912 fix(update): remove stale isFirstRunNoCache post-merge fix (upstream now requires it)
+4ccd9024 fix(update): mark bun.lock resolved with git rm during conflict resolution
+37e9332a fix(update): defer bun.lock regeneration until after post-merge fixes
+d987d82f fix(update): run post-merge fixes BEFORE bun install (prepare triggers build)
+1a370b9d fix(update): add post-merge semantic fix for builtin-agents.ts isFirstRunNoCache
+371bf886 fix(update): resolve package.json before bun.lock, add missing conflict rules
+7c29e6a7 fix(merge): resolve Effect.void type error and regenerate schema/lockfile
+03e9e9e2 feat(update): add automated upstream sync updater script
+939f2b8b @SoShymKing has signed the CLA in code-yeongyu/oh-my-openagent#4469
+1b3c0351 Merge dev into fredotran/dev
+03eb9fff Merge pull request #4465 from code-yeongyu/fix-4417-atlas-path-and-start-work
+28efc4e8 fix(continuation): resolve registered agent name before dispatching prompt (#4417)
+a5cee769 fix(prompt-async-gate): retry object-form path on runtime type error (#4417)
+c25c3383 Merge pull request #4454 from code-yeongyu/fix-4448-npm-pack-dot-dirs
+94d9d932 Merge pull request #4453 from code-yeongyu/fix-4419-atlas-subagent-fallback
+0d0be435 Merge pull request #4452 from code-yeongyu/fix-4449-tool-execute-after-stall
+9c56bf22 test(script): typecheck package layout regression
+72119b3a fix(package): ship dot-directory command assets
+f57532cb fix(tool-execute-after): narrow metadata warning tools
+dc845a88 chore(web): migrate canonical domain to omo.dev
+6551f389 fix(background-agent): retry Atlas subagents on usage limits
+767f5a61 fix(model-core): retry OpenAI usage_limit_reached fallbacks
+6343feb6 Merge pull request #4450 from code-yeongyu/fix-4447-subagent-task-deny
+4a68db02 fix(tool-execute-after): gate metadata recovery warnings
+75d1ff4c fix(plugin-handlers): deny task for read-only subagents
+9be97de6 Merge pull request #4435 from code-yeongyu/fix/issue-4429-team-mode-model-override
+9fd52cb6 feat(help): #689 acp help JSON schema
+eed88e41 feat(help): #689 acp help JSON schema
+bab9caa6 feat(help): #688 sandbox help JSON schema
+1fdb88a3 feat(help): #688 sandbox help JSON schema
+2c6c42f8 feat(help): #687 status help JSON schema
+36e394a5 feat(help): #687 status help JSON schema
+a73e4db1 feat(help): #686 doctor help JSON schema
+21713dcd fix(agents): preserve model overrides with team mode
+776da68e feat(help): #686 doctor help JSON schema
+ce4b11b0 fix(cli): add explicit helpOption configuration for consistent help-flag ordering
+222adeb6 fix(runtime-fallback): honor retryable signal
+de7f1d88 Merge pull request #4400 from code-yeongyu/refactor/prompts-core-oracle-cleanup
+8f09c02c docs: scrub remaining references to migrated files
+d18cadb1 test(ultrawork): add byte-exact characterization test
+e0b37b46 test(prometheus): add byte-exact characterization test
+9d204250 docs(keyword-detector): rewrite AGENTS.md for prompts-core migration
+87e28d26 docs(prometheus): rewrite AGENTS.md for thin-loader structure
+640d7f7b Merge pull request #4396 from code-yeongyu/fix/session-scoped-internal-wake
+3d0b4c4a fix(parent-wake): block unfinished assistant wakes
+2ea7c492 Merge pull request #4390 from code-yeongyu/refactor/prometheus-to-prompts-core
+1f32b885 refactor(prometheus): remove migrated section TypeScript files
+8fc429a5 refactor(prometheus): load prompt variants from prompts-core
+3806d93d feat(prompts-core): wire Prometheus variant table
+fa0500e9 feat(prompts-core): add Prometheus prompt markdown variants
+4749eab2 Merge pull request #4389 from code-yeongyu/refactor/mode-prompts-to-prompts-core
+803f030b Merge remote-tracking branch 'origin/dev' into refactor/mode-prompts-to-prompts-core
+528f083f Merge pull request #4388 from code-yeongyu/refactor/atlas-to-prompts-core
+63ef72d1 docs(agents): document prompts-core mode prompts
+80361c05 chore(prompts-core): wire markdown prompt packaging
+2c8e2dac refactor(mode-prompts): migrate hyperplan prompt
+e79baf59 refactor(mode-prompts): migrate team prompt
+3b7f51d5 refactor(mode-prompts): migrate analyze prompt
+5cefbdbb refactor(mode-prompts): migrate search prompt
+c187dba5 test(keyword-detector): capture mode prompt baselines
+8451ecd1 docs(atlas): document prompts-core prompt ownership
+582c768b refactor(atlas): remove migrated TypeScript prompts
+4975c354 refactor(atlas): load prompt variants from prompts-core
+96a93650 build(prompts-core): bundle markdown prompt variants
+91351d73 feat(prompts-core): support bundled prompt sources
+b77fed28 feat(prompts-core): add Atlas Opus 4.7 prompt markdown
+2adcec8f feat(prompts-core): add Atlas Kimi prompt markdown
+d5995b38 feat(prompts-core): add Atlas Gemini prompt markdown
+19237611 feat(prompts-core): add Atlas GPT prompt markdown
+565d0994 feat(prompts-core): add Atlas default prompt markdown
+a92e25a1 test(atlas): add prompt byte preservation baselines
+66445241 Merge pull request #4386 from code-yeongyu/refactor/ultrawork-to-prompts-core
+79beeeee docs: document ultrawork prompt markdown location
+d217efc1 build(prompts): inline markdown prompt imports
+e772c468 refactor(ultrawork): move planner prompt to prompts-core
+e51acd0a refactor(ultrawork): move gemini prompt to prompts-core
+a818bbd9 refactor(ultrawork): move gpt prompt to prompts-core
+9c366cce refactor(ultrawork): move default prompt to prompts-core
+39b3cbcb chore(ultrawork): capture prompt baseline hashes
+46ad6bfd Merge pull request #4385 from code-yeongyu/refactor/prompts-core-foundation
+436c6187 fix(prompts-core): block prompt path traversal
+74d5f701 chore(prompts-core): wire package typecheck
+da0fa83f test(prompts-core): audit opencode coupling
+c44a6bdb feat(prompts-core): add prompt loader
+6301bcf0 feat(prompts-core): add variant resolver
+4338ddb8 feat(prompts-core): add package skeleton
+87de0563 refactor(model-core): move model family detectors
+e1e9f348 Merge pull request #4382 from code-yeongyu/feat/ultrawork-prompt-tdd-evidence-tightening
+d073bf1b feat(ultrawork): enforce TDD, scenario contract, durable notepad, reviewer gate
+39a549a3 Merge pull request #4381 from code-yeongyu/fix/team-mode-closure-prompts
+5f1fb0c5 fix(team-mode): make lead close teams on its own initiative
+a4dcbb6b docs(publish): use Jobdori bot for releases
+1473f93f Merge pull request #4380 from code-yeongyu/fix/ralph-loop-oracle-double-fire-race
+cdc93754 chore: update bun.lock
+9a1dd756 fix(ralph-loop): skip handleFailedVerification when oracle dispatch is in flight (#4256)
+3523dab0 @niStee has signed the CLA in code-yeongyu/oh-my-openagent#4378
+41c98e51 release: v4.4.0
+20d67be4 @EvangelosMoschou has signed the CLA in code-yeongyu/oh-my-openagent#4357
+5e2f12fd Merge pull request #4348 from Yeachan-Heo/omc-team/you-are-one-of-5-parallel-work/worker-4
+0c14c473 Merge pull request #4350 from Yeachan-Heo/omc-team/you-are-one-of-5-parallel-work/worker-3
+f390d365 Merge pull request #4352 from Yeachan-Heo/fix/atlas-config-model-override-4255
+54513137 Merge pull request #4356 from Yeachan-Heo/fix/issue-3805-auto-tools-path
+bfc50789 fix: trust user-configured multimodal-looker model for vision (#4209)
+779e2d2f fix(task): capture late-arriving sessionId so TUI subagent entry is clickable (#4252)
+7d444eed fix(agents): honor user atlas model when resolution returns undefined (#4255)
+6c691a1a fix(grep): probe OpenCode cache-backed bin for auto-downloaded rg (#3805)
+c0a6c667 Merge pull request #4346 from code-yeongyu/fix/agent-loop-dedupe-race-4256
+b3097e56 fix(background-agent): suppress redundant parent wakes
+2bfad490 feat(skills): add security-research orchestration
+1ecf4f64 @chouzz has signed the CLA in code-yeongyu/oh-my-openagent#4312
+01d21962 Merge pull request #4238 from islee23520/fix/look-at-status-map-hang
+f511b4bc Merge pull request #4263 from YOMXXX/fix/gpt-5-3-codex-migration
+d06a5d7a Merge pull request #4272 from YOMXXX/fix/ast-grep-windows-cli-suffix-test
+9da30095 Merge pull request #4279 from MoerAI/fix/migrate-orphan-lsp-config-key
+7cc5f8c6 chore: update bun.lock
+74db81df Merge pull request #4285 from SpencerJung/fix/issue-4123-tool-pair-retrigger
+6cac80fe Merge pull request #4290 from SpencerJung/fix/issue-4170-cjk-agent-header
+12d7d104 Merge pull request #4282 from SpencerJung/fix/issue-4149-terminal-continuation-guard
+aa3a2f2e release: v4.3.1
+e7120f6a Merge pull request #4295 from vanhci/fix/issue-4292-comment-checker-deadloop
+9e5c4318 Merge pull request #4297 from SpencerJung/fix/issue-4128-desktop-sidecar-crash
+7409f2ea Merge pull request #4300 from code-yeongyu/fix/issue-3919-desktop-native-search
+e6d8b3e7 Merge pull request #4299 from code-yeongyu/fix/issue-4128-ctx-dollar-guard
+a51d22d3 Merge pull request #4301 from code-yeongyu/fix/issue-4256-duplicate-prompt-dispatch
+560569e3 fix(parent-wake-notifier): drop duplicate wakes during promptAsync gate hold (#4256, #4019)
+aded57ff fix(shared): harden ripgrep-cli, zip-extractor, binary-downloader subprocess paths
+d17b2127 fix(tools/grep, tools/glob): use Node-safe subprocess streaming (#3919)
+4ea7562f feat(shared): add Node-safe process stream reader and search output collector
+bc8c462d fix(session-notification-sender): guard ctx.$ with execFile fallback for Desktop sidecar (#4128, #4061)
+b31ad3c8 @csxq0605 has signed the CLA in code-yeongyu/oh-my-openagent#4298
+6062df82 fix(migration): make 'lsp' migration guidance self-contained and update stale docs (addresses codex P2 on #4279)
+ec9997b7 fix(background-agent): keep cleanup error listener active
+4cf391b7 fix(comment-checker): skip modified-existing comments and dedupe per-session (issue #4292)
+ed4c04e5 fix(cli): preserve CJK agent header text
+28569307 fix(tool-pair-validator): continue after synthetic repairs
+7dae2711 fix(atlas): honor stopped continuation after boulder completion
+a7429cc2 fix(migration): drop orphan 'lsp' config key so users see LSP moved to .opencode/lsp.json (fixes #4225)
+ccaf61e0 test(ast-grep): lock Windows backslash matching for ast_grep dist cli suffix (#4220)
+cb205e14 @SpencerJung has signed the CLA in code-yeongyu/oh-my-openagent#4247
+16993291 @YOMXXX has signed the CLA in code-yeongyu/oh-my-openagent#4263
+d788c3d1 fix(migration): stop rewriting explicit gpt-5.3-codex to gpt-5.4 (#3777)
+0904e237 @wolfkill has signed the CLA in code-yeongyu/oh-my-openagent#4261
+00d814ee chore: update bun.lock
+4e0dc7fa release: v4.3.0
+abeb555c chore: regenerate config schema after default_mode/i18n/disabled_providers additions
+f313eb1a docs: add [Unreleased] section and #4225 known issue
+11c3da75 fix(default-mode,multimodal-looker,delegate-task): preserve user-expected behavior
+7cce0ad2 fix(notepad-guard,start-work): wire dispatch and match .omo paths
+3f44b45f feat(i18n): wire initI18n into production plugin startup
+2e2e33cf test: fix stale imports after prompt-async-gate and model-core refactors
+9c9e9885 fix(model-core): restore OpenAI server_error retryable patterns (regression from package extraction)
+9624914c test(disabled-providers): drop logger mock to fix global mock-module leakage
+bc0da0fa test: fix prometheus-prompt syntax + sync display name casing to lowercase
+beed9e89 @shipped-it has signed the CLA in code-yeongyu/oh-my-openagent#4253
+f1bf61ef fix: resolve duplicate ANALYZE_MESSAGE/ANALYZE_PATTERN identifiers in keyword-detector constants
+2884ec9f chore: regenerate config schema
+8a5811bf chore(comment-checker): drop dead apply-patch-edits re-export shim
+7c66aae0 refactor(rules-engine): centralize rule constants and AGENTS.md walk-up
+edaa95fe refactor(model-core): host snapshot fetcher, suggestion parser, and context-limit resolver
+4ea76365 refactor(packages): extract hashline-core package
+f29411a6 Merge pull request #4235 from code-yeongyu/fix/subagent-timeout-active-output
+dbfde0b0 fix(background-agent): ignore metadata stream output
+c4a51bee Cover look_at permanently absent session output
+282010f9 fix(background-agent): gate stale timeout on abort success
+6d15ab86 fix(background-agent): fail cancellation when abort fails
+bd1a6e3d fix(background-agent): forward session stream activity
+b3a195d6 Avoid look_at status map wait hang
+53cabfe4 Merge pull request #3035 from code-yeongyu/fix/issue-2697-v2
+90c38d16 Merge remote-tracking branch 'origin/dev' into fix/subagent-timeout-active-output
+0bf8a9df fix(background-agent): fail abort on SDK errors
+a562d536 fix: strip mcp_ prefix from tool names before dispatch
+b68af25e fix(background-agent): track session.next activity
+6c0252fa Merge pull request #3742 from mrosnerr/fix/schema-preserve-custom-agent-overrides
+6e1e01eb Merge pull request #4219 from sjawhar/fix/skill-discovery-opencode-config
+baa07dc9 Merge pull request #4232 from MoerAI/fix/hyperplan-hpp-file-extension
+61b812ff fix(keyword-detector): stop hyperplan firing on '.hpp' C++ header paths (fixes #4215)
+94d6d5b4 Merge pull request #4231 from code-yeongyu/fix/post-4228-test-and-session-gone
+0feb1250 fix(background-agent): preserve missed polls on lookup errors
+98d475f9 test(agent): align remapper fallback display name
+7e8a61ae Merge pull request #2307 from SwiggitySwerve/feat/prometheus-spec-awareness
+b2971a6a Merge pull request #2827 from z-traveler/feat/per-agent-skill-filtering
+a7af82a8 Merge pull request #4230 from code-yeongyu/fix/post-merge-debugging-cleanup-20260521
+80d726bf chore: remove reintroduced debugging artifact
+3d402644 Merge pull request #4228 from code-yeongyu/fix/delegate-stale-activity
+deb13d8e Merge pull request #3241 from cpkt9762/fix/configurable-task-cleanup-delay
+4b6877cb Merge pull request #3294 from kilhyeonjun/fix/doctor-custom-provider-regression
+d78ebc12 Merge pull request #3370 from Zireael/fix/git-bash-shell-detection-on-windows
+6678c2ae Merge pull request #3884 from leeyazhou/i18n
+c5f8fd40 Merge pull request #4031 from PeterPonyu/feat/config-disabled-providers
+e4a60b8c Merge pull request #4048 from PeterPonyu/feat/doctor-check-tui-plugin
+735b4d29 Merge pull request #4070 from PeterPonyu/fix/4036-prompt-shield-system-directive-marker
+45e5d5dd Merge pull request #4071 from PeterPonyu/fix/4027-role-coordinator-subagent-selection
+d7d023bf Merge pull request #4072 from PeterPonyu/fix/3645-runtime-fallback-git-silent-fail
+689ad997 Merge pull request #4079 from PeterPonyu/refactor/3694-extract-analyze-constants
+c5b1bff3 Merge pull request #4080 from PeterPonyu/docs/3469-mcp-list-plugin-vs-native
+9cca6848 Merge pull request #4081 from PeterPonyu/feat/4004-agent-display-name-i18n
+acedacc5 Merge pull request #4084 from pizzav-xyz/feature/keyword-detector-enabled-expansions
+ba5bc0ef Merge pull request #4092 from code-yeongyu/fix/status-timeout-hang
+a7401a34 Merge pull request #4157 from ririnto/docs/config-reference-alignment
+323e53f3 Merge pull request #4181 from devswha/docs/add-vibetip-docs-link
+b40426ca Merge pull request #4190 from herjarsa/feat/default-mode
+d5029002 Merge pull request #4221 from heunghingwan/feat/plan-format-validator
+e4049b7a Merge pull request #4222 from andomeder/wip/pr1-skip-disconnected-explicit-provider-fallbacks
+bd553962 fix(look-at): avoid empty stable idle completion
+bd614793 Merge pull request #4227 from code-yeongyu/fix/post-4106-cleanup-20260521
+95291fa4 chore(evidence): refresh package layering refactor notes
+fc0f4cc9 chore(model-core): remove unused generated snapshot (DI strategy makes it dead)
+f6a2ff35 test(coupling-audit): allowlist dual-runtime spawn shims
+2f26f78f chore(evidence): backfill PASS sentinels in empty evidence files
+017f05dd refactor(packages/model-core): eliminate src/ back-imports via dependency injection
+e15461fe refactor(model-core): inject bundled capabilities snapshot from harness
+2462d7af refactor(model-core): remove src back-imports via core utilities and adapter
+819bf0d1 chore: update meta-audits + add opencode coupling grep gate
+a089d4a5 docs: update AGENTS.md + ROADMAP.md for package layering refactor
+faf4a2d3 chore: post-W2 cleanup (remove orphan rules-core dir + W2-QA evidence)
+27e43457 docs: update rules-core → rules-engine references
+4bbf1d93 refactor(packages): rename rules-core to rules-engine
+7c7aa281 refactor(packages): extract agents-md-core package
+2748009f refactor(packages): extract model-core package
+f7ceb03e refactor(packages): extract boulder-state package
+7028c1f4 refactor(packages): extract comment-checker-core package
+3b303e79 refactor(packages): extract ast-grep-core from ast-grep-mcp
+a5c1d710 refactor(packages): extract utils package
+c4fe747e chore: baseline measurements for package layering refactor
+6e6f300c fix(background-agent): defer stale cancel on activity lookup errors
+036e04c1 fix(look-at): allow stable idle after sync prompt
+98d760a5 test(agent): align remapper display assertion
+927cc84f fix(background-agent): refresh stale checks from session activity
+8979e198 Merge pull request #4226 from code-yeongyu/fix/background-notification-active-turn-queue
+0ad4d974 fix(background-agent): preserve parent activity across idle events
+ced36bff refactor: split prompt async gate modules
+3717b332 chore: remove leaked debugging artifact
+a8201726 fix(background-agent): defer parent wakes during active turns
+8b526124 Merge pull request #4194 from MoerAI/fix/lsp-windows-cli-path-separator
+9bd2a9d7 fix(runtime-fallback): fall back to synthetic continuation when session messages are empty  (#3645)
+20ba83e1 test(mcp): remove stale lsp exists import
+ed6e9955 fix(mcp): normalize path separators in LSP/ast-grep cli candidate detection (fixes #4151)
+860c663c fix-up(#4027): narrow coordinator guard to registry hard-reject set
+7af3007e fix(team-mode): reject coordinator agents as subagent targets (#4027)
+97910193 fix(prometheus-md-only): replace SYSTEM DIRECTIVE marker with XML tag in external prompts (#4036)
+5a965fb4 fix(background-agent): skip disconnected explicit-provider fallbacks
 e83bdb83 release: v2.0.0
+cfe29168 Fix ambiguous FN. notation in Final Wave label instructions
+fcb96841 @heunghingwan has signed the CLA in code-yeongyu/oh-my-openagent#4221
+73b5a7eb Add plan format validator hook to detect malformed task labels
 b4c4c53b fix(devin-mcp): await async file ops in session-store meta updates
 e250c715 fix(tests): resolve fork-specific and upstream merge test failures
 3ac42616 fix(build): align zod version override to resolve MCP SDK type incompatibility
+a6e4691f fix: remove duplicate local isRecord declaration (conflicts with import)
+9c4ae269 fix(skill-discovery): load native OpenCode skills in task delegation
+97c73b41 Merge pull request #3147 from EZotoff/fix/notepad-directive-scope
+db4c9f49 Merge pull request #3316 from ahuangsnail/fix/max-output-tokens-zero-fallback
+821ee92c Merge pull request #2965 from sjawhar/fix/chat-message-session-cache
+5b72411b Merge pull request #3045 from haimingZZ/fix/gpt54-junior-edit-tool-haimingzz
+d7dbe7cd Merge pull request #2988 from odedindi/fix/add-server-export
+abcc46f4 fix: update pollSessionUntilIdle -> waitForLookAtSessionResult import
+2a4f5f28 Merge pull request #2958 from kui123456789/fix/context-injector-prt-prefix
+70da8ad6 Merge pull request #3600 from hackerh3/hackerh3/start-work-session-affinity
+3dba5527 Merge pull request #2991 from GreenPi290/fix/doctor-wsl-binary-detection
+f5de4bf7 Merge pull request #3498 from Disaster-Terminator/fix/task-id-prompt-surface
+abf79cd8 Merge pull request #3499 from Netzhangheng/fix/windows-auth-interceptor-binding
+ace15a6a Merge pull request #3785 from Biemmmmm/fix/resolve-plugin-root-in-commands
+d0719ff7 Merge pull request #3875 from jollyxenon/fix/3846-opencode-config-dir-additive
+6dcb2afd Merge pull request #3838 from NICxKMS/fix/team-mode-windows-atomic-write
+b18963b0 Merge pull request #3868 from MoerAI/fix/openai-server-error-retryable
+2185babd Merge pull request #3936 from wjiuxing/fix/flaky-spawner-test-polling
+cad63c97 Merge pull request #4052 from PeterPonyu/fix/3505-attach-retry-until-session-ready
+7651c856 Merge pull request #3944 from survivor998/fix/ultraworker-display-name-zwsp
+10ad8d87 Merge pull request #4050 from PeterPonyu/fix/3822-doctor-plugin-version-detection
+0e49767a Merge pull request #4026 from dihak/fix/graceful-shutdown-exit
+e824115a Merge pull request #4063 from PeterPonyu/fix/3963-server-url-port-zero
+467aa13e Merge pull request #4064 from PeterPonyu/fix/3923-team-error-propagation
+cb124f75 Merge pull request #4065 from PeterPonyu/fix/3987-team-create-hard-reject-validation
+a1f03c84 Merge pull request #4066 from PeterPonyu/fix/2887-filter-terminal-probe-replies
+6637a184 Merge pull request #4067 from PeterPonyu/fix/3898-fallback-preserve-team-context
+b76e8d2e Merge pull request #4077 from PeterPonyu/fix/4013-todo-continuation-enforcer-loop
+5eabeb80 Merge pull request #4082 from PeterPonyu/fix/3685-notepad-no-write-fallback
+85d03298 Merge pull request #4098 from sjawhar/feat/look-at-async
+aa3187bf Merge pull request #4180 from JacobZyy/fix/plugin-hooks-merge
+343d9ed2 Merge pull request #4099 from sjawhar/fix/mcp-reload-survival
+7a5b8d83 Merge pull request #4100 from sjawhar/fix/tmux-isolated-close-no-layout
+12ed091e Merge pull request #4101 from sjawhar/fix/modalities-object-shape
+aa5eeaf8 Merge pull request #4102 from sjawhar/fix/skill-directory-param
+3ee0209a Merge pull request #4113 from PeterPonyu/fix/3937-runtime-fallback-quota-patterns
+f35bb956 Merge pull request #4114 from PeterPonyu/fix/3607-detect-shell-windows-msystem
+c6d754d3 Merge pull request #4115 from PeterPonyu/fix/3726-glob-grep-broken-symlinks
+8276eb6c Merge pull request #4121 from mguttmann/fix-4119
+33f121b1 fix: add PATH to restricted hook env, protect HOME/CLAUDE_PROJECT_DIR from allowlist override, reset plugin hooks state in tests
+3e9c3f8a Merge pull request #4146 from LYY/fix/skill-shortname-fallback
+2fd62714 Merge remote-tracking branch 'origin/dev' into dev
+791825fc Merge pull request #4153 from MoerAI/fix/fallback-model-string-guard
+e2469657 Merge pull request #4154 from MoerAI/fix/todo-description-override-fires
+b463acda Merge pull request #4171 from MoerAI/fix/multimodal-looker-tool-usage-guidance
+eea27d6f fix(mcp): resolve local mcp runtimes
+37be0d56 Merge pull request #4174 from MoerAI/fix/cli-setup-alias-for-install
+0a20844b fix: address PR #4180 review - security, typing, and test coverage
+fd6a7aed Merge pull request #4176 from jangByeongHui/fix/skill-mcp-env-allowlist-bypass-3995
+1e42c610 fix(todo-continuation): normalize prompt agent
+32f0e1e0 Merge pull request #4186 from lang-911/feat/grok-reasoning-effort
+3e2662dc chore: update bun.lock
+5a695505 Merge pull request #4206 from jeongjin0/fix/session-ready-background-tasks
 1f03f275 Merge branch 'origin/dev' into fredotran/dev
+c85d2f9b fix(model-error-classifier): mark OpenAI server_error patterns as retryable (fixes #3799)
+69e7ab47 Merge pull request #4083 from PeterPonyu/fix/3724-slash-command-content-duplicated
 46118561 Merge pull request #4172 from MoerAI/fix/team-mode-base-dir-chmod-eperm
 efe0458c release: v4.2.3
 4e4bb361 docs(release): finalize v4.2.3 release notes
@@ -404,6 +705,7 @@ fbcc1435 fix(runtime-fallback): recognize completion progress events
 330e437f docs(agents): regenerate hierarchical AGENTS.md for 2026-05-20
 39aadbf9 fix(context-recovery): handle idle sessions
 caa751aa @jeongjin0 has signed the CLA in code-yeongyu/oh-my-openagent#4206
+60a23a55 fix(notification): suppress ready alerts during background tasks
 c197c240 docs(agents): require merge commits for PRs
 23396066 docs(release): expand v4.2.3 CHANGELOG and add OmO logo to README.ru.md
 a0d75d15 docs(prompt-gate): document DEFAULT_PROMPT_ASYNC_POST_DISPATCH_HOLD_MS 250 -> 2000
@@ -461,13 +763,32 @@ af42f0ac test(team-mode): stabilize resume stale reservation history check
 847a8db2 fix(runtime-fallback): preserve accepted pending retries
 6df148f0 fix(team-mode): close peer message delivery races
 d3e218f9 fix(prompt): treat post-dispatch failures as accepted
+3cb6785d fix(ralph-loop): minimal continuation prompt for default_mode
+dc2e082a fix(default-mode): skip ultrawork system prompt when ralph_loop is also enabled
+2f1380f5 refactor(default-mode): inject ultrawork via system prompt instead of visible text
+e5463e2d feat(default-mode): auto-activate ultrawork and ralph loop without commands
+696682e9 fix(chat-message): refresh stale session-agent cache from explicit input.agent
+33c8bcd8 fix(look-at): address Oracle review findings on async session poller
+824cd1a8 fix(skill-mcp): allow MCP manager to accept connections after disconnectAll
+e8a7e2a9 fix(tmux): skip layout enforcement when closing isolated container pane
+94e71936 fix(model-capabilities): handle object-shaped modalities in readModalityKeys
+d2d15413 fix(skill): pass directory to getAllSkills and fix async test timing
+342954ca fix(sisyphus-junior-notepad): scope plan directive to delegated workers
 f5402498 docs(readme): add OmO logo to hero section
 b2918fd4 fix(team-mode): close peer message delivery races
 bcea4a9d fix(prompt-gate): harden sync and team prompt dispatch
 1492bffd fix(prompt-gate): harden internal prompt dispatch
 6c63372e @lang-911 has signed the CLA in code-yeongyu/oh-my-openagent#4186
+8b097f2c fix(model-heuristics): register Grok family with reasoningEffort support
 22cf4fcc @devswha has signed the CLA in code-yeongyu/oh-my-openagent#4181
+9b151a25 fix(delegate-task): address Oracle review on PR #4121 — preserve explicit-null reject + rewrite continuation test
+2f16a7da fix(delegate-task): default run_in_background and load_skills instead of throwing (fixes #4119)
+c5cc720d docs(readme): add docs site badge linking to omo.vibetip.help/docs
+68f9cd25 Merge branch 'i18n' of github.com:leeyazhou/oh-my-openagent into i18n
+9dc9d779 feat(i18n): add toast i18n with en/zh locale and plugin config support
+5e208422 fix(hooks): always persist plugin hook config state, even when empty
 49066e7e @JacobZyy has signed the CLA in code-yeongyu/oh-my-openagent#4180
+4d105d05 fix(hooks): merge marketplace plugin hooksConfigs into claude-code-hooks at config time
 3dd41422 fix(rules): drop legacy sisyphus rule sources
 7db3a7f9 fix(team-mode): preserve live delivery holds after ambiguous prompt failure
 bb757514 fix(babysitter): avoid double prompt gate
@@ -483,15 +804,19 @@ b53a8b5e fix(parent-wake): close duplicate wake races
 f5f358ab fix(prompt-gate): ignore internal user tails in tool waits
 63e4198d @jangByeongHui has signed the CLA in code-yeongyu/oh-my-openagent#4176
 1f3245e8 Merge pull request #4175 from code-yeongyu/fix/anthropic-assistant-prefill-tail
+22aadd68 fix(skill-mcp-manager): trust explicit skill MCP env vars (#3995)
 5f0e037d fix(plugin): cover Anthropic-family prefill guard
 45d670a7 fix(plugin): constrain Anthropic prefill guard
 3509bf47 fix(plugin): guard Anthropic assistant prefill tails
 35d40cfd Merge pull request #4173 from code-yeongyu/roadmap-refactor
+554a6aab fix(cli): add 'setup' as an alias for the install command (fixes #4112)
 ff78aeda docs: add ROADMAP.md with package layering refactor plan
 688d7395 fix(team-mode): swallow EPERM/ENOTSUP/EINVAL from chmod on base dir to keep init alive (fixes #4023)
+81ce5127 fix(agents): declare multimodal-looker tool allowlist in prompt to prevent death loop on small VL models (fixes #4116)
 33b66376 fix(background-agent): defer live tool-turn wakes
 6915f152 fix(todo-continuation): cancel stale ULW countdown
 37bd866c Merge pull request #4155 from code-yeongyu/feature/rules-astgrep-packages-20260518
+8b40d0af docs: align config reference with implementation
 d8f6d59d docs: update rules and MCP inventories
 06f67093 build: wire ast-grep MCP into release gates
 05c09c1d fix(doctor): list all built-in MCP servers
@@ -509,8 +834,13 @@ a6f1950d fix(web): restore navigation smoke coverage
 c9a3c34a test: stabilize dependency verification
 f925d130 chore(deps): update root dependencies
 6fe2f72c fix(mcp): bootstrap lsp when cli is unavailable
+ed44466f fix(plugin): wire tool.definition handler so todo-description-override actually fires (fixes #3705)
 f6fba0b1 chore(deps): bump @code-yeongyu/comment-checker to 0.8.0
+ae0c106e fix(shared,delegate-task,claude-code-agent-loader): guard model parsers against non-string input (fixes #4145)
+47fced74 fix: address review findings - git-master identity check, test fixtures, regression strength
+77997d8e fix(skill-loader): support unambiguous short skill names
 ea249121 @LYY has signed the CLA in code-yeongyu/oh-my-openagent#4146
+08869369 feat: filter agent-restricted skills from prompts and tool description
 2926e366 Merge pull request #4148 from code-yeongyu/fix/prompt-async-duplicate-response
 5862292e chore: refresh platform binary lockfile entries
 450c1f9e fix(runtime-fallback): ignore stale assistant errors during fallback wait
@@ -612,6 +942,8 @@ baa0470e Merge pull request #3870 from cvqluu/fix/3772-log-bloat-and-epipe-suppr
 442cdebc docs: add Deepgram to sponsor list in README files
 755f380a docs: update AGENTS.md metadata for v4.2.0 release
 397ed104 fix(hooks): guard session-notification against missing ctx.$ (refs #3997)
+98bd6a8e Merge branch 'i18n' of github.com:leeyazhou/oh-my-openagent into i18n
+669e7525 feat(i18n): add toast i18n with en/zh locale and plugin config support
 a6bed0a5 Merge branch 'code-yeongyu:dev' into fredotran/dev
 fbfbbd10 docs(README): rename title to Oh My OpenDevin
 b5644643 docs: invert Standard and Fast/Cheap tier models
@@ -633,9 +965,16 @@ a620bb83 feat(devin-watcher): add meta-reader with tests
 caa28bf7 config: add devin watcher config schema
 bb7cca8a docs: add implementation plan for devin session watcher
 63815d40 docs: add design spec for devin session watcher
+8bba7357 fix(glob,grep): keep exit-code gate at >1 — --no-messages alone is enough
 e0d88ff2 Merge pull request #3713 from deopa0402/fix/stale-plugin-specifier-cache
+a8ccffdd style(runtime-fallback): add explicit optional chain on .replace per review
+e195a472 fix(glob,grep): tolerate broken symlinks and non-fatal I/O warnings
+2bd79460 fix(non-interactive-env): use powershell syntax on Windows regardless of SHELL/MSYSTEM
+b2f0d423 test(runtime-fallback): tighten quota regression fixtures so new paths actually fire
+f357ed03 fix(runtime-fallback): classify more provider quota error names
 bb117107 docs: regenerate DEVIN-FEATURES.md after upstream merge
 165017e4 Merge remote-tracking branch 'upstream/dev' into fredotran/dev
+6c54123e fix(slash-commands): inject command content exactly once (#3724)
 97581686 test(auto-update): isolate cached version resolution
 37d9d613 fix(auto-update): clean stale OMO cache roots
 babee921 Merge pull request #4109 from code-yeongyu/code-yeongyu/unify-prompt-async-routes
@@ -655,6 +994,7 @@ f1a0ba20 Merge pull request #4108 from code-yeongyu/code-yeongyu/fix-idle-recove
 8bc49775 fix(slash-command): skip already tagged command output
 55312cc4 fix(session-recovery): preflight idle recovery fanout
 1fea761c Merge pull request #4106 from code-yeongyu/code-yeongyu/fix-stale-tool-hang
+75ba7080 fix(team-mode): sync atomic writes through writable handle
 a7b7ace7 fix(prompt-gate): block prompts into pending tool turns
 6eb88a05 fix(session-recovery): prefer valid tool use ids
 4d417a33 fix(process-cleanup): stop force-exiting opencode on transient unhandled errors
@@ -662,6 +1002,7 @@ f43effb8 fix(session-recovery): recover interrupted idle tool turns
 fbec112b fix(background-output): bound session.messages fetch to stop forever-hang during /init-deep
 24261da8 Merge pull request #4103 from code-yeongyu/code-yeongyu/fix-prompt-hang-race
 f4f1efcb fix(call-omo-agent): fail fast on lost prompts
+ec371237 Merge remote-tracking branch 'origin/dev' into fix/task-id-prompt-surface
 8c770db8 refactor(devin): keep devin as primary so it remains in TUI agent list
 257ff0e2 refactor(devin): make devin a subagent instead of primary
 89c5be3f ci: let auto-updater run through CI instead of skipping it
@@ -670,10 +1011,12 @@ f4f1efcb fix(call-omo-agent): fail fast on lost prompts
 412ac045 docs: add debugging journal for prompt hang investigation
 d8f365bf test(guard): add merge-conflict guard to prevent unresolved git conflicts in source files
 38702f6e Merge pull request #4094 from code-yeongyu/fix/opus-4.7
+a77312c3 test(atlas): exclude isSessionActive timeout from retry timer assertion
 c142066f Merge pull request #4093 from code-yeongyu/k2p6-turbo
 67ead7bf fix(dynamic-truncator): bound session.messages fetch to stop forever-hang on Read (#4086)
 fcd0011a test(atlas): track active timers instead of scheduled delays in setTimeout mock
 2613de52 fix(prompt-async-gate): timeout isSessionActive to prevent infinite hang on stale SDK status
+36468b11 fix(shared): add timeout to isSessionActive to prevent infinite hang
 169e61f7 test(audit): allowlist build-team-idle-wake-hint-client.ts in prompt route audit
 a43215f2 fix(plugin/event): bind team-idle-wake-hint client methods to SDK Session
 271878bc perf(rules-injector): cache full candidates and memoize ancestor scans
@@ -692,6 +1035,11 @@ ba648685 fix(runtime-fallback): carry delegated system and tools through bootstr
 4f981384 feat: add ci test runner, session routing, bash parser, and test fixtures
 166e5de0 @pizzav-xyz has signed the CLA in code-yeongyu/oh-my-openagent#4084
 80fa177b Merge pull request #4075 from code-yeongyu/feature/migrate-sisyphus-to-omo
+572c3c24 fix(notepad-guard): refuse Write tool for .sisyphus/notepads files (#3685)
+7bc92bcd feat(agents): support per-agent displayName for i18n (#4004)
+c5067d1e docs(mcp): clarify plugin-injected MCPs do not appear in opencode mcp list (#3469)
+57ab749b refactor(keyword-detector): consolidate analyze pattern/message into analyze/default and document delegate_task params (#3694)
+5e4d45a3 fix(todo-continuation-enforcer): stop looping after all todos complete (#4013)
 6573bd94 chore(workspace): move test discipline rule to omo
 5a2c3bbb fix(workspace): match omo guard paths cross-platform
 b5992b13 test(shared): stabilize port utility interface check
@@ -710,8 +1058,14 @@ a86221b1 feat(workspace): store runtime state under omo
 d974cd3d test(hooks): repair stale retry harnesses
 cf7bf9d0 fix(team-mode): accept legacy inline specs
 a2054057 Merge pull request #4068 from code-yeongyu/feat/pre-publish-fix-v420
+b516d5d4 fix(team-mode): preserve team membership across model fallback (#3898)
+e25f3ca7 fix(tmux-subagent): drain terminal probe replies during delegated pane startup (#2887)
+4c360054 fix(team-mode): reject team_create from hard-reject agents (#3987)
+2bf50382 fix(team-mode): surface member error to main agent (#3923)
+ced95c4b fix(team-mode): surface port-0 fallback and silent layout skip (#3963)
 496e00b7 refactor(devin-mcp): rename fully-qualified model from swe-1-6 to swe-1.6
 64f5dc43 feat(devin-mcp): add safety-net fallback to default model on quota exhaustion
+f152569e feat(keyword-detector): add enabled_expansions config for allowlist control
 6576cb12 refactor(agents): rename devin display name to Devin - CLI Executor
 3f3a63c5 docs(changelog): v4.2.0 entry with known issues and supersession history
 eba17441 test(mock-module-audit): require lifecycle cleanup for mock.module
@@ -858,6 +1212,8 @@ c63108d5 fix(tmux): track placeholder panes before attach readiness
 6e5a127f Merge pull request #3840 from EnochLi15/codex/fix-tool-execute-after-boundary
 d1161399 fix tool execute after hook boundary
 ad10450b Merge pull request #3841 from Momentum96/fix/background-manager-tmux-ordering
+58681f6d test(tmux-subagent): assert waitForSessionReady gates executeActions
+cc88bedd fix(doctor): emit warning when tui.json is registered but opencode.json is not
 df64f325 @boris-gorbylev has signed the CLA in code-yeongyu/oh-my-openagent#4057
 be25109f fix(continuation): skip internal user turns
 c580b8f2 fix(session): ignore internal synthetic turns
@@ -893,8 +1249,10 @@ b6caa5d3 fix(background-agent): correct stall timeout guidance
 68e9d54f fix(todo-continuation): remove activity-based stagnation bypass
 fe66c962 Merge pull request #4053 from code-yeongyu/supersede/3866-tool-result-schema
 b504fb1d fix(tool-pair-validator): emit schema-compatible synthetic tool results
+0465562f fix(tmux-subagent): wait for session readiness before spawning attach pane
 24f7e560 Merge pull request #4051 from code-yeongyu/supersede/3952-first-prompt-watchdog
 3199bd3d fix(runtime-fallback): broaden watchdog progress detection + harden test timing
+78ae2402 fix(doctor): detect plugin version via require.resolve fallback
 a130fa70 fix(runtime-fallback): add first-prompt watchdog for stuck subagents
 bda0452b Merge pull request #4029 from sandikodev/fix/json-error-recovery-exclude-todowrite
 f835244d Merge pull request #4047 from PeterPonyu/fix/3894-skip-tmux-layout-when-server-unreachable
@@ -905,6 +1263,7 @@ a3283436 Merge pull request #3299 from kilhyeonjun/fix/claude-code-settings-hook
 c6054af9 Merge pull request #3872 from x-x-gpu/dev
 7da44232 Merge pull request #4049 from code-yeongyu/supersede/3790-session-firstmessage-no-clear
 9f6b6811 fix(hooks): do not clear sessionFirstMessageProcessed on session.idle
+08959d63 feat(doctor): warn when oh-my-openagent/tui is missing from tui.json
 bd3928e1 fix(team-mode): skip tmux layout when opencode server unreachable
 ac66a43e Merge pull request #4046 from code-yeongyu/fix/3494-strip-zwsp-before-promptasync
 7caf74a9 fix(atlas,todo-continuation): strip ZWSP sort prefix before promptAsync agent
@@ -972,11 +1331,13 @@ b7482ea7 test(fallback): type chat output assertions
 26bb6231 fix(fallback): preserve provider-specific fallback retries
 005d16dd fix(fallback): dedupe providerless fallback errors
 da339204 fix(fallback): dedupe overlapping fallback continuations
+e8a64088 feat(config): add disabled_providers schema + helper
 17030b9a Prevent subagent repair from corrupting background sessions
 c6c7a103 Merge pull request #4015 from code-yeongyu/fix/background-output-bg-id-20260514
 8f90c1e9 fix(background-task): log missing output retry
 d0355590 @sandikodev has signed the CLA in code-yeongyu/oh-my-openagent#4029
 c76ac27e fix(json-error-recovery): add todowrite/todoread to JSON_ERROR_TOOL_EXCLUDE_LIST
+ec49d6af fix(process-cleanup): call process.exit() after SIGTERM cleanup
 bd2f1055 @scw1109 has signed the CLA in code-yeongyu/oh-my-openagent#4020
 ec7168eb fix: respect default_agent in sort shim ordering (#3900)
 d8652863 Merge remote-tracking branch 'origin/dev' into fix/background-output-bg-id-20260514
@@ -986,6 +1347,8 @@ ca178f41 Merge pull request #4016 from code-yeongyu/fix-bg-noti-coalesce
 268c89c9 fix(background-agent): coalesce rapid-fire idle parent notifications
 1ea192b3 fix(background-task): retry transient missing output tasks
 b9beea10 feat(team-mode): drive immediate teardown and recreate-to-reshape loop
+a960f44a Merge branch 'i18n' of github.com:leeyazhou/oh-my-openagent into i18n
+fd4b3bb3 feat(i18n): add toast i18n with en/zh locale and plugin config support
 c75deee5 release: v4.1.2
 9a1f8f67 fix(web): route installation links to docs section
 63ced1d2 Merge pull request #4010 from code-yeongyu/chore/safe-tooling-upgrades-biome-tsgo-20260514-132516
@@ -1021,6 +1384,8 @@ a337635e fix(background-agent): defer active parent wakes
 e49ba947 chore(deps): refresh platform lock entries
 38b1433f fix(continuation): mark resumes synthetic
 3f922643 fix(interactive-bash): prohibit tmux kill-server
+099e126b Merge branch 'i18n' of github.com:leeyazhou/oh-my-openagent into i18n
+6ffea1bc feat(i18n): add toast i18n with en/zh locale and plugin config support
 286f5ccf when publish always discord
 9edaa6e9 release: v4.1.0
 21460713 .opencode to .agents
@@ -1028,6 +1393,10 @@ a0b46309 remove hyperplan for .opencode (not as a feature)
 711b7534 fix(delegate-task): honor user fallback_models when category primary is unreachable
 83c3379b Merge branch 'dev' into fix/surface-subagent-quota-error
 12f52338 merge(dev): resolve latest manager and runtime-fallback conflicts
+771242ea fix(start-work): prefer nested session plan refs
+d22bd71d fix(start-work): narrow existing state before resume
+063ba466 fix(start-work): prefer current session plan
+b430524a feat(start-work): add session plan affinity lookup
 5cd95cf5 fix(background-agent): fall back to partInfo.input when state.input is unavailable for circuit breaker (fixes #3962)
 c4e88d63 fix(agents): add run_in_background to category task() examples in prompts (fixes #3960)
 75825eb9 fix(todo-description-override): add OpenCode schema contract for string priorities
@@ -1036,19 +1405,46 @@ c740ed8a fix(delegate-task): route sync prompts by directory
 1e1f574b merge(dev): resolve latest sync-task conflict for delegated fallback PR
 ecb92c1e fix(runtime-fallback): abort stuck subagent on quota error with no fallback
 dd68f324 fix(background-agent): add OMO_DISABLE_PROCESS_CLEANUP env opt-out for global handlers (fixes #3856)
+cd39f885 fix(display): lowercase 'ultraworker' to avoid ZWSP rendering glitch in OpenCode TUI
+a4fde034 fix: replace brittle setTimeout(50) with polling waitForCondition in spawner tests
 583fa242 fix(runtime-fallback): classify localized balance failures
 74171b91 merge(dev): resolve background-agent delegated fallback conflicts
 291eeed8 fix(delegate-task): preserve late background session wiring on abort
+6fd31a99 feat(i18n): add toast i18n with en/zh locale and plugin config support
+ecd9d2a0 fix(test): stabilize opencode command dir assertions across environments
+66a1a9ad fix(test): address review follow-ups for config dir layering
+8d5dd908 fix(plugin-config): merge user config from default and custom opencode dirs
+850dc3a4 fix(agent-loader): load opencode global agents from both config roots
+71025dae fix(shared): add additive opencode config directory discovery
 0b9cc80e fix: pass resolved model to session.create so sub-agent sessions use the correct model
 fac90d69 fix(delegate-task): harden child-session fallback bootstrap and cleanup
+87ad159b fix(prompt): prefer edit tool for gpt-5.4 juniors
+a26117d9 fix: resolve ${CLAUDE_PLUGIN_ROOT} in plugin commands, agents, and skills
 61d2f119 fix(model-fallback): add HTTP statusCode check for GLM rate limit fallback
+bcc554bb fix(schema): preserve custom agent overrides via catchall
+fd0e6e21 Merge remote-tracking branch 'origin/dev' into fix/git-bash-shell-detection-on-windows
+0996d68d Fix interceptor auth injection binding
+ee500ad7 Fix interceptor auth injection on Windows
+ff9c3e0e test(atlas): assert task_id guidance in reminder
+64a29118 fix(prompts): prefer task_id in continuation guidance
 b6ad494f fix(session-recovery): detect and recover from 'thinking block modified' errors
+998dbde2 fix: detect Git Bash/WSL/MSYS2 shell on Windows before PSModulePath
 23d12575 fix(delegate-task): apply getAgentConfigKey normalization to isPlanAgent
+6c3308aa fix: treat zero limit.output as unknown to enable fallback to bundled snapshot
 fe1cfd88 fix: preserve accumulated modifiedInput and common fields on deny/ask from exit code paths
 5d8bd99f fix: accumulate modifiedInput and common fields from allow hooks
 e0d611ae revert: remove incorrect claudeCodeHooks override in createHooks, add pre-tool-use tests
 5aeb5688 fix: don't early-return on 'allow' in executePreToolUseHooks
 3b5745a6 fix: wire claudeCodeHooks into createHooks() to enable .claude/settings.json hooks
+02d64e44 test(doctor): cover custom provider config regression
+14c25cbb feat(background-task): make taskCleanupDelayMs configurable
+cb53cba8 merge: resolve conflicts with dev branch
+c507ce7c fix(doctor): improve opencode binary detection for WSL
+28b0a757 fix(package): add ./server export for OpenCode-Go plugin compatibility
+607fce17 fix(context-injector): prefix synthetic part ids with prt_
+d66b6bcb fix(prometheus): complete OpenSpec command reference, fix Gemini self-containment, strengthen tests
+69f4fed0 fix(prometheus): remove BMAD active detection, add missing spec-awareness tests
+8ff41232 feat(prometheus): add spec-driven development framework awareness
 ```
 
 ---
