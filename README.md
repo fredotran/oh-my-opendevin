@@ -17,341 +17,178 @@ All core features from the original oh-my-openagent are preserved and maintained
 
 ---
 
-## Fork-Specific Features
+> [!NOTE]
+> **Multi-Harness Agent OS Refactor in Progress**
+>
+> We are restructuring the codebase to support multiple agent harnesses (OpenCode, Codex, Pi, and others). If you are interested in contributing, please read the [ROADMAP](./ROADMAP.md) first. PRs related to roadmap work should use the `ROADMAP` label.
 
-### Devin CLI Integration
+> [!TIP]
+> **Building in Public**
+>
+> The maintainer builds and maintains oh-my-openagent in real-time with Jobdori, an AI assistant running on a heavily customized fork of OpenClaw.
+> Every feature, every fix, every issue triage — live in our Discord.
+>
+> [![Building in Public](./.github/assets/building-in-public.png)](https://discord.gg/PUwSMR9XNk)
+>
+> [**→ Watch it happen in #building-in-public**](https://discord.gg/PUwSMR9XNk)
 
-This fork includes a complete integration with the [Devin CLI](https://cli.devin.ai/docs):
+> [!NOTE]
+>
+> [![Sisyphus Labs - Meet Dori. Not a demo. Subscribes to everything.](./.github/assets/sisyphuslabs.png?v=4)](https://sisyphuslabs.ai)
+> > **OmO is maintained by Jobdori, the AI assistant shown above. Meet your own Jobdori — Dori. <br />Join the waitlist [here](https://sisyphuslabs.ai).**
 
-**MCP Server** (`src/mcp-servers/devin/`)
-- `devin_start` - Start a background Devin session
-- `devin_status` - Get session status and recent output
-- `devin_wait` - Block until session finishes
-- `devin_cancel` - Cancel a running session
-- `devin_list` - List all active sessions
+> [!TIP]
+> Be with us!
+>
+> | [<img alt="Discord link" src="https://img.shields.io/discord/1452487457085063218?color=5865F2&label=discord&labelColor=black&logo=discord&logoColor=white&style=flat-square" width="156px" />](https://discord.gg/PUwSMR9XNk) | Join our [Discord community](https://discord.gg/PUwSMR9XNk) to connect with contributors and fellow `oh-my-openagent` users. |
+> | :-----| :----- |
+> | [<img alt="X link" src="https://img.shields.io/badge/Follow-%40justsisyphus-00CED1?style=flat-square&logo=x&labelColor=black" width="156px" />](https://x.com/justsisyphus) | Updates for `oh-my-openagent` used to be posted on my X account. <br /> Since it was mistakenly suspended, [@justsisyphus](https://x.com/justsisyphus) now posts updates on my behalf. |
+> | [<img alt="GitHub Follow" src="https://img.shields.io/github/followers/code-yeongyu?style=flat-square&logo=github&labelColor=black&color=24292f" width="156px" />](https://github.com/code-yeongyu) | Follow [@code-yeongyu](https://github.com/code-yeongyu) on GitHub for more projects. |
 
-**Built-in Skill** (`src/features/builtin-skills/skills/devin-cli.ts`)
-- Tiered model selection guidance (Standard → Fast → Code Gen → Balanced → Deep)
-- Standard workflow documentation for agents
-- Anti-patterns and best practices
+<!-- <CENTERED SECTION FOR GITHUB DISPLAY> -->
 
-**Slash Commands** (`src/features/builtin-commands/templates/devin.ts`)
-- `/devin-status` - List or show session status
-- `/devin-cancel` - Cancel sessions
+<div align="center">
 
-**Resilience & Maintainability**
-- Session re-attachment on MCP server restart (orphaned sessions remain visible)
-- Pre-flight validation: binary existence check, model typo detection, cwd validation
-- Auto-cleanup of completed sessions from memory (1h TTL, logs remain on disk)
-- Idle session detection: sessions with no output for 30min marked as `"stalled"`
-- First-class CLI reporter: `bunx oh-my-opencode devin-report [--json] [--tier <tier>]`
-- Model disclosure: agents always tell you which tier and model was selected when delegating to Devin CLI
+<a href="https://github.com/code-yeongyu/oh-my-openagent#oh-my-openagent"><img src="./.github/assets/omo-logo.png" alt="OmO" width="200" /></a>
 
-**Devin Session Watcher** (live completion notifications)
-- Lightweight file watcher that polls the Devin MCP log directory for session state changes
-- Detects when a Devin session transitions from `running` → `completed` / `error` / `cancelled`
-- Fires two notification paths:
-  - **System reminder** — queued into the active OpenCode chat session via `backgroundManager.queuePendingNotification`, injected on the next `chat.message` via the existing `backgroundNotificationHook`
-  - **OS notification** — cross-platform native toast (macOS `osascript`/`terminal-notifier`, Linux `notify-send`, Windows PowerShell toast)
-- Configurable: enable/disable, poll interval (default 5s), toggle system reminders vs OS notifications independently
-- Automatically starts when `devin.watcher_enabled: true`, stops on `session.deleted` and process shutdown
+[![Oh My OpenAgent](./.github/assets/hero.jpg)](https://github.com/code-yeongyu/oh-my-openagent#oh-my-openagent)
 
-Enable in `~/.config/opencode/oh-my-openagent.jsonc`:
+[![Preview](./.github/assets/omo.png)](https://github.com/code-yeongyu/oh-my-openagent#oh-my-openagent)
 
-```jsonc
-{
-  "devin": {
-    "watcher_enabled": true,
-    "watcher_poll_interval_ms": 5000,
-    "watcher_system_reminders": true,
-    "watcher_os_notifications": true
-  }
-}
-```
+</div>
 
-Restart OpenCode after changing. When a Devin session completes, you will see:
-- **In chat**: *"Devin session `{id}` completed with status: `{status}`. Duration: `{duration}`. Prompt: `{preview}"*`
-- **OS banner**: Native notification titled "Devin" with the same message
+> This is oh-my-openagent, running Team Mode. With Kimi K2.6 and GPT-5.5.
 
-### Devin x Sisyphus Dual-Primary Architecture
+> Anthropic [**blocked OpenCode because of us.**](https://x.com/thdxr/status/2010149530486911014) **Yes, this is true.**
+> They want you locked in. Claude Code is a nice prison, but it's still a prison.
+>
+> You don't need to pay $200 for 2 hours of work.
+> The future isn't picking one winner; it's orchestrating them all. Models get cheaper every month. Smarter every month. No single provider will dominate. We're building for that open market, not their walled gardens.
 
-This fork introduces a **clear separation of responsibilities** between two primary agents. Pick the right tool for the job:
+<div align="center">
 
-| Agent | Mode | What It Does | What It Does NOT Do | When to Use |
-|-------|------|-------------|---------------------|-------------|
-| **Devin** (default) | primary | Local execution (read, edit, grep, LSP) + Devin CLI sandbox delegation for background/long-running tasks | NEVER calls specialist agents (Oracle, Librarian, Explore, Hephaestus, Atlas, Metis, Momus). Never routes to Sisyphus. | Quick edits, file reads, greps, background Devin CLI jobs, sandboxed execution |
-| **Sisyphus** | primary | Full specialist agent orchestration. Plans, delegates to Oracle/Librarian/Explore/Hephaestus/Atlas/Metis/Momus, and executes complex multi-file changes. | Does not use Devin CLI sandbox | Deep research, architecture decisions, multi-file refactoring, external doc searches, multi-agent coordination |
+[![GitHub Release](https://img.shields.io/github/v/release/code-yeongyu/oh-my-openagent?color=369eff&labelColor=black&logo=github&style=flat-square)](https://github.com/code-yeongyu/oh-my-openagent/releases)
+[![npm downloads](https://img.shields.io/endpoint?url=https%3A%2F%2Fohmyopenagent.com%2Fapi%2Fnpm-downloads&style=flat-square)](https://www.npmjs.com/package/oh-my-opencode)
+[![GitHub Contributors](https://img.shields.io/github/contributors/code-yeongyu/oh-my-openagent?color=c4f042&labelColor=black&style=flat-square)](https://github.com/code-yeongyu/oh-my-openagent/graphs/contributors)
+[![GitHub Forks](https://img.shields.io/github/forks/code-yeongyu/oh-my-openagent?color=8ae8ff&labelColor=black&style=flat-square)](https://github.com/code-yeongyu/oh-my-openagent/network/members)
+[![GitHub Stars](https://img.shields.io/github/stars/code-yeongyu/oh-my-openagent?color=ffcb47&labelColor=black&style=flat-square)](https://github.com/code-yeongyu/oh-my-openagent/stargazers)
+[![GitHub Issues](https://img.shields.io/github/issues/code-yeongyu/oh-my-openagent?color=ff80eb&labelColor=black&style=flat-square)](https://github.com/code-yeongyu/oh-my-openagent/issues)
+[![License](https://img.shields.io/badge/license-SUL--1.0-white?labelColor=black&style=flat-square)](https://github.com/code-yeongyu/oh-my-openagent/blob/dev/LICENSE.md)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/code-yeongyu/oh-my-openagent)
+[![Docs](https://img.shields.io/badge/docs-omo.vibetip.help-369eff?labelColor=black&logo=readthedocs&logoColor=white&style=flat-square)](https://omo.vibetip.help/docs)
 
-**Key principle:** You choose the agent. They don't choose for you.
+</div>
 
-- **Devin** is the **default** when you start OpenCode. Use Devin for local work + Devin CLI background tasks.
-- **Sisyphus** is available anytime. Use Sisyphus when you need specialist agent coordination.
-- **Switching:** Start a new session with the agent you want. They operate independently.
-- Both agents are **eligible for Team Mode** — you can spawn a team with either Devin or Sisyphus as the lead.
-
-#### Devin CLI Model Tiers
-
-When the Devin agent delegates to the Devin CLI sandbox, it uses **explicit keyword-based tier selection** based on task complexity. The agent picks a tier keyword; the MCP server resolves it to the actual Devin model before spawning the session. The Devin agent itself runs on free OpenCode Zen models; the CLI sandbox sessions can be routed to any available model.
-
-| Tier | How to invoke | Resolved model | Use for |
-|------|---------------|----------------|---------|
-| **Standard** | Omit `model` | `swe-1.6` | Most tasks — good balance of capability and cost (default) |
-| **Fast/Cheap** | `model: "kimi"` | `kimi-k2.6` | Simple edits, typos, single-file fixes |
-| **Code Gen** | `model: "codex"` | `codex` | Boilerplate, CRUD, test scaffolding |
-| **Balanced** | `model: "sonnet"` | `sonnet` | Moderate complexity, general purpose |
-| **Deep** | `model: "opus"` | `opus` | Architecture refactors, multi-file, complex debugging |
-
-**Selection heuristics:**
-- Default to **Standard** (omit `model`) for almost everything — `swe-1.6` handles most engineering tasks well
-- Use **Fast** (`"kimi"`) only for trivial tasks where speed matters more than reasoning
-- Use **Code Gen** (`"codex"`) for pure scaffolding and repetitive patterns
-- Use **Deep** (`"opus"`) sparingly — reserve for architectural refactors or critical correctness
-- Use **Balanced** (`"sonnet"`) when you need more than `kimi` but don't want `opus` cost
-
-#### Devin CLI Reliability
-
-The MCP server includes multiple safeguards for production use:
-
-| Feature | What it does |
-|---------|-------------|
-| **Max duration cap** | `maxDurationMs` option (default 2h, min 1m) auto-cancels runaway sessions |
-| **Log size caps** | Warns at 100MB; auto-cancels at 500MB to prevent disk exhaustion |
-| **Structured error hints** | Spawn failures return tagged errors: `RATE_LIMIT`, `QUOTA_EXCEEDED`, `CONTEXT_LIMIT`, `UNKNOWN` with recovery guidance |
-| **Model fallback chain** | `opus` → `sonnet` → `kimi-k2.6` → `swe` — agents can retry with the next tier when quota is hit |
-| **Auto-fallback** | `autoFallback: true` on `devin_start` automatically retries down the chain on `QUOTA_EXCEEDED` |
-| **Tool error wrapping** | All tool handlers catch unexpected errors and return text results instead of crashing |
-| **Concurrent limit** | Maximum 50 running sessions enforced at spawn time |
-| **Idle detection** | Sessions with no output growth for 30 minutes are marked `stalled` |
-| **Stdin EOF handler** | Detects parent process crash and cancels all sessions to avoid burning credits |
-
-**Override the Devin agent model** in `~/.config/opencode/oh-my-openagent.jsonc`:
-
-```jsonc
-{
-  "agents": {
-    "devin": {
-      "model": "github-copilot/claude-opus-4.6",
-      "variant": "high"
-    }
-  }
-}
-```
-
-Restart OpenCode after changing. The agent model is separate from the CLI sandbox tier — the agent's model config does not affect CLI session routing.
-
-**Agent assembly order:** `Devin → Sisyphus → Hephaestus → Prometheus → Atlas`
-
-Canonical order is enforced by `installAgentSortShim()` so Devin always appears first when both Devin and Sisyphus are registered. Devin is the default primary agent; Sisyphus is available when you need specialist orchestration.
-
-#### Architecture Diagram
-
-```
-  +-------------------+                          +-----------------------+
-  |  Devin (primary)  |                          | Sisyphus (primary)    |
-  |   Default Agent   |                          |  Deep-work Agent      |
-  +-------------------+                          +-----------------------+
-          |                                                  |
-          | Local execution OR Devin CLI                     | Specialist agent
-          | sandbox delegation ONLY                          | orchestration ONLY
-          |                                                  |
-    +-------+-------+                                +-------+-------+
-    |               |                                |               |
-    v               v                                v               v
-+--------+  +-----------+                      +----------+          +----------+
-| Local  |  | Devin CLI |                      |  Oracle  |          |Hephaestus|
-| Tools  |  |  Sandbox  |                      | (review) |          |  (deep)  |
-|        |  |           |                      +----------+          +----------+
-| read   |  | devin_    |                          |                     |
-| edit   |  | start     |                      +----------+          +----------+
-| grep   |  | status    |                      | Librarian|          | Explore  |
-| LSP    |  | wait      |                      |  (docs)  |          | (search) |
-|        |  | cancel    |                      +----------+          +----------+
-+--------+  +-----------+                          |
-                                               +----------+
-                                               |  Atlas   |
-                                               | (todos)  |
-                                               +----------+
-                                               |  Metis   |
-                                               |  (plan)  |
-                                               +----------+
-                                               |  Momus   |
-                                               | (review) |
-                                               +----------+
-```
-
-#### Devin Decision Flow
-
-```
-User Request
-    |
-    +-- Simple? (single-file edit, read, grep)
-    |      +--> Execute locally with read/edit/grep/LSP tools
-    |
-    +-- Long-running? (>30s, background, sandbox)
-    |      +--> Delegate to Devin CLI via devin_start
-    |      +--> Monitor with devin_status / devin_wait
-    |
-    +-- Needs specialist agents? (Oracle, Hephaestus, Librarian, Explore, etc.)
-           +--> Suggest user switches to Sisyphus
-           +--> "I don't delegate to specialist agents. Use Sisyphus for this."
-```
-
----
-
-## Installation
-
-### Quick Install (Recommended)
-
-For most users, the easiest way to install this fork is using the global installer:
+## Quick Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/fredotran/oh-my-opendevin/dev/install-global.sh | bash
+curl -fsSL https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/install.sh | bash
 ```
 
-Or clone and run:
+```bash
+# For oh-my-opencode (the OpenCode Plugin):
+opencode plugins add oh-my-opencode
+```
+
+> For detailed instructions and troubleshooting, see [Installation Guide](docs/guide/installation.md).
+
+## What is Oh My OpenAgent?
+
+**Oh My OpenAgent (OmO)** is an opinionated, batteries-included plugin for [OpenCode](https://opencode.ai) that turns a basic code editor into a multi-agent powerhouse.
+
+Instead of one generic assistant, you get **11 specialist agents** — each with their own role, model requirements, and lifecycle hooks:
+
+| Agent | Role | When to Use |
+|-------|------|-------------|
+| **Sisyphus** | Main orchestrator | General coding tasks |
+| **Prometheus** | Planner | Complex multi-step tasks |
+| **Oracle** | Architecture/debugging | System design, debugging |
+| **Librarian** | Documentation/code search | Finding relevant code/docs |
+| **Explore** | Fast codebase grep | Quick codebase navigation |
+| **Hephaestus** | Refactoring specialist | Code restructuring |
+| **Atlas** | Infrastructure/ops | DevOps, deployment |
+| **Metis** | Plan consultant | Reviewing/refining plans |
+| **Momus** | Critic | Code review, quality checks |
+| **Multimodal Looker** | Vision | Image analysis, UI review |
+| **Sisyphus-Junior** | Lightweight delegate | Quick subtasks |
+
+**Key Features:**
+
+- **Team Mode** — Parallel multi-agent coordination (like Claude Code Agent Teams, but open)
+- **Hash-Anchored Edit Tool** (`LINE#ID`) — Zero stale-line errors, guaranteed
+- **LSP + AST-Grep** — IDE-precision refactoring and code search
+- **Background Agents** — Fire specialists in parallel, come back when done
+- **Built-in MCPs** — Exa websearch, Context7 docs, Grep.app
+- **Tmux Integration** — Full interactive terminal support
+- **Claude Code Compatibility** — Hooks, commands, skills, MCPs, plugins
+- **IntentGate** — True intent analysis before acting
+- **Ralph Loop** — Self-referential completion loop
+- **Todo Enforcer** — Auto-resume idle agents
+- **`/init-deep`** — Hierarchical `AGENTS.md` generation
+
+**Quick Overview:**
+- **Agents**: Sisyphus (the main agent), Prometheus (planner), Oracle (architecture/debugging), Librarian (docs/code search), Explore (fast codebase grep), Multimodal Looker
+- **Background Agents**: Run multiple agents in parallel like a real dev team
+- **LSP & AST Tools**: Refactoring, rename, diagnostics, AST-aware code search
+- **Hash-anchored Edit Tool**: `LINE#ID` references validate content before applying every change. Surgical edits, zero stale-line errors
+- **Context Injection**: Auto-inject AGENTS.md, README.md, conditional rules
+- **Claude Code Compatibility**: Full hook system, commands, skills, agents, MCPs
+- **Built-in MCPs**: websearch (Exa), context7 (docs), grep_app (GitHub search) — injected at runtime by the plugin; not visible in `opencode mcp list` (see [MCP docs](docs/reference/features.md#native-vs-plugin-injected-mcps))
+- **Session Tools**: List, read, search, and analyze session history
+- **Productivity Features**: Ralph Loop, Todo Enforcer, Comment Checker, Think Mode, and more
+- **Doctor Command**: Built-in diagnostics (`bunx oh-my-opendevin doctor`) verify plugin registration, config, models, and environment
+- **Model Fallbacks**: `fallback_models` can mix plain model strings with per-fallback object settings in the same array
+- **File Prompts**: Load prompts from files with `file://` support in agent configurations
+- **Session Recovery**: Automatic recovery from session errors, context window limits, and API failures
+- **Model Setup**: Agent-model matching is built into the [Installation Guide](docs/guide/installation.md#step-5-understand-your-model-setup)
+
+**Quick Overview:**
+- **Config Locations**: User config plus walked `.opencode/oh-my-openagent.json[c]` configs up to `$HOME`; closest wins. Legacy `oh-my-opencode.json[c]` still works.
+- **JSONC Support**: Comments and trailing commas supported
+- **Agents**: Override models, temperatures, prompts, and permissions for any agent
+- **Built-in Skills**: `playwright` (browser automation), `git-master` (atomic commits)
+- **Sisyphus Agent**: Main orchestrator with Prometheus (Planner) and Metis (Plan Consultant)
+- **Background Tasks**: Configure concurrency limits per provider/model
+- **Categories**: Domain-specific task delegation (`visual`, `business-logic`, custom)
+- **Hooks**: 54+ lifecycle hooks (61 with Team Mode), all configurable via `disabled_hooks`
+- **MCPs**: Built-in websearch (Exa), context7 (docs), grep_app (GitHub search) — runtime-injected, not shown in `opencode mcp list`
+- **LSP**: Full LSP support with refactoring tools
+- **Experimental**: Aggressive truncation, auto-resume, and more
+
+## Documentation
+
+Full docs at [omo.vibetip.help](https://omo.vibetip.help/docs):
+
+- [Installation Guide](docs/guide/installation.md)
+- [Feature Reference](docs/reference/features.md)
+- [Team Mode Guide](docs/guide/team-mode.md)
+- [Troubleshooting](docs/troubleshooting.md)
+
+## Architecture
+
+OmO is built as a modular plugin system:
+
+- **Agents** — 11 specialist agents with model requirements, permissions, and lifecycle hooks
+- **Hooks** — 54+ lifecycle hooks (61 with Team Mode) across 5 tiers: Session, ToolGuard, Transform, Continuation, Skill
+- **Tools** — 20-39 tools depending on config: LSP, AST-grep, session management, background tasks, delegation, skills
+- **MCPs** — 3 built-in remote MCPs (Exa, Context7, Grep.app) + skill-embedded MCPs
+- **Config** — JSONC multi-level config with Zod v4 validation, deep merge, and automatic migration
+- **Team Mode** — Parallel multi-agent coordination modeled after Claude Code Agent Teams
+
+See [AGENTS.md](AGENTS.md) for the full architecture overview.
+
+## Fork Installation
+
+If you are using this fork:
 
 ```bash
-git clone https://github.com/fredotran/oh-my-opendevin.git
-cd oh-my-opendevin
+# Install the fork globally
 ./install-global.sh
 ```
-
-**What the installer does:**
-- Checks prerequisites (npm required, bun required for MCP integration)
-- Installs Bun automatically if not found (needed for Devin MCP server)
-- Installs `oh-my-opendevin` globally from npm
-- Configures OpenCode automatically
-- Configures MCP servers for Devin CLI integration
-- Runs verification checks
-
-**Usage:**
-```bash
-./install-global.sh              # Install globally
-./install-global.sh --uninstall  # Remove global installation
-./install-global.sh --restore    # Restore configs from most recent backup
-./install-global.sh --fix-mcp    # Repair MCP configuration without reinstalling
-./install-global.sh --no-verify  # Skip verification step
-./install-global.sh --help       # Show help
-```
-
-**After installation:**
-- Restart OpenCode to load the plugin
-- CLI commands available: `oh-my-opendevin` or `oh-my-opencode`
-- Run `oh-my-opendevin doctor` to verify installation
-- Or run `./check-installation.sh` for a quick diagnostic of all components
-
-**Resuming sessions:**
-When running `oh-my-opencode run "<task>"`, if you interrupt with Ctrl+C or the session completes, the CLI prints a resume hint with the session ID:
-```
-oh-my-opencode run --session-id <id> "Continue the work"
-```
-This lets you easily resume exactly where you left off.
-
-### Alternative: Direct npm Install
-
-If you prefer to install directly via npm:
-
-```bash
-npm install -g oh-my-opendevin
-```
-
-Then manually configure OpenCode by editing `~/.config/opencode/opencode.json`:
-
-```json
-{
-  "plugin": ["oh-my-opendevin"]
-}
-```
-
-### Development Installation
-
-For contributors who want to work on the code:
-
-```bash
-git clone https://github.com/fredotran/oh-my-opendevin.git
-cd oh-my-opendevin
-bun install  # Bun is required for development
-bun run build
-```
-
-Then manually configure OpenCode to use the local build:
-
-```json
-{
-  "plugin": ["file:///path/to/oh-my-opendevin/dist/index.js"]
-}
-```
-
-**Development workflow:**
-1. Make changes to the code
-2. Run `bun run build` to rebuild
-3. Restart OpenCode to pick up changes
-4. Test your changes
-
-### MCP Integration Requirements
-
-The Devin CLI MCP server requires **Bun** to run. This is because the MCP server is built specifically for the Bun runtime to ensure optimal performance and compatibility.
-
-**For users installing via the global installer:**
-- Bun is automatically installed if not present on your system
-- The installer handles all MCP configuration automatically
-- No manual setup required
-
-**For users installing via npm directly:**
-- You must have Bun installed on your system
-- Install Bun: `curl -fsSL https://bun.sh/install | bash`
-- Manually configure MCP in `~/.claude/.mcp.json`:
-  ```json
-  {
-    "mcpServers": {
-      "devin": {
-        "type": "stdio",
-        "command": "bun",
-        "args": ["run", "$(npm root -g)/oh-my-opendevin/dist/mcp-servers/devin/index.js"],
-        "env": {}
-      }
-    }
-  }
-  ```
-
-The plugin also checks `~/.config/opencode/.mcp.json` as a fallback for manual configurations.
-
-**For developers:**
-- Bun is required for both development and MCP integration
-- The `.mcp.json` in the repo root points to built files in `dist/`
-- Run `bun run build` before using MCP integration in development
-
-### Troubleshooting
-
-#### Bun not found or MCP integration not working
-
-If you see errors about Bun not being installed or MCP integration fails:
-
-1. **Install Bun manually:**
-   ```bash
-   curl -fsSL https://bun.sh/install | bash
-   ```
-
-2. **Restart your shell** to pick up the new PATH (the global installer does this automatically for bash and zsh):
-   ```bash
-   source ~/.bashrc  # or ~/.zshrc, .bash_profile, .zprofile
-   ```
-
-3. **Verify Bun installation:**
-   ```bash
-   bun --version
-   ```
-
-4. **Re-run the installer:**
-   ```bash
-   ./install-global.sh
-   ```
 
 If you prefer not to use Bun, the plugin will still work without MCP integration. You just won't be able to use the Devin CLI delegation features.
 
 If MCP was previously configured but stopped working, run `./install-global.sh --fix-mcp` to repair the configuration without reinstalling.
-
-#### Installation fails with permission errors
 
 If you encounter permission errors during npm installation:
 
@@ -365,8 +202,6 @@ source ~/.bashrc
 # Then re-run the installer
 ./install-global.sh
 ```
-
-#### Plugin not loading in OpenCode
 
 1. Restart OpenCode after running the installer
 2. Check OpenCode logs for errors

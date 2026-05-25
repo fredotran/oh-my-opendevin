@@ -23,6 +23,7 @@ import {
 } from "../shared/external-plugin-detector"
 import { PUBLISHED_PACKAGE_NAME } from "../shared/plugin-identity"
 import { createFirstMessageVariantGate } from "../shared/first-message-variant"
+import { initI18n } from "../shared/i18n"
 import { log } from "../shared/logger"
 import { logLegacyPluginStartupWarning } from "../shared/log-legacy-plugin-startup-warning"
 import { migrateLegacyWorkspaceDirectory } from "../shared/legacy-workspace-migration"
@@ -45,6 +46,7 @@ export type PluginModuleDeps = {
   detectSiblingPackage: typeof detectSiblingPackage
   injectServerAuthIntoClient: typeof injectServerAuthIntoClient
   loadPluginConfig: typeof loadPluginConfig
+  initI18n: typeof initI18n
   initializeOpenClaw: typeof initializeOpenClaw
   isTmuxIntegrationEnabled: typeof isTmuxIntegrationEnabled
   startTmuxCheck: typeof startTmuxCheck
@@ -69,6 +71,7 @@ const defaultPluginModuleDeps: PluginModuleDeps = {
   detectSiblingPackage,
   injectServerAuthIntoClient,
   loadPluginConfig,
+  initI18n,
   initializeOpenClaw,
   isTmuxIntegrationEnabled,
   startTmuxCheck,
@@ -111,6 +114,7 @@ export function createPluginModule(overrides: Partial<PluginModuleDeps> = {}): P
     deps.injectServerAuthIntoClient(input.client)
 
     const pluginConfig = deps.loadPluginConfig(input.directory, input)
+    deps.initI18n(pluginConfig.i18n?.locale ? { locale: pluginConfig.i18n.locale } : undefined)
     deps.setAgentSortOrder(pluginConfig.agent_order)
 
     if (pluginConfig.openclaw) {

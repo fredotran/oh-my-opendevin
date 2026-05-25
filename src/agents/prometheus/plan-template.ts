@@ -66,6 +66,17 @@ Generate plan to: \`.omo/plans/{name}.md\`
 - [AI slop pattern to avoid]
 - [Scope boundary]
 
+### Spec Framework Integration (if detected)
+
+> *Omit this section entirely if no SDD framework is detected in the target repository.*
+
+- **Detected Framework**: [OpenSpec | Spec Kit | None]
+- **Config File**: [path to config, e.g., \`openspec/config.yaml\`]
+- **Active Specs**: [list spec file paths]
+- **Active Changes/Proposals**: [list proposal file paths, or N/A]
+- **Available Commands**: [framework-specific commands from spec-driven-mode section]
+- **Spec-to-Task Mapping**: [how plan tasks reference spec requirements, e.g., "Task 2 implements \`openspec/specs/auth/spec.md\`"]
+
 ---
 
 ## Verification Strategy (MANDATORY)
@@ -163,6 +174,9 @@ Max Concurrent: 7 (Waves 1 & 2)
 > Implementation + Test = ONE Task. Never separate.
 > EVERY task MUST have: Recommended Agent Profile + Parallelization info + QA Scenarios.
 > **A task WITHOUT QA Scenarios is INCOMPLETE. No exceptions.**
+> **FORMAT**: Task labels MUST use bare numbers: \`1.\`, \`2.\`, \`3.\` — NOT \`T1.\`, \`Task 1.\`, \`Phase 1:\`.
+> The /start-work progress counter requires exact format. Deviation = progress shows 0/0.
+> Final Verification Wave labels MUST use \`F1.\`, \`F2.\`, etc. — NOT \`T-F1.\`, \`F-1.\`, \`Final 1.\`.
 
 - [ ] 1. [Task Title]
 

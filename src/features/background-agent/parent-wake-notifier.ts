@@ -67,6 +67,7 @@ type ParentWakeNotifierOptions = {
    * inside OpenCode's `@parcel/watcher` TSFN callback path. See issue #4120.
    */
   userMessageInProgressWindowMs: number
+  parentSessionActivityInProgressWindowMs?: number
 }
 
 type ToolWaitDeferralDecision = {
@@ -94,6 +95,7 @@ export class ParentWakeNotifier {
   private pendingParentWakeTimers: Map<string, ReturnType<typeof setTimeout>> = new Map()
   private dispatchedParentWakes: Map<string, PendingParentWake> = new Map()
   private dispatchedParentWakeTimers: Map<string, ReturnType<typeof setTimeout>> = new Map()
+  private recentParentSessionActivity: Map<string, number> = new Map()
 
   constructor(
     private readonly deps: ParentWakeNotifierDeps,
@@ -114,6 +116,10 @@ export class ParentWakeNotifier {
 
   getDispatchedParentWakeTimers(): Map<string, ReturnType<typeof setTimeout>> {
     return this.dispatchedParentWakeTimers
+  }
+
+  recordParentSessionActivity(sessionID: string): void {
+    this.recentParentSessionActivity.set(sessionID, Date.now())
   }
 
   queuePendingParentWake(
@@ -160,6 +166,14 @@ export class ParentWakeNotifier {
 
     const latestWake = this.pendingParentWakes.get(sessionID)
     if (!latestWake) {
+      return
+    }
+
+    if (this.hasRecentParentSessionActivity(sessionID)) {
+      this.schedulePendingParentWakeFlush(sessionID)
+      log("[background-agent] Deferred parent wake because parent session activity is still fresh:", {
+        sessionID,
+      })
       return
     }
 
@@ -224,6 +238,13 @@ export class ParentWakeNotifier {
         throw promptResult.error
       }
       if (promptResult.status === "reserved" && promptResult.reservedBy === "background-agent-parent-wake") {
+        const dispatchedWake = this.dispatchedParentWakes.get(sessionID)
+        if (dispatchedWake && this.isSameParentWake(latestWake, dispatchedWake)) {
+          // #4256/#4019: duplicated completion edges can enqueue the same wake
+          // during the gate hold. Replaying it later starts a second assistant stream.
+          log("[background-agent] Suppressed duplicate parent wake during promptAsync gate hold:", { sessionID })
+          return
+        }
         this.requeueWake(sessionID, latestWake)
         this.schedulePendingParentWakeFlush(sessionID, 2_000)
         log("[background-agent] Requeued parent wake flush reserved by promptAsync gate hold:", { sessionID })
@@ -324,10 +345,27 @@ export class ParentWakeNotifier {
     this.dispatchedParentWakeTimers.clear()
     this.pendingParentWakes.clear()
     this.dispatchedParentWakes.clear()
+    this.recentParentSessionActivity.clear()
   }
 
   private async isSessionActive(sessionID: string): Promise<boolean> {
     return isOpenCodeSessionActive(this.deps.client, sessionID)
+  }
+
+  private hasRecentParentSessionActivity(sessionID: string): boolean {
+    const windowMs = this.options.parentSessionActivityInProgressWindowMs ?? 0
+    if (windowMs <= 0) {
+      return false
+    }
+    const lastActivityAt = this.recentParentSessionActivity.get(sessionID)
+    if (lastActivityAt === undefined) {
+      return false
+    }
+    if (Date.now() - lastActivityAt <= windowMs) {
+      return true
+    }
+    this.recentParentSessionActivity.delete(sessionID)
+    return false
   }
 
   private resolveParentWakePromptContext(promptContext: ParentWakePromptContext): ParentWakePromptContext {
@@ -366,6 +404,12 @@ export class ParentWakeNotifier {
     // event loop alive past the natural teardown window (issue #4120).
     unrefTimerHandle(timer)
     this.dispatchedParentWakeTimers.set(sessionID, timer)
+  }
+
+  private isSameParentWake(left: PendingParentWake, right: PendingParentWake): boolean {
+    return left.shouldReply === right.shouldReply
+      && JSON.stringify(left.notifications) === JSON.stringify(right.notifications)
+      && JSON.stringify(left.promptContext) === JSON.stringify(right.promptContext)
   }
 
   private async loadParentWakeSessionMessages(sessionID: string): Promise<ParentWakeSessionMessage[]> {
