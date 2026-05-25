@@ -274,21 +274,11 @@ async function regenerateLockfile(): Promise<void> {
 // Post-merge semantic fixes for files that auto-merged textually
 // but have semantic incompatibilities
 async function applyPostMergeFixes(): Promise<void> {
-  // Fix: builtin-agents.ts may have fork-specific isFirstRunNoCache
-  // that upstream's buildAgent doesn't accept
-  const builtinAgentsPath = "src/agents/builtin-agents.ts"
-  if (existsSync(builtinAgentsPath)) {
-    const content = readFileSync(builtinAgentsPath, "utf-8")
-    if (content.includes("isFirstRunNoCache")) {
-      log(`Applying post-merge fix: removing isFirstRunNoCache from ${builtinAgentsPath}`)
-      if (!DRY_RUN) {
-        const lines = content.split("\n")
-        const filtered = lines.filter((line) => !line.includes("isFirstRunNoCache"))
-        writeFileSync(builtinAgentsPath, filtered.join("\n"))
-        await $`git add ${builtinAgentsPath}`
-      }
-    }
-  }
+  // Add known post-merge fixes here as they are discovered.
+  // Example: if upstream auto-merges a file but breaks types,
+  // add a targeted fix here.
+  log("Checking for post-merge semantic fixes...")
+  // No fixes currently needed
 }
 
 async function verifyBuild(): Promise<void> {

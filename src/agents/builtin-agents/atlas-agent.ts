@@ -4,7 +4,7 @@ import type { CategoriesConfig, CategoryConfig } from "../../config/schema"
 import type { AvailableAgent, AvailableSkill } from "../dynamic-agent-prompt-builder"
 import { AGENT_MODEL_REQUIREMENTS } from "../../shared"
 import { applyOverrides } from "./agent-overrides"
-import { applyModelResolution, getFirstFallbackModel } from "./model-resolution"
+import { applyModelResolution } from "./model-resolution"
 import { createAtlasAgent } from "../atlas"
 
 export function maybeCreateAtlasConfig(input: {
@@ -19,7 +19,6 @@ export function maybeCreateAtlasConfig(input: {
   directory?: string
   userCategories?: CategoriesConfig
   useTaskSystem?: boolean
-  isFirstRunNoCache?: boolean
 }): AgentConfig | undefined {
   const {
     disabledAgents,
@@ -32,7 +31,6 @@ export function maybeCreateAtlasConfig(input: {
     mergedCategories,
     directory,
     userCategories,
-    isFirstRunNoCache = false,
   } = input
 
   if (disabledAgents.includes("atlas")) return undefined
@@ -48,8 +46,10 @@ export function maybeCreateAtlasConfig(input: {
     systemDefaultModel,
   })
 
-  if (isFirstRunNoCache && !orchestratorOverride?.model && !uiSelectedModel) {
-    atlasResolution = getFirstFallbackModel(atlasRequirement)
+  if (!atlasResolution && orchestratorOverride?.model) {
+    // User explicitly configured a model but resolution failed (e.g., cold cache, no system default).
+    // Honor the user's choice directly instead of dropping Atlas entirely.
+    atlasResolution = { model: orchestratorOverride.model, provenance: "override" as const }
   }
 
   if (!atlasResolution) return undefined

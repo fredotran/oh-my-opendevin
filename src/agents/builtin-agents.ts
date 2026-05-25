@@ -91,7 +91,6 @@ export async function createBuiltinAgents(
   const availableModels = await fetchAvailableModels(undefined, {
     connectedProviders: mergedConnectedProviders.length > 0 ? mergedConnectedProviders : undefined,
   })
-  const isFirstRunNoCache =
     availableModels.size === 0 && mergedConnectedProviders.length === 0
 
   const result: Record<string, AgentConfig> = {}
@@ -116,7 +115,6 @@ export async function createBuiltinAgents(
     browserProvider,
     uiSelectedModel,
     availableModels,
-    isFirstRunNoCache,
     disabledSkills,
     teamModeEnabled,
     disableOmoEnv,
@@ -128,7 +126,6 @@ export async function createBuiltinAgents(
     uiSelectedModel,
     availableModels,
     systemDefaultModel,
-    isFirstRunNoCache,
     availableAgents,
     availableSkills: buildAvailableSkills(discoveredSkills, browserProvider, disabledSkills, teamModeEnabled, "sisyphus"),
     availableCategories,
@@ -147,7 +144,6 @@ export async function createBuiltinAgents(
     agentOverrides,
     availableModels,
     systemDefaultModel,
-    isFirstRunNoCache,
     availableAgents,
     availableSkills: buildAvailableSkills(discoveredSkills, browserProvider, disabledSkills, teamModeEnabled, "hephaestus"),
     availableCategories,
@@ -176,7 +172,6 @@ export async function createBuiltinAgents(
     mergedCategories,
     directory,
     userCategories: categories,
-    isFirstRunNoCache,
   })
   if (atlasConfig) {
     result["atlas"] = atlasConfig
